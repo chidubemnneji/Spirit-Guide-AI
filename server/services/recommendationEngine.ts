@@ -14,21 +14,21 @@ class RecommendationEngine {
   private getIconForPractice(practice: string): string {
     const lowerPractice = practice.toLowerCase();
 
-    if (lowerPractice.includes("walk")) return "🚶‍♂️";
-    if (lowerPractice.includes("prayer") || lowerPractice.includes("pray")) return "🙏";
-    if (lowerPractice.includes("silence") || lowerPractice.includes("stillness")) return "🧘";
-    if (lowerPractice.includes("journal")) return "📝";
-    if (lowerPractice.includes("breath")) return "💨";
-    if (lowerPractice.includes("scripture") || lowerPractice.includes("bible") || lowerPractice.includes("read")) return "📖";
-    if (lowerPractice.includes("coffee") || lowerPractice.includes("tea")) return "☕";
-    if (lowerPractice.includes("nature") || lowerPractice.includes("outside")) return "🌳";
-    if (lowerPractice.includes("music") || lowerPractice.includes("worship")) return "🎵";
-    if (lowerPractice.includes("friend") || lowerPractice.includes("talk") || lowerPractice.includes("connect")) return "💬";
-    if (lowerPractice.includes("gratitude") || lowerPractice.includes("thank")) return "🙌";
-    if (lowerPractice.includes("rest") || lowerPractice.includes("sleep")) return "😴";
-    if (lowerPractice.includes("meditat")) return "🧘‍♀️";
+    if (lowerPractice.includes("walk")) return "footprints";
+    if (lowerPractice.includes("prayer") || lowerPractice.includes("pray")) return "hands";
+    if (lowerPractice.includes("silence") || lowerPractice.includes("stillness")) return "pause";
+    if (lowerPractice.includes("journal")) return "pencil";
+    if (lowerPractice.includes("breath")) return "wind";
+    if (lowerPractice.includes("scripture") || lowerPractice.includes("bible") || lowerPractice.includes("read")) return "book-open";
+    if (lowerPractice.includes("coffee") || lowerPractice.includes("tea")) return "coffee";
+    if (lowerPractice.includes("nature") || lowerPractice.includes("outside")) return "tree-pine";
+    if (lowerPractice.includes("music") || lowerPractice.includes("worship")) return "music";
+    if (lowerPractice.includes("friend") || lowerPractice.includes("talk") || lowerPractice.includes("connect")) return "message-circle";
+    if (lowerPractice.includes("gratitude") || lowerPractice.includes("thank")) return "heart";
+    if (lowerPractice.includes("rest") || lowerPractice.includes("sleep")) return "moon";
+    if (lowerPractice.includes("meditat")) return "pause";
 
-    return "✨";
+    return "sparkles";
   }
 
   async generateRecommendationCards(
@@ -36,8 +36,12 @@ class RecommendationEngine {
     userPersona: UserPersona | null,
     emotionalState?: EmotionalState
   ): Promise<RecommendationCardData[]> {
+    // Always provide fallback if no API key or any error
+    const emotionalLabel = emotionalState?.primaryEmotion;
+    
     if (!process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY) {
-      return this.getFallbackRecommendations(emotionalState?.primaryEmotion);
+      console.log("[RecommendationEngine] No API key, using fallback recommendations");
+      return this.getFallbackRecommendations(emotionalLabel);
     }
 
     try {
@@ -108,8 +112,8 @@ Generate 3 personalized spiritual practice recommendations.`,
         iconEmoji: this.getIconForPractice(rec.practice),
       }));
     } catch (error) {
-      console.error("Recommendation generation error:", error);
-      return this.getFallbackRecommendations(emotionalState?.primaryEmotion);
+      console.error("[RecommendationEngine] AI generation error, using fallback:", error);
+      return this.getFallbackRecommendations(emotionalLabel);
     }
   }
 
@@ -121,7 +125,7 @@ Generate 3 personalized spiritual practice recommendations.`,
         description: "A gentle walk to notice God in ordinary moments",
         duration: "5 minutes",
         instructions: "Step outside or walk around your space. As you walk, notice three things you're grateful for. Let each step be a quiet prayer.",
-        iconEmoji: "🚶‍♂️",
+        iconEmoji: "footprints",
       },
       {
         practiceType: "breath_prayer",
@@ -129,7 +133,7 @@ Generate 3 personalized spiritual practice recommendations.`,
         description: "Connect with God through your breathing",
         duration: "2 minutes",
         instructions: "Breathe in slowly while thinking 'Lord.' Breathe out slowly while thinking 'I trust you.' Repeat 5-10 times.",
-        iconEmoji: "💨",
+        iconEmoji: "wind",
       },
       {
         practiceType: "scripture_pause",
@@ -137,7 +141,7 @@ Generate 3 personalized spiritual practice recommendations.`,
         description: "A moment with one verse",
         duration: "3 minutes",
         instructions: "Read Psalm 23:1 slowly: 'The Lord is my shepherd, I lack nothing.' Sit with these words. What do they stir in you?",
-        iconEmoji: "📖",
+        iconEmoji: "book-open",
       },
     ];
 
@@ -149,7 +153,7 @@ Generate 3 personalized spiritual practice recommendations.`,
           description: "Give yourself permission to pause",
           duration: "2 minutes",
           instructions: "Sit or lie down comfortably. Place your hand on your heart. Breathe slowly and say: 'I am held. I am not alone.'",
-          iconEmoji: "🧘",
+          iconEmoji: "pause",
         },
         basePractices[1],
         basePractices[2],
@@ -164,7 +168,7 @@ Generate 3 personalized spiritual practice recommendations.`,
           description: "Remember you are not alone",
           duration: "3 minutes",
           instructions: "Close your eyes. Picture yourself surrounded by warmth and light. Whisper: 'I am seen. I am known. I am loved.'",
-          iconEmoji: "🙏",
+          iconEmoji: "hands",
         },
         basePractices[0],
         basePractices[2],

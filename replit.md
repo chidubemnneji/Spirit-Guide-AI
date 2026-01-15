@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **ORM**: Drizzle ORM with PostgreSQL dialect
 - **Schema Location**: `shared/schema.ts` - shared between client and server
 - **Storage Pattern**: Repository pattern with `IStorage` interface allowing for in-memory or database implementations
-- **Key Entities**: Users, UserPersonas (onboarding responses + assigned persona), Conversations, Messages
+- **Key Entities**: Users, UserPersonas (onboarding responses + assigned persona), Conversations, Messages, RecommendationCards
 
 ### Persona System
 The application assigns users one of 8 primary persona types based on onboarding responses:
@@ -67,6 +67,18 @@ Located in `server/services/`:
 4. **Memory Extraction Service** (`memoryExtractor.ts`)
    - Extracts topics, memorable moments, and themes from conversations
    - Formats memory context for AI prompts to enable continuity
+
+5. **Recommendation Engine Service** (`recommendationEngine.ts`)
+   - Generates personalized spiritual practice recommendations
+   - Creates 3 practice cards per Phase 4+ message (contemplative, active, reflective)
+   - AI-powered with fallback recommendations when unavailable
+   - Card data: practiceType, title, description, duration, instructions, iconEmoji
+
+### Interactive Recommendation Cards (Phase 4+)
+- **Trigger**: Automatically generated for messages after the user's 4th turn (recommendation phase)
+- **Card Types**: Tappable practice suggestions (breath prayer, scripture pause, contemplative walk, etc.)
+- **User Interactions**: Click to expand, mark complete, rate helpfulness (1-5 stars)
+- **Tracking**: Clicks, completions, and ratings stored for personalization
 
 ### Conversation Phases (Pastoral Progression)
 - **Phase 1 (Acknowledgment)**: Pure validation, no advice

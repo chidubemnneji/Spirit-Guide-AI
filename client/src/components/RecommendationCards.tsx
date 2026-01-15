@@ -1,9 +1,35 @@
 import { useState } from "react";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Check, ThumbsUp, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { 
+  Clock, Check, ThumbsUp, ChevronDown, ChevronUp, Star,
+  Footprints, Hand, Pause, Pencil, Wind, BookOpen, Coffee,
+  TreePine, Music, MessageCircle, Heart, Moon, Sparkles
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RecommendationCard } from "@shared/schema";
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  "footprints": Footprints,
+  "hands": Hand,
+  "pause": Pause,
+  "pencil": Pencil,
+  "wind": Wind,
+  "book-open": BookOpen,
+  "coffee": Coffee,
+  "tree-pine": TreePine,
+  "music": Music,
+  "message-circle": MessageCircle,
+  "heart": Heart,
+  "moon": Moon,
+  "sparkles": Sparkles,
+};
+
+function PracticeIcon({ iconName, className }: { iconName?: string | null; className?: string }) {
+  const IconComponent = iconName ? iconMap[iconName] : Sparkles;
+  const FinalIcon = IconComponent || Sparkles;
+  return <FinalIcon className={cn("w-5 h-5 text-primary", className)} />;
+}
 
 interface RecommendationCardsProps {
   cards: RecommendationCard[];
@@ -79,8 +105,8 @@ function PracticeCard({
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
-            <div className="text-2xl" role="img" aria-label="practice icon">
-              {card.iconEmoji || "✨"}
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <PracticeIcon iconName={card.iconEmoji} />
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="font-medium text-sm leading-tight flex items-center gap-2">

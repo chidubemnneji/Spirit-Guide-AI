@@ -289,7 +289,19 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Conversation not found" });
       }
       const messages = await storage.getMessages(id);
-      res.json({ ...conversation, messages });
+      
+      // Attach recommendation cards to assistant messages
+      const messagesWithCards = await Promise.all(
+        messages.map(async (msg) => {
+          if (msg.role === "assistant") {
+            const cards = await storage.getRecommendationCardsForMessage(msg.id);
+            return { ...msg, recommendationCards: cards };
+          }
+          return msg;
+        })
+      );
+      
+      res.json({ ...conversation, messages: messagesWithCards });
     } catch (error) {
       console.error("Error fetching conversation:", error);
       res.status(500).json({ error: "Failed to fetch conversation" });
@@ -345,7 +357,19 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Conversation not found" });
       }
       const messages = await storage.getMessages(id);
-      res.json({ messages });
+      
+      // Attach recommendation cards to assistant messages
+      const messagesWithCards = await Promise.all(
+        messages.map(async (msg) => {
+          if (msg.role === "assistant") {
+            const cards = await storage.getRecommendationCardsForMessage(msg.id);
+            return { ...msg, recommendationCards: cards };
+          }
+          return msg;
+        })
+      );
+      
+      res.json({ messages: messagesWithCards });
     } catch (error) {
       console.error("Error fetching messages:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
@@ -516,13 +540,46 @@ I'm here to listen whenever you're ready to talk.`;
         const fallbackMessage = fallbackResponses[phase];
         res.write(`data: ${JSON.stringify({ content: fallbackMessage })}\n\n`);
         
-        await storage.createMessage({
+        const savedFallbackMessage = await storage.createMessage({
           conversationId,
           role: "assistant",
           content: fallbackMessage,
         });
         
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        // Generate recommendation cards for phase 4+ even in fallback mode
+        let fallbackCards: any[] = [];
+        if (userTurnCount >= 4) {
+          try {
+            const { recommendationEngine } = await import("./services/recommendationEngine");
+            const cardData = await recommendationEngine.generateRecommendationCards(
+              content,
+              persona,
+              emotionalState
+            );
+            
+            for (const card of cardData) {
+              const savedCard = await storage.createRecommendationCard({
+                conversationId,
+                messageId: savedFallbackMessage.id,
+                practiceType: card.practiceType,
+                title: card.title,
+                description: card.description,
+                duration: card.duration,
+                instructions: card.instructions,
+                iconEmoji: card.iconEmoji,
+              });
+              fallbackCards.push(savedCard);
+            }
+          } catch (cardError) {
+            console.error("Error generating fallback recommendation cards:", cardError);
+          }
+        }
+        
+        res.write(`data: ${JSON.stringify({ 
+          done: true, 
+          messageId: savedFallbackMessage.id,
+          hasRecommendations: fallbackCards.length > 0 
+        })}\n\n`);
         res.end();
         return;
       }
@@ -598,13 +655,49 @@ I'm here to listen whenever you're ready to talk.`;
         res.write(`data: ${JSON.stringify({ content: fallbackMessage })}\n\n`);
         
         // Save fallback as assistant message
-        await storage.createMessage({
+        const savedErrorMessage = await storage.createMessage({
           conversationId,
           role: "assistant",
           content: fallbackMessage,
         });
         
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        // Generate recommendation cards for phase 4+ even in error fallback
+        let errorFallbackCards: any[] = [];
+        console.log(`[Chat] AI error path: userTurnCount=${userTurnCount}, generating cards: ${userTurnCount >= 4}`);
+        if (userTurnCount >= 4) {
+          try {
+            const { recommendationEngine } = await import("./services/recommendationEngine");
+            const cardData = await recommendationEngine.generateRecommendationCards(
+              content,
+              persona,
+              emotionalState
+            );
+            console.log(`[Chat] Generated ${cardData.length} recommendation cards`);
+            
+            for (const card of cardData) {
+              const savedCard = await storage.createRecommendationCard({
+                conversationId,
+                messageId: savedErrorMessage.id,
+                practiceType: card.practiceType,
+                title: card.title,
+                description: card.description,
+                duration: card.duration,
+                instructions: card.instructions,
+                iconEmoji: card.iconEmoji,
+              });
+              errorFallbackCards.push(savedCard);
+            }
+            console.log(`[Chat] Saved ${errorFallbackCards.length} cards to storage`);
+          } catch (cardError) {
+            console.error("[Chat] Error generating error fallback recommendation cards:", cardError);
+          }
+        }
+        
+        res.write(`data: ${JSON.stringify({ 
+          done: true, 
+          messageId: savedErrorMessage.id,
+          hasRecommendations: errorFallbackCards.length > 0 
+        })}\n\n`);
         res.end();
       }
     } catch (error) {
