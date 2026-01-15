@@ -132,7 +132,7 @@ Example verses by struggle:
 - Comparison: Galatians 6:4-5, 2 Corinthians 10:12, Psalm 139:14`,
 };
 
-export function buildAISystemPrompt(persona: UserPersona, userTurnCount: number = 0): string {
+export function buildAISystemPrompt(persona: UserPersona, userTurnCount: number = 0, userName?: string): string {
   const phase = getPhaseFromUserTurns(userTurnCount);
   const primaryDef = personaDefinitions[persona.primaryPersona as PersonaType];
   const modifierDefs = (persona.personaModifiers || []).map(
@@ -141,7 +141,16 @@ export function buildAISystemPrompt(persona: UserPersona, userTurnCount: number 
 
   const depthLayer = persona.depthLayerResponses as Record<string, unknown> | null;
 
-  let prompt = `You are a spiritual companion for this user.
+  let prompt = `You are a spiritual companion for ${userName || "this user"}.`;
+  
+  if (userName) {
+    prompt += `
+
+USER'S NAME: ${userName}
+Use their name naturally in conversation (not every message, but when it feels warm and personal).`;
+  }
+
+  prompt += `
 
 PRIMARY PERSONA: ${(persona.primaryPersona || "").replace(/_/g, " ").toUpperCase()}
 

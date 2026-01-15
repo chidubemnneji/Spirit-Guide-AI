@@ -376,7 +376,9 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Conversation not found" });
       }
 
-      // Get user persona for system prompt
+      // Get user and persona for system prompt
+      const userId = (req.session as any)?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
       const persona = await storage.getPersona();
 
       // Save user message
@@ -396,9 +398,9 @@ export async function registerRoutes(
       // Count user turns for phase determination (new message is already saved and included)
       const userTurnCount = allMessages.filter(m => m.role === "user").length;
 
-      // Build system prompt if persona exists (with user turn count for phases)
+      // Build system prompt if persona exists (with user turn count for phases and user name)
       const systemPrompt = persona
-        ? buildAISystemPrompt(persona, userTurnCount)
+        ? buildAISystemPrompt(persona, userTurnCount, user?.name)
         : "You are a warm, empathetic spiritual companion. Help the user explore their faith journey with kindness and without judgment.";
 
       // Set up SSE
