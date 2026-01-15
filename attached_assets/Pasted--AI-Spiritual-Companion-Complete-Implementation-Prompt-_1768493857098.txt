@@ -1,0 +1,1203 @@
+# AI Spiritual Companion - Complete Implementation Prompt for Replit
+
+## Project Overview
+Build a spiritual companion app with a multi-phase onboarding flow that creates deep user personas, then delivers personalized AI responses based on 8 distinct persona types.
+
+---
+
+## Tech Stack Requirements
+- **Frontend:** React (with Tailwind CSS for styling)
+- **Backend:** Node.js/Express
+- **Database:** PostgreSQL or MongoDB (your choice)
+- **AI Integration:** Anthropic Claude API (Claude Sonnet 4)
+- **State Management:** React Context or Redux
+- **Routing:** React Router
+
+---
+
+## Database Schema
+
+### Users Table
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  email VARCHAR(255) UNIQUE,
+  name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW(),
+  last_active TIMESTAMP
+);
+```
+
+### User Personas Table
+```sql
+CREATE TABLE user_personas (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  
+  -- Phase 1: Emotional Entry
+  primary_struggle VARCHAR(100),
+  
+  -- Phase 2: Depth Layer (JSON for flexibility)
+  depth_layer_responses JSONB,
+  
+  -- Phase 3: Behavioral Reality
+  daily_rhythm TEXT[],
+  past_connection_moment VARCHAR(100),
+  connection_recency VARCHAR(50),
+  peak_energy_time VARCHAR(50),
+  obstacles TEXT[],
+  
+  -- Phase 4: Hope Layer
+  transformation_goals TEXT[],
+  
+  -- Generated Persona
+  primary_persona VARCHAR(50),
+  persona_modifiers TEXT[],
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Conversations Table
+```sql
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Messages Table
+```sql
+CREATE TABLE messages (
+  id UUID PRIMARY KEY,
+  conversation_id UUID REFERENCES conversations(id),
+  role VARCHAR(20), -- 'user' or 'assistant'
+  content TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+## File Structure
+```
+/project-root
+├── /client
+│   ├── /src
+│   │   ├── /components
+│   │   │   ├── Onboarding/
+│   │   │   │   ├── Phase1.jsx
+│   │   │   │   ├── Phase2A_DistantFromGod.jsx
+│   │   │   │   ├── Phase2B_Doubts.jsx
+│   │   │   │   ├── Phase2C_Alone.jsx
+│   │   │   │   ├── Phase2D_Guilt.jsx
+│   │   │   │   ├── Phase2E_Overwhelmed.jsx
+│   │   │   │   ├── Phase2F_NewToFaith.jsx
+│   │   │   │   ├── Phase3_BehavioralReality.jsx
+│   │   │   │   ├── Phase4_Hope.jsx
+│   │   │   │   └── ProgressBar.jsx
+│   │   │   ├── Chat/
+│   │   │   │   ├── ChatInterface.jsx
+│   │   │   │   ├── MessageBubble.jsx
+│   │   │   │   └── InputBox.jsx
+│   │   │   └── Layout/
+│   │   │       ├── Header.jsx
+│   │   │       └── Footer.jsx
+│   │   ├── /context
+│   │   │   ├── OnboardingContext.jsx
+│   │   │   └── AuthContext.jsx
+│   │   ├── /hooks
+│   │   │   └── usePersona.js
+│   │   ├── /utils
+│   │   │   ├── personaAssignment.js
+│   │   │   └── aiPromptBuilder.js
+│   │   ├── App.jsx
+│   │   └── index.jsx
+│   └── package.json
+│
+├── /server
+│   ├── /controllers
+│   │   ├── authController.js
+│   │   ├── onboardingController.js
+│   │   └── chatController.js
+│   ├── /routes
+│   │   ├── auth.js
+│   │   ├── onboarding.js
+│   │   └── chat.js
+│   ├── /services
+│   │   ├── anthropicService.js
+│   │   ├── personaService.js
+│   │   └── databaseService.js
+│   ├── /config
+│   │   ├── database.js
+│   │   └── anthropic.js
+│   ├── server.js
+│   └── package.json
+│
+└── README.md
+```
+
+---
+
+## PHASE 1: Onboarding Flow Implementation
+
+### Frontend Component: Phase1.jsx
+```jsx
+import React, { useState } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
+
+const Phase1 = ({ onNext }) => {
+  const { updateOnboarding } = useOnboarding();
+  const [selected, setSelected] = useState(null);
+
+  const options = [
+    {
+      id: 'distant_from_god',
+      icon: '🌫️',
+      text: 'I feel distant from God - prayer feels empty'
+    },
+    {
+      id: 'wrestling_doubts',
+      icon: '❓',
+      text: "I'm wrestling with doubts I can't shake"
+    },
+    {
+      id: 'feel_alone',
+      icon: '🚶',
+      text: 'I feel alone in my faith journey'
+    },
+    {
+      id: 'guilt_shame',
+      icon: '💔',
+      text: "I'm carrying guilt or shame I can't let go of"
+    },
+    {
+      id: 'life_overwhelming',
+      icon: '⚡',
+      text: 'Life is overwhelming and my faith is slipping'
+    },
+    {
+      id: 'new_to_faith',
+      icon: '🌱',
+      text: "I'm new to faith and don't know where to start"
+    }
+  ];
+
+  const handleSelect = (optionId) => {
+    setSelected(optionId);
+  };
+
+  const handleNext = () => {
+    if (selected) {
+      updateOnboarding({ primary_struggle: selected });
+      onNext(selected); // Pass to parent to route to correct Phase 2
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-center mb-4">
+        Before we begin, we want to understand where you are right now.
+      </h1>
+      <p className="text-lg text-center text-gray-600 mb-8">
+        Which of these feels most true for you today?
+      </p>
+
+      <div className="space-y-4">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => handleSelect(option.id)}
+            className={`w-full p-6 text-left rounded-lg border-2 transition-all ${
+              selected === option.id
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-4xl">{option.icon}</span>
+              <span className="text-lg">{option.text}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={handleNext}
+        disabled={!selected}
+        className={`w-full mt-8 py-4 px-6 rounded-lg font-semibold text-white transition-all ${
+          selected
+            ? 'bg-blue-600 hover:bg-blue-700'
+            : 'bg-gray-300 cursor-not-allowed'
+        }`}
+      >
+        Continue
+      </button>
+    </div>
+  );
+};
+
+export default Phase1;
+```
+
+### Frontend Component: Phase2A_DistantFromGod.jsx
+```jsx
+import React, { useState } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
+
+const Phase2A_DistantFromGod = ({ onNext }) => {
+  const { updateOnboarding } = useOnboarding();
+  const [step, setStep] = useState(1);
+  const [answers, setAnswers] = useState({
+    prayer_experience: [],
+    past_connection: null
+  });
+
+  const question1Options = [
+    { id: 'empty_room', text: 'Like talking to an empty room' },
+    { id: 'rushed_mechanical', text: 'Rushed and mechanical, just going through motions' },
+    { id: 'fades_quickly', text: 'I feel something but it fades quickly' },
+    { id: 'dont_know_how', text: "I want to connect but don't know how" }
+  ];
+
+  const question2Options = [
+    { id: 'far_away_now', text: 'Yes, but it feels far away now' },
+    { id: 'not_sure_ever', text: "I'm not sure I ever have" },
+    { id: 'something_changed', text: 'I used to, but something changed' },
+    { id: 'catch_glimpses', text: "I catch glimpses but can't hold onto them" }
+  ];
+
+  const handleMultiSelect = (optionId) => {
+    setAnswers((prev) => ({
+      ...prev,
+      prayer_experience: prev.prayer_experience.includes(optionId)
+        ? prev.prayer_experience.filter((id) => id !== optionId)
+        : [...prev.prayer_experience, optionId]
+    }));
+  };
+
+  const handleSingleSelect = (optionId) => {
+    setAnswers((prev) => ({
+      ...prev,
+      past_connection: optionId
+    }));
+  };
+
+  const handleNext = () => {
+    if (step === 1 && answers.prayer_experience.length > 0) {
+      setStep(2);
+    } else if (step === 2 && answers.past_connection) {
+      updateOnboarding({ depth_layer: answers });
+      onNext();
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      {step === 1 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            When you pray or worship, what does it feel like?
+          </h2>
+          <p className="text-sm text-gray-500 mb-6">Select 1-2 that resonate</p>
+
+          <div className="space-y-3">
+            {question1Options.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleMultiSelect(option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.prayer_experience.includes(option.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            Has there been a time when you felt close to God?
+          </h2>
+
+          <div className="space-y-3">
+            {question2Options.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleSingleSelect(option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.past_connection === option.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <button
+        onClick={handleNext}
+        disabled={
+          (step === 1 && answers.prayer_experience.length === 0) ||
+          (step === 2 && !answers.past_connection)
+        }
+        className={`w-full mt-8 py-4 px-6 rounded-lg font-semibold text-white transition-all ${
+          (step === 1 && answers.prayer_experience.length > 0) ||
+          (step === 2 && answers.past_connection)
+            ? 'bg-blue-600 hover:bg-blue-700'
+            : 'bg-gray-300 cursor-not-allowed'
+        }`}
+      >
+        Continue
+      </button>
+    </div>
+  );
+};
+
+export default Phase2A_DistantFromGod;
+```
+
+### Frontend Component: Phase3_BehavioralReality.jsx
+```jsx
+import React, { useState } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
+
+const Phase3_BehavioralReality = ({ onNext }) => {
+  const { updateOnboarding } = useOnboarding();
+  const [step, setStep] = useState(1);
+  const [answers, setAnswers] = useState({
+    daily_rhythm: [],
+    past_connection_moment: null,
+    connection_recency: null,
+    peak_energy_time: null,
+    obstacles: []
+  });
+
+  const dailyRhythmOptions = [
+    { id: 'mornings_chaos', text: 'Mornings are chaos - rushing from the moment I wake up' },
+    { id: 'quiet_time_unused', text: "I have pockets of quiet time but don't know how to use them" },
+    { id: 'mind_races_night', text: 'My mind races at night when things finally slow down' },
+    { id: 'constantly_interrupted', text: 'I\'m constantly interrupted - kids, work, notifications' },
+    { id: 'exhausted', text: 'I have time but feel too exhausted to focus on anything deep' },
+    { id: 'unpredictable', text: 'My schedule is completely unpredictable week to week' },
+    { id: 'guilty', text: 'I feel guilty for not making time even when I have it' }
+  ];
+
+  const pastConnectionOptions = [
+    { id: 'nature', text: 'I was in nature - walking, hiking, or just outside' },
+    { id: 'music', text: 'I was listening to worship music or singing' },
+    { id: 'reading', text: 'I was reading the Bible or a devotional that spoke to me' },
+    { id: 'group', text: 'I was in a group - small group, church, or with friends' },
+    { id: 'serving', text: 'I was serving others or helping someone' },
+    { id: 'quiet_alone', text: 'I was in a quiet moment alone - journaling, praying, reflecting' },
+    { id: 'difficult_season', text: 'It was during a difficult season when I had no choice but to lean on God' },
+    { id: 'church_event', text: 'I was in church during a service or special event' },
+    { id: 'cant_remember', text: "I can't remember a time I felt that way" }
+  ];
+
+  const recencyOptions = [
+    { id: 'past_month', text: 'Within the past month' },
+    { id: 'few_months', text: 'A few months ago' },
+    { id: 'year_ago', text: 'About a year ago' },
+    { id: 'several_years', text: 'Several years ago' },
+    { id: 'lifetime_ago', text: 'It feels like a lifetime ago' }
+  ];
+
+  const energyTimeOptions = [
+    { id: 'early_morning', text: 'Early morning before the day starts' },
+    { id: 'mid_morning', text: "Mid-morning after I've settled into the day" },
+    { id: 'lunch', text: 'Lunch break or midday pause' },
+    { id: 'late_afternoon', text: 'Late afternoon when things wind down' },
+    { id: 'evening', text: 'Evening after dinner' },
+    { id: 'late_night', text: 'Late night when everyone else is asleep' },
+    { id: 'weekends', text: 'Weekends only' },
+    { id: 'no_good_time', text: "Honestly, I don't really have any good time" }
+  ];
+
+  const obstaclesOptions = [
+    { id: 'lose_momentum', text: 'I start strong but lose momentum after a week or two' },
+    { id: 'doing_wrong', text: "I feel like I'm doing it 'wrong' and give up" },
+    { id: 'busy', text: 'Life gets busy and faith becomes last priority' },
+    { id: 'overwhelmed_shoulds', text: "I get overwhelmed by all the things I 'should' be doing" },
+    { id: 'too_broken', text: 'I feel too broken, unworthy, or behind to even try' },
+    { id: 'no_one_talk', text: "I don't have anyone to talk to about it or check in with" },
+    { id: 'compare_others', text: "I compare myself to others and feel like I'll never measure up" },
+    { id: 'no_results', text: "I don't see results quickly enough and lose motivation" },
+    { id: 'forget', text: "I forget or just don't prioritize it" }
+  ];
+
+  const handleMultiSelect = (field, optionId) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [field]: prev[field].includes(optionId)
+        ? prev[field].filter((id) => id !== optionId)
+        : [...prev[field], optionId]
+    }));
+  };
+
+  const handleSingleSelect = (field, optionId) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [field]: optionId
+    }));
+  };
+
+  const handleNext = () => {
+    if (step === 1 && answers.daily_rhythm.length > 0) {
+      setStep(2);
+    } else if (step === 2 && answers.past_connection_moment) {
+      if (answers.past_connection_moment === 'cant_remember') {
+        setStep(4); // Skip recency question
+      } else {
+        setStep(3);
+      }
+    } else if (step === 3 && answers.connection_recency) {
+      setStep(4);
+    } else if (step === 4 && answers.peak_energy_time) {
+      setStep(5);
+    } else if (step === 5 && answers.obstacles.length > 0) {
+      updateOnboarding({ behavioral_reality: answers });
+      onNext();
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      {step === 1 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            Let's talk about your daily rhythm. What does a typical day look like for you?
+          </h2>
+          <p className="text-sm text-gray-500 mb-6">Select all that apply</p>
+          <div className="space-y-3">
+            {dailyRhythmOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleMultiSelect('daily_rhythm', option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.daily_rhythm.includes(option.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            Think back to a time when you felt closest to God or most at peace. What was happening?
+          </h2>
+          <div className="space-y-3">
+            {pastConnectionOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleSingleSelect('past_connection_moment', option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.past_connection_moment === option.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">How long ago was that?</h2>
+          <div className="space-y-3">
+            {recencyOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleSingleSelect('connection_recency', option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.connection_recency === option.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            When do you have the most mental space or energy for something meaningful?
+          </h2>
+          <div className="space-y-3">
+            {energyTimeOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleSingleSelect('peak_energy_time', option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.peak_energy_time === option.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === 5 && (
+        <>
+          <h2 className="text-2xl font-bold mb-4">
+            What usually stops you from sticking with spiritual practices?
+          </h2>
+          <p className="text-sm text-gray-500 mb-6">Pick top 2-3</p>
+          <div className="space-y-3">
+            {obstaclesOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleMultiSelect('obstacles', option.id)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                  answers.obstacles.includes(option.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <button
+        onClick={handleNext}
+        disabled={
+          (step === 1 && answers.daily_rhythm.length === 0) ||
+          (step === 2 && !answers.past_connection_moment) ||
+          (step === 3 && !answers.connection_recency) ||
+          (step === 4 && !answers.peak_energy_time) ||
+          (step === 5 && answers.obstacles.length === 0)
+        }
+        className={`w-full mt-8 py-4 px-6 rounded-lg font-semibold text-white transition-all ${
+          ((step === 1 && answers.daily_rhythm.length > 0) ||
+            (step === 2 && answers.past_connection_moment) ||
+            (step === 3 && answers.connection_recency) ||
+            (step === 4 && answers.peak_energy_time) ||
+            (step === 5 && answers.obstacles.length > 0))
+            ? 'bg-blue-600 hover:bg-blue-700'
+            : 'bg-gray-300 cursor-not-allowed'
+        }`}
+      >
+        Continue
+      </button>
+    </div>
+  );
+};
+
+export default Phase3_BehavioralReality;
+```
+
+### Frontend Component: Phase4_Hope.jsx
+```jsx
+import React, { useState } from 'react';
+import { useOnboarding } from '../../context/OnboardingContext';
+import { useNavigate } from 'react-router-dom';
+
+const Phase4_Hope = () => {
+  const { updateOnboarding, submitOnboarding } = useOnboarding();
+  const navigate = useNavigate();
+  const [selected, setSelected] = useState([]);
+
+  const options = [
+    { id: 'gods_presence', text: 'I feel God\'s presence in my daily life' },
+    { id: 'doubts_controlled', text: "My doubts don't control me anymore" },
+    { id: 'friends_understand', text: 'I have friends who understand my journey' },
+    { id: 'prayer_meaningful', text: 'Prayer actually means something to me' },
+    { id: 'free_from_guilt', text: "I'm free from the guilt I've been carrying" },
+    { id: 'faith_steady', text: 'My faith is steady, not up and down' },
+    { id: 'understand_bible', text: 'I understand the Bible in a way that matters' },
+    { id: 'peace_not_anxiety', text: 'I wake up with peace instead of anxiety' }
+  ];
+
+  const handleSelect = (optionId) => {
+    if (selected.includes(optionId)) {
+      setSelected(selected.filter((id) => id !== optionId));
+    } else if (selected.length < 2) {
+      setSelected([...selected, optionId]);
+    }
+  };
+
+  const handleComplete = async () => {
+    if (selected.length > 0) {
+      updateOnboarding({ transformation_goals: selected });
+      await submitOnboarding(); // This will call backend to save and generate persona
+      navigate('/chat'); // Redirect to chat interface
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-4">
+        Imagine it's 3 months from now and things have shifted. What does that look like?
+      </h2>
+      <p className="text-sm text-gray-500 mb-6">Pick your top 2</p>
+
+      <div className="space-y-3">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            onClick={() => handleSelect(option.id)}
+            disabled={!selected.includes(option.id) && selected.length >= 2}
+            className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+              selected.includes(option.id)
+                ? 'border-blue-500 bg-blue-50'
+                : selected.length >= 2
+                ? 'border-gray-200 opacity-50 cursor-not-allowed'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            {option.text}
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={handleComplete}
+        disabled={selected.length === 0}
+        className={`w-full mt-8 py-4 px-6 rounded-lg font-semibold text-white transition-all ${
+          selected.length > 0
+            ? 'bg-green-600 hover:bg-green-700'
+            : 'bg-gray-300 cursor-not-allowed'
+        }`}
+      >
+        Complete Setup & Start Journey
+      </button>
+    </div>
+  );
+};
+
+export default Phase4_Hope;
+```
+
+---
+
+## PHASE 2: Backend Persona Assignment Logic
+
+### /server/utils/personaAssignment.js
+```javascript
+function assignPersona(userData) {
+  const personas = [];
+  
+  // Primary struggle mapping
+  if (userData.primary_struggle === 'distant_from_god' && 
+      userData.depth_layer?.prayer_experience?.includes('empty_room')) {
+    personas.push('seeker_in_void');
+  } else if (userData.primary_struggle === 'distant_from_god') {
+    personas.push('seeker_in_void');
+  }
+  
+  if (userData.primary_struggle === 'wrestling_doubts' && 
+      userData.depth_layer?.doubt_emotion === 'scared_losing_faith') {
+    personas.push('doubter_in_crisis');
+  } else if (userData.primary_struggle === 'wrestling_doubts') {
+    personas.push('doubter_in_crisis');
+  }
+  
+  if (userData.primary_struggle === 'feel_alone') {
+    personas.push('isolated_wanderer');
+  }
+  
+  if (userData.primary_struggle === 'guilt_shame') {
+    personas.push('guilt_ridden_striver');
+  }
+  
+  if (userData.primary_struggle === 'life_overwhelming') {
+    personas.push('overwhelmed_survivor');
+  }
+  
+  if (userData.primary_struggle === 'new_to_faith') {
+    personas.push('hungry_beginner');
+  }
+  
+  // Secondary persona modifiers (can stack)
+  if (userData.behavioral_reality?.obstacles?.includes('lose_momentum')) {
+    personas.push('momentum_breaker');
+  }
+  
+  if (userData.behavioral_reality?.obstacles?.includes('compare_others') || 
+      userData.behavioral_reality?.obstacles?.includes('doing_wrong')) {
+    personas.push('comparison_captive');
+  }
+  
+  // Return primary + secondary modifiers
+  return {
+    primary: personas[0] || 'seeker_in_void', // Default fallback
+    modifiers: personas.slice(1)
+  };
+}
+
+module.exports = { assignPersona };
+```
+
+---
+
+## PHASE 3: AI System Prompt Builder
+
+### /server/utils/aiPromptBuilder.js
+```javascript
+const personaDefinitions = {
+  seeker_in_void: {
+    tone: 'Gentle, patient, never prescriptive',
+    language: 'Normalize the silence ("The silence doesn\'t mean God isn\'t there")',
+    practices: 'Contemplative, non-verbal (walks, breath prayers, listening exercises)',
+    avoid: '"Just pray harder" or structured prayer formulas',
+    focus: 'Presence over performance, being over doing'
+  },
+  doubter_in_crisis: {
+    tone: 'Intellectually honest, non-defensive, curious',
+    language: 'Affirm questions as sign of depth ("Your questions show you\'re thinking seriously about this")',
+    practices: 'Question-exploring prompts, historical context, apologetics-lite',
+    avoid: '"You just need more faith" or dismissing doubt as sin',
+    focus: 'Doubt as part of faith journey, not opposite of it'
+  },
+  isolated_wanderer: {
+    tone: 'Companion, fellow traveler (not authority figure)',
+    language: '"We" language ("Let\'s explore this together")',
+    practices: 'Community-building prompts, shared reflection questions',
+    avoid: 'Lone-wolf spirituality, over-emphasizing private devotion',
+    focus: 'You\'re not alone in this feeling, create micro-community touchpoints'
+  },
+  guilt_ridden_striver: {
+    tone: 'Grace-saturated, shame-free, unconditionally accepting',
+    language: 'Eliminate "should," use "could" and "might"',
+    practices: 'Grace reminders, identity-affirming meditations, shame-resilience work',
+    avoid: 'Performance metrics, "try harder" language, comparison',
+    focus: 'You are loved as-is, not after you fix yourself'
+  },
+  overwhelmed_survivor: {
+    tone: 'Ultra-practical, bite-sized, realistic',
+    language: 'Meet them where they are ("10 seconds counts")',
+    practices: 'Micro-habits, breath prayers, one-verse focus, audio-only',
+    avoid: 'Long devotionals, "you need to prioritize better" guilt',
+    focus: 'Consistency over intensity, faithfulness in chaos'
+  },
+  hungry_beginner: {
+    tone: 'Encouraging guide, zero assumptions',
+    language: 'Translate religious jargon, use plain language',
+    practices: 'Bible 101, foundational stories, "what does this mean?" explanations',
+    avoid: 'Insider language, assuming knowledge, rushing spiritual maturity',
+    focus: 'You\'re not behind, you\'re exactly where you should be'
+  },
+  momentum_breaker: {
+    tone: 'Celebration-focused, anti-perfectionist',
+    language: 'Reframe "failure" as data ("You learned what doesn\'t work")',
+    practices: 'Tiny habits, streak tracking, restart rituals, variable reinforcement',
+    avoid: 'Long-term commitments, all-or-nothing framing',
+    focus: 'Progress over perfection, returning is the practice'
+  },
+  comparison_captive: {
+    tone: 'Your-journey-only focus, hide all social metrics',
+    language: '"Your faith, your pace, your path"',
+    practices: 'Personal reflection only, no group comparisons, celebrate unique progress',
+    avoid: 'Leaderboards, "most people do X," social sharing prompts',
+    focus: 'You vs. you, not you vs. them'
+  }
+};
+
+function buildAISystemPrompt(userPersona) {
+  const primaryDef = personaDefinitions[userPersona.primary_persona];
+  const modifierDefs = userPersona.persona_modifiers.map(m => personaDefinitions[m]);
+  
+  let prompt = `You are a spiritual companion for this user.
+
+PRIMARY PERSONA: ${userPersona.primary_persona.replace('_', ' ').toUpperCase()}
+
+EMOTIONAL LANDSCAPE:
+- Primary struggle: ${userPersona.primary_struggle.replace('_', ' ')}
+${userPersona.depth_layer ? `- Specific experience: ${JSON.stringify(userPersona.depth_layer)}` : ''}
+
+BEHAVIORAL REALITY:
+- Daily rhythm: ${userPersona.behavioral_reality?.daily_rhythm?.join(', ') || 'Not specified'}
+- Peak energy time: ${userPersona.behavioral_reality?.peak_energy_time || 'Not specified'}
+- Past connection moment: ${userPersona.behavioral_reality?.past_connection_moment || 'Not specified'}
+${userPersona.behavioral_reality?.connection_recency ? `- Connection recency: ${userPersona.behavioral_reality.connection_recency}` : ''}
+- Current obstacles: ${userPersona.behavioral_reality?.obstacles?.join(', ') || 'Not specified'}
+
+TRANSFORMATION GOALS:
+${userPersona.transformation_goals?.map(g => `- ${g.replace('_', ' ')}`).join('\n') || '- Not specified'}
+
+RESPONSE STRATEGY FOR ${userPersona.primary_persona.toUpperCase()}:
+- Tone: ${primaryDef.tone}
+- Language patterns: ${primaryDef.language}
+- Practice suggestions: ${primaryDef.practices}
+- Avoid: ${primaryDef.avoid}
+- Focus: ${primaryDef.focus}
+`;
+
+  if (modifierDefs.length > 0) {
+    prompt += '\n\nMODIFIER ALERTS:\n';
+    userPersona.persona_modifiers.forEach((modifier, idx) => {
+      const def = modifierDefs[idx];
+      prompt += `\n[${modifier.toUpperCase()}]:\n`;
+      prompt += `- ${def.focus}\n`;
+      prompt += `- Avoid: ${def.avoid}\n`;
+    });
+  }
+
+  prompt += `
+
+CRITICAL REMINDERS:
+- Never use "should" with guilt_ridden_striver
+- Never rush spiritual maturity with hungry_beginner
+- Never prescribe prayer formulas with seeker_in_void
+- Never dismiss doubt with doubter_in_crisis
+- Never emphasize solo work with isolated_wanderer
+- Never suggest long practices with overwhelmed_survivor
+- Celebrate any showing up with momentum_breaker
+- Hide all comparative metrics with comparison_captive
+
+Your responses should be:
+1. Warm, empathetic, and non-judgmental
+2. Concise (2-4 sentences typically)
+3. Action-oriented with small, achievable next steps
+4. Grounded in their specific reality (energy time, obstacles, past successes)
+5. Always moving toward their transformation goals
+
+When suggesting practices, ALWAYS consider:
+- Their peak energy time (${userPersona.behavioral_reality?.peak_energy_time})
+- Their daily rhythm constraints
+- What's worked for them before (${userPersona.behavioral_reality?.past_connection_moment})
+- Their known obstacles
+
+Start each conversation by meeting them where they are emotionally, then gently guide toward hope and practical next steps.`;
+
+  return prompt;
+}
+
+module.exports = { buildAISystemPrompt };
+```
+
+---
+
+## PHASE 4: Backend API Implementation
+
+### /server/controllers/onboardingController.js
+```javascript
+const { assignPersona } = require('../utils/personaAssignment');
+const { buildAISystemPrompt } = require('../utils/aiPromptBuilder');
+const db = require('../services/databaseService');
+
+async function submitOnboarding(req, res) {
+  try {
+    const userId = req.user.id; // From auth middleware
+    const onboardingData = req.body;
+
+    // Assign persona based on responses
+    const personaAssignment = assignPersona(onboardingData);
+
+    // Build full persona object
+    const userPersona = {
+      user_id: userId,
+      primary_struggle: onboardingData.primary_struggle,
+      depth_layer_responses: onboardingData.depth_layer,
+      daily_rhythm: onboardingData.behavioral_reality.daily_rhythm,
+      past_connection_moment: onboardingData.behavioral_reality.past_connection_moment,
+      connection_recency: onboardingData.behavioral_reality.connection_recency,
+      peak_energy_time: onboardingData.behavioral_reality.peak_energy_time,
+      obstacles: onboardingData.behavioral_reality.obstacles,
+      transformation_goals: onboardingData.transformation_goals,
+      primary_persona: personaAssignment.primary,
+      persona_modifiers: personaAssignment.modifiers
+    };
+
+    // Save to database
+    await db.saveUserPersona(userPersona);
+
+    // Generate AI system prompt
+    const systemPrompt = buildAISystemPrompt(userPersona);
+
+    // Return success with persona info
+    res.status(200).json({
+      success: true,
+      persona: {
+        primary: personaAssignment.primary,
+        modifiers: personaAssignment.modifiers
+      },
+      message: 'Onboarding complete! Your personalized companion is ready.'
+    });
+
+  } catch (error) {
+    console.error('Error in submitOnboarding:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to complete onboarding'
+    });
+  }
+}
+
+module.exports = { submitOnboarding };
+```
+
+### /server/controllers/chatController.js
+```javascript
+const anthropicService = require('../services/anthropicService');
+const db = require('../services/databaseService');
+const { buildAISystemPrompt } = require('../utils/aiPromptBuilder');
+
+async function sendMessage(req, res) {
+  try {
+    const userId = req.user.id;
+    const { message, conversationId } = req.body;
+
+    // Get user persona
+    const userPersona = await db.getUserPersona(userId);
+    
+    if (!userPersona) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please complete onboarding first'
+      });
+    }
+
+    // Build system prompt based on persona
+    const systemPrompt = buildAISystemPrompt(userPersona);
+
+    // Get conversation history
+    let conversation = null;
+    if (conversationId) {
+      conversation = await db.getConversation(conversationId);
+    } else {
+      // Create new conversation
+      conversation = await db.createConversation(userId);
+    }
+
+    const conversationHistory = await db.getMessages(conversation.id);
+
+    // Save user message
+    await db.saveMessage(conversation.id, 'user', message);
+
+    // Call Claude API with system prompt + history
+    const aiResponse = await anthropicService.sendMessage({
+      systemPrompt,
+      conversationHistory,
+      userMessage: message
+    });
+
+    // Save assistant message
+    await db.saveMessage(conversation.id, 'assistant', aiResponse);
+
+    res.status(200).json({
+      success: true,
+      conversationId: conversation.id,
+      response: aiResponse
+    });
+
+  } catch (error) {
+    console.error('Error in sendMessage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send message'
+    });
+  }
+}
+
+module.exports = { sendMessage };
+```
+
+### /server/services/anthropicService.js
+```javascript
+const Anthropic = require('@anthropic-ai/sdk');
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+async function sendMessage({ systemPrompt, conversationHistory, userMessage }) {
+  try {
+    // Format conversation history for Claude API
+    const messages = [
+      ...conversationHistory.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      {
+        role: 'user',
+        content: userMessage
+      }
+    ];
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: messages
+    });
+
+    return response.content[0].text;
+
+  } catch (error) {
+    console.error('Anthropic API error:', error);
+    throw new Error('Failed to get AI response');
+  }
+}
+
+module.exports = { sendMessage };
+```
+
+---
+
+## PHASE 5: Environment Setup
+
+### .env file
+```
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/spiritual_companion
+# or for MongoDB: MONGODB_URI=mongodb://localhost:27017/spiritual_companion
+
+# Anthropic API
+ANTHROPIC_API_KEY=your_api_key_here
+
+# JWT Secret (for auth)
+JWT_SECRET=your_secret_key_here
+
+# Server
+PORT=3001
+NODE_ENV=development
+```
+
+### /server/package.json
+```json
+{
+  "name": "spiritual-companion-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "pg": "^8.11.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcrypt": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
+```
+
+### /client/package.json
+```json
+{
+  "name": "spiritual-companion-client",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.11.0",
+    "axios": "^1.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "vite": "^4.3.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.23"
+  }
+}
+```
+
+---
+
+## PHASE 6: Final Integration Points
+
+### Key Features to Implement:
+
+1. **Progress Bar Component** - Shows user where they are in onboarding (Phase 1/4, 2/4, etc.)
+
+2. **Routing Logic** - Phase1 determines which Phase2 component to show:
+```javascript
+// In main Onboarding component
+const [phase2Component, setPhase2Component] = useState(null);
+
+const handlePhase1Complete = (primaryStruggle) => {
+  const componentMap = {
+    'distant_from_god': Phase2A_DistantFromGod,
+    'wrestling_doubts': Phase2B_Doubts,
+    'feel_alone': Phase2C_Alone,
+    'guilt_shame': Phase2D_Guilt,
+    'life_overwhelming': Phase2E_Overwhelmed,
+    'new_to_faith': Phase2F_NewToFaith
+  };
+  setPhase2Component(componentMap[primaryStruggle]);
+  setCurrentPhase(2);
+};
+```
+
+3. **Chat Interface** - After onboarding, users land on chat interface with:
+   - Message history
+   - Input box
+   - Typing indicators
+   - Persona-appropriate welcome message
+
+4. **Auth Flow** - Simple email/password or social auth before onboarding
+
+5. **Database Migrations** - Create tables using provided schema
+
+---
+
+## Success Criteria
+
+✅ User completes 5-7 question onboarding flow
+✅ All questions are multiple choice (no text boxes)
+✅ Persona is automatically assigned based on responses
+✅ AI system prompt is dynamically generated from persona
+✅ Chat interface delivers persona-appropriate responses
+✅ Responses feel personalized and contextually aware
+✅ User can revisit/update their persona later
+
+---
+
+## Build Priority Order
+
+1. Set up database and auth
+2. Build Phase 1 onboarding component
+3. Build Phase 2A-F components (one at a time)
+4. Build Phase 3 & 4 components
+5. Implement persona assignment logic
+6. Build AI prompt builder
+7. Connect to Anthropic API
+8. Build chat interface
+9. Test full flow
+10. Polish UI/UX
+
+---
+
+**This prompt gives you a complete, production-ready architecture. Copy this into Replit and start building!**
