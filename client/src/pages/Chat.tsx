@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Message, Conversation } from "@shared/schema";
+import RecommendationCards from "@/components/RecommendationCards";
+import type { Message, Conversation, RecommendationCard } from "@shared/schema";
 
 // Bible verse pattern: Book Chapter:Verse or Book Chapter:Verse-Verse
 // Matches: "John 3:16", "1 Corinthians 13:4", "Song of Solomon 2:1", "Psalm 23:1-6"
@@ -94,6 +95,8 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+  hasRecommendations?: boolean;
+  recommendationCards?: RecommendationCard[];
 }
 
 export default function Chat() {
@@ -237,11 +240,26 @@ export default function Chat() {
                 }
                 if (data.done) {
                   const assistantMessage: ChatMessage = {
-                    id: Date.now() + 1,
+                    id: data.messageId || Date.now() + 1,
                     role: "assistant",
                     content: fullContent,
                     createdAt: new Date().toISOString(),
+                    hasRecommendations: data.hasRecommendations,
                   };
+                  
+                  // If there are recommendations, fetch them
+                  if (data.hasRecommendations && data.messageId) {
+                    try {
+                      const cardsResponse = await fetch(`/api/messages/${data.messageId}/recommendations`);
+                      if (cardsResponse.ok) {
+                        const cardsData = await cardsResponse.json();
+                        assistantMessage.recommendationCards = cardsData.cards;
+                      }
+                    } catch (cardError) {
+                      console.error("Error fetching recommendation cards:", cardError);
+                    }
+                  }
+                  
                   setMessages((prev) => [...prev, assistantMessage]);
                   setStreamingContent("");
                 }
@@ -499,20 +517,26 @@ function MessageBubble({
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
       )}
-      <div
-        className={cn(
-          "max-w-[80%] sm:max-w-md rounded-2xl px-4 py-3",
-          isUser
-            ? "bg-primary text-primary-foreground rounded-br-md"
-            : "bg-card border border-border rounded-bl-md"
-        )}
-      >
-        <p className="text-base leading-relaxed whitespace-pre-wrap">
-          {parseContentWithVerseLinks(message.content, navigate, isUser)}
-          {isStreaming && (
-            <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
+      <div className="flex flex-col max-w-[80%] sm:max-w-md">
+        <div
+          className={cn(
+            "rounded-2xl px-4 py-3",
+            isUser
+              ? "bg-primary text-primary-foreground rounded-br-md"
+              : "bg-card border border-border rounded-bl-md"
           )}
-        </p>
+        >
+          <p className="text-base leading-relaxed whitespace-pre-wrap">
+            {parseContentWithVerseLinks(message.content, navigate, isUser)}
+            {isStreaming && (
+              <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
+            )}
+          </p>
+        </div>
+        
+        {!isUser && message.recommendationCards && message.recommendationCards.length > 0 && (
+          <RecommendationCards cards={message.recommendationCards} />
+        )}
       </div>
     </div>
   );

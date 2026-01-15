@@ -547,13 +547,47 @@ I'm here to listen whenever you're ready to talk.`;
         }
 
         // Save assistant message
-        await storage.createMessage({
+        const savedMessage = await storage.createMessage({
           conversationId,
           role: "assistant",
           content: fullResponse,
         });
 
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        // For phase 4+ (recommendation phase), generate interactive practice cards
+        let recommendationCards: any[] = [];
+        if (userTurnCount >= 4) {
+          try {
+            const { recommendationEngine } = await import("./services/recommendationEngine");
+            const cardData = await recommendationEngine.generateRecommendationCards(
+              content,
+              persona,
+              emotionalState
+            );
+            
+            // Save cards to storage
+            for (const card of cardData) {
+              const savedCard = await storage.createRecommendationCard({
+                conversationId,
+                messageId: savedMessage.id,
+                practiceType: card.practiceType,
+                title: card.title,
+                description: card.description,
+                duration: card.duration,
+                instructions: card.instructions,
+                iconEmoji: card.iconEmoji,
+              });
+              recommendationCards.push(savedCard);
+            }
+          } catch (cardError) {
+            console.error("Error generating recommendation cards:", cardError);
+          }
+        }
+
+        res.write(`data: ${JSON.stringify({ 
+          done: true, 
+          messageId: savedMessage.id,
+          hasRecommendations: recommendationCards.length > 0 
+        })}\n\n`);
         res.end();
       } catch (aiError) {
         console.error("AI streaming error:", aiError);
