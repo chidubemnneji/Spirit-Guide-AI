@@ -31,15 +31,15 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
 
 // Zod schemas for request validation
 const onboardingSchema = z.object({
-  primaryStruggle: z.string().optional(),
-  depthLayer: z.record(z.unknown()).optional(),
+  primaryStruggle: z.string().optional().nullable(),
+  depthLayer: z.record(z.unknown()).optional().nullable(),
   behavioralReality: z.object({
     dailyRhythm: z.array(z.string()).optional(),
-    pastConnectionMoment: z.string().optional(),
-    connectionRecency: z.string().optional(),
-    peakEnergyTime: z.string().optional(),
+    pastConnectionMoment: z.string().optional().nullable(),
+    connectionRecency: z.string().optional().nullable(),
+    peakEnergyTime: z.string().optional().nullable(),
     obstacles: z.array(z.string()).optional(),
-  }).optional(),
+  }).optional().nullable(),
   transformationGoals: z.array(z.string()).optional(),
 });
 
