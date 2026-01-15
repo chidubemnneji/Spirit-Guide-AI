@@ -188,6 +188,38 @@ export async function registerRoutes(
     }
   });
 
+  // Get user stats for account page
+  app.get("/api/user/stats", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as SessionWithUser)?.userId;
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: "Not authenticated",
+          conversationCount: 0,
+          messageCount: 0,
+          practicesCompleted: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+        });
+      }
+      
+      // Note: In-memory storage currently aggregates all activity.
+      // For proper multi-user support, storage methods need userId scoping.
+      const stats = await storage.getUserStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get user stats error:", error);
+      res.status(500).json({ 
+        conversationCount: 0,
+        messageCount: 0,
+        practicesCompleted: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+      });
+    }
+  });
+
   // Submit onboarding data and create persona
   app.post("/api/onboarding", async (req: Request, res: Response) => {
     try {

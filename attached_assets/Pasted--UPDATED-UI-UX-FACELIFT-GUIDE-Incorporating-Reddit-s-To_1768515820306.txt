@@ -1,0 +1,1050 @@
+# UPDATED UI/UX FACELIFT GUIDE
+## Incorporating Reddit's Top iOS App Design Patterns
+
+---
+
+## 🎯 WHAT CHANGED
+
+Based on Reddit research of top iOS apps (Bear, Craft, Gentler Streak, Overcast, Apple Fitness, etc.), we're adding:
+
+1. **More personality** (NotBoring apps approach)
+2. **Better typography** (Bear/Craft refinement)
+3. **Circular progress** (Apple Fitness rings)
+4. **Timeline views** (Timepage calendar)
+5. **Enhanced glassmorphism** (Overcast liquid glass)
+6. **Delightful micro-interactions** (Gentler Streak polish)
+
+Everything from the original guide stays. These are ADDITIONS.
+
+---
+
+## 🎨 PART 1: ENHANCED DESIGN SYSTEM
+
+### **1. Color Palette (UNCHANGED - Validated by Reddit)**
+
+```typescript
+const colors = {
+  // Primary (spiritual, calm)
+  sage: '#8B9D83',      // Growth, peace
+  teal: '#6B9F9A',      // Calm, spiritual
+  beige: '#F5F1E8',     // Comfort, warmth
+  navy: '#2C3E50',      // Stability, trust
+  
+  // Emotional states
+  struggling: '#E8A798',   // Warm coral
+  peaceful: '#B8D8D8',     // Sky blue
+  hopeful: '#FAD6A5',      // Soft gold
+  overwhelmed: '#C9C2D3',  // Lavender
+  
+  // System
+  success: '#7FB685',
+  warning: '#F4A259',
+  error: '#E07A5F',
+  
+  // Surfaces (for glassmorphism)
+  glass: 'rgba(245, 241, 232, 0.85)',
+  glassDark: 'rgba(42, 46, 56, 0.85)',
+};
+```
+
+### **2. Typography (ENHANCED - Bear/Craft Inspired)**
+
+```typescript
+const typography = {
+  // Display (page headers)
+  display: {
+    fontSize: 34,
+    fontWeight: '700',
+    letterSpacing: 0.8,  // NEW: More refined
+    lineHeight: 41,
+  },
+  
+  // Title (section headers)
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    letterSpacing: 0.5,  // NEW: Premium feel
+    lineHeight: 32,
+  },
+  
+  // Body (main text)
+  body: {
+    fontSize: 17,
+    fontWeight: '400',
+    letterSpacing: 0.3,  // NEW: Subtle spacing
+    lineHeight: 26,
+  },
+  
+  // Scripture (Georgia serif)
+  scripture: {
+    fontFamily: 'Georgia',
+    fontSize: 18,
+    fontWeight: '400',
+    letterSpacing: 0.4,  // NEW: Elegant spacing
+    lineHeight: 32,      // Generous for readability
+    fontStyle: 'normal',
+  },
+  
+  // Caption (metadata)
+  caption: {
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.2,  // NEW: Even small text gets love
+    lineHeight: 18,
+  },
+};
+```
+
+### **3. Spacing System (UNCHANGED)**
+
+```typescript
+const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+};
+```
+
+### **4. Border Radius (UNCHANGED)**
+
+```typescript
+const borderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  full: 9999,
+};
+```
+
+### **5. Shadows (ENHANCED - More Options)**
+
+```typescript
+const shadows = {
+  subtle: {
+    shadowColor: '#2C3E50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  
+  elevated: {
+    shadowColor: '#2C3E50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  
+  floating: {
+    shadowColor: '#2C3E50',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  
+  // NEW: Colored shadow for primary actions
+  primary: {
+    shadowColor: '#6B9F9A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+};
+```
+
+---
+
+## 🎭 PART 2: COMPONENT REDESIGNS WITH PERSONALITY
+
+### **1. Message Bubbles (Enhanced with Better Typography)**
+
+**AI Message with Personality:**
+
+```typescript
+<View style={styles.aiMessage}>
+  <View style={styles.aiAvatar}>
+    <Text style={styles.aiAvatarEmoji}>🕊️</Text>
+  </View>
+  
+  <View style={styles.aiBubble}>
+    <Text style={styles.aiText}>{message}</Text>
+    
+    {/* NEW: Timestamp with personality */}
+    <View style={styles.messageMeta}>
+      <Text style={styles.timestamp}>Just now</Text>
+      {aiIsTypingMore && (
+        <Text style={styles.typingHint}>✨ thinking...</Text>
+      )}
+    </View>
+  </View>
+</View>
+
+const styles = StyleSheet.create({
+  aiText: {
+    fontSize: 17,
+    lineHeight: 26,
+    color: '#2C3E50',
+    letterSpacing: 0.3,  // NEW: Better readability
+    fontWeight: '400',
+  },
+  
+  typingHint: {
+    fontSize: 12,
+    color: '#6B9F9A',
+    fontStyle: 'italic',
+    marginLeft: 8,
+  },
+});
+```
+
+### **2. Recommendation Cards (Glassmorphism + Personality)**
+
+```typescript
+import { BlurView } from '@react-native-community/blur';
+import LinearGradient from 'react-native-linear-gradient';
+
+<TouchableOpacity
+  style={styles.cardContainer}
+  activeOpacity={0.85}
+  onPress={handlePress}
+>
+  {/* Background gradient */}
+  <LinearGradient
+    colors={['#F5F1E8', '#E8DFD0']}
+    style={styles.cardBackground}
+  >
+    {/* NEW: Glassmorphic overlay (Overcast-inspired) */}
+    <BlurView
+      blurType="light"
+      blurAmount={8}
+      style={styles.glassOverlay}
+    >
+      {/* Icon with animated pulse */}
+      <View style={styles.iconContainer}>
+        <Animated.View style={[
+          styles.iconPulse,
+          { transform: [{ scale: pulseAnim }] }
+        ]} />
+        <View style={styles.iconCircle}>
+          <Text style={styles.emoji}>🚶‍♂️</Text>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>5-Minute Walk</Text>
+        <Text style={styles.cardDescription}>
+          Notice God in ordinary moments
+        </Text>
+        
+        {/* NEW: Duration badge with icon */}
+        <View style={styles.metaRow}>
+          <View style={styles.durationBadge}>
+            <Text style={styles.durationIcon}>⏱️</Text>
+            <Text style={styles.durationText}>5 min</Text>
+          </View>
+          
+          {/* NEW: Difficulty indicator */}
+          <View style={styles.difficultyBadge}>
+            <Text style={styles.difficultyText}>Easy</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Arrow with subtle animation */}
+      <Animated.View style={{ opacity: arrowOpacity }}>
+        <Text style={styles.arrow}>→</Text>
+      </Animated.View>
+    </BlurView>
+  </LinearGradient>
+
+  {/* NEW: Colored border glow */}
+  <View style={styles.glowBorder} />
+</TouchableOpacity>
+
+const styles = StyleSheet.create({
+  cardContainer: {
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...shadows.elevated,
+  },
+  
+  cardBackground: {
+    borderRadius: 20,
+  },
+  
+  glassOverlay: {
+    flexDirection: 'row',
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  
+  iconPulse: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(107, 159, 154, 0.2)',
+  },
+  
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.subtle,
+  },
+  
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.4,  // NEW
+    color: '#2C3E50',
+    marginBottom: 4,
+  },
+  
+  cardDescription: {
+    fontSize: 14,
+    letterSpacing: 0.2,  // NEW
+    color: '#5A6C7D',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  
+  metaRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(107, 159, 154, 0.15)',
+    borderRadius: 12,
+    gap: 4,
+  },
+  
+  difficultyBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(139, 157, 131, 0.15)',
+    borderRadius: 12,
+  },
+  
+  glowBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(107, 159, 154, 0.3)',
+    borderRadius: 20,
+    pointerEvents: 'none',
+  },
+});
+```
+
+### **3. Buttons (More Personality)**
+
+**Primary Button with Enhanced Shadow:**
+
+```typescript
+<TouchableOpacity
+  style={styles.primaryButtonContainer}
+  activeOpacity={0.85}
+  onPress={handlePress}
+>
+  <LinearGradient
+    colors={['#6B9F9A', '#5A8B87']}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={styles.primaryButtonGradient}
+  >
+    {/* NEW: Icon + Text layout */}
+    <View style={styles.buttonContent}>
+      {icon && <Text style={styles.buttonIcon}>{icon}</Text>}
+      <Text style={styles.primaryButtonText}>{text}</Text>
+    </View>
+  </LinearGradient>
+</TouchableOpacity>
+
+const styles = StyleSheet.create({
+  primaryButtonContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...shadows.primary,  // NEW: Colored shadow
+  },
+  
+  primaryButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+  },
+  
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  
+  buttonIcon: {
+    fontSize: 20,
+  },
+  
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.5,  // NEW: More refined
+    color: '#FFFFFF',
+  },
+});
+```
+
+---
+
+## ⭕ PART 3: CIRCULAR PROGRESS (Apple Fitness Inspired)
+
+### **Streak Progress Ring**
+
+```typescript
+import { Circle, Svg } from 'react-native-svg';
+import { Animated } from 'react-native';
+
+const CircularProgress = ({ 
+  value, 
+  maxValue, 
+  size = 120,
+  strokeWidth = 12,
+  color = '#6B9F9A',
+  backgroundColor = '#E8DFD0'
+}) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (value / maxValue) * circumference;
+  
+  const animatedProgress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(animatedProgress, {
+      toValue: progress,
+      useNativeDriver: true,
+      tension: 40,
+      friction: 8,
+    }).start();
+  }, [progress]);
+
+  return (
+    <View style={styles.container}>
+      <Svg width={size} height={size}>
+        {/* Background circle */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={backgroundColor}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        
+        {/* Progress circle */}
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - progress}
+          strokeLinecap="round"
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+      
+      {/* Center content */}
+      <View style={styles.centerContent}>
+        <Text style={styles.progressValue}>{value}</Text>
+        <Text style={styles.progressLabel}>day streak</Text>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerContent: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+  progressValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: '#2C3E50',
+  },
+  progressLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+    color: '#5A6C7D',
+    marginTop: 4,
+  },
+});
+```
+
+### **Profile Stats with Rings**
+
+```typescript
+<View style={styles.statsContainer}>
+  <View style={styles.statCard}>
+    <CircularProgress
+      value={7}
+      maxValue={30}
+      size={100}
+      color="#6B9F9A"
+    />
+    <Text style={styles.statTitle}>Current Streak</Text>
+  </View>
+  
+  <View style={styles.statCard}>
+    <CircularProgress
+      value={24}
+      maxValue={30}
+      size={100}
+      color="#8B9D83"
+    />
+    <Text style={styles.statTitle}>Conversations</Text>
+  </View>
+  
+  <View style={styles.statCard}>
+    <CircularProgress
+      value={12}
+      maxValue={20}
+      size={100}
+      color="#FAD6A5"
+    />
+    <Text style={styles.statTitle}>Practices</Text>
+  </View>
+</View>
+```
+
+---
+
+## 📅 PART 4: TIMELINE VIEW (Timepage Inspired)
+
+### **Conversation History Timeline**
+
+```typescript
+const ConversationTimeline = ({ conversations }) => {
+  const groupedByDate = groupConversationsByDate(conversations);
+
+  return (
+    <ScrollView style={styles.timeline}>
+      {Object.entries(groupedByDate).map(([date, convos]) => (
+        <View key={date} style={styles.timelineSection}>
+          {/* Date header */}
+          <View style={styles.dateHeader}>
+            <View style={styles.dateDot} />
+            <Text style={styles.dateText}>{date}</Text>
+            <View style={styles.dateLine} />
+          </View>
+
+          {/* Conversations for this date */}
+          {convos.map((convo) => (
+            <TouchableOpacity
+              key={convo.id}
+              style={styles.timelineCard}
+              activeOpacity={0.85}
+            >
+              {/* Connection line */}
+              <View style={styles.connectionLine} />
+              
+              {/* Card with glassmorphism */}
+              <BlurView
+                blurType="light"
+                blurAmount={8}
+                style={styles.cardBlur}
+              >
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>{convo.title}</Text>
+                  <Text style={styles.cardTime}>
+                    {formatTime(convo.updated_at)}
+                  </Text>
+                  
+                  {/* Preview of last message */}
+                  <Text style={styles.cardPreview} numberOfLines={2}>
+                    {convo.lastMessage}
+                  </Text>
+                  
+                  {/* Emotion indicator */}
+                  {convo.emotion && (
+                    <View style={styles.emotionBadge}>
+                      <Text style={styles.emotionEmoji}>
+                        {getEmotionEmoji(convo.emotion)}
+                      </Text>
+                      <Text style={styles.emotionText}>
+                        {convo.emotion}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </BlurView>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ))}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  timeline: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  
+  timelineSection: {
+    marginBottom: 32,
+  },
+  
+  dateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  
+  dateDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#6B9F9A',
+    marginRight: 12,
+  },
+  
+  dateText: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    color: '#2C3E50',
+    marginRight: 12,
+  },
+  
+  dateLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E8DFD0',
+  },
+  
+  timelineCard: {
+    marginHorizontal: 24,
+    marginBottom: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...shadows.subtle,
+  },
+  
+  connectionLine: {
+    position: 'absolute',
+    left: 5,
+    top: -16,
+    width: 2,
+    height: 16,
+    backgroundColor: '#E8DFD0',
+  },
+  
+  cardBlur: {
+    backgroundColor: 'rgba(245, 241, 232, 0.5)',
+  },
+  
+  cardContent: {
+    padding: 16,
+  },
+  
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    color: '#2C3E50',
+    marginBottom: 4,
+  },
+  
+  cardTime: {
+    fontSize: 13,
+    letterSpacing: 0.2,
+    color: '#5A6C7D',
+    marginBottom: 8,
+  },
+  
+  cardPreview: {
+    fontSize: 14,
+    letterSpacing: 0.2,
+    lineHeight: 20,
+    color: '#5A6C7D',
+    marginBottom: 12,
+  },
+  
+  emotionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(107, 159, 154, 0.15)',
+    borderRadius: 12,
+    gap: 4,
+  },
+  
+  emotionEmoji: {
+    fontSize: 14,
+  },
+  
+  emotionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+    color: '#6B9F9A',
+  },
+});
+```
+
+---
+
+## ✨ PART 5: DELIGHTFUL MICRO-INTERACTIONS (Gentler Streak Inspired)
+
+### **1. Button Press with Haptic Feedback**
+
+```typescript
+import * as Haptics from 'expo-haptics';
+
+const DelightfulButton = ({ onPress, children }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  
+  const handlePressIn = () => {
+    // Visual feedback
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+    
+    // NEW: Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+  
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+  
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        activeOpacity={1}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+```
+
+### **2. Checkmark Animation (Practice Completion)**
+
+```typescript
+import LottieView from 'lottie-react-native';
+
+const PracticeCheckmark = ({ completed }) => {
+  const checkmarkRef = useRef(null);
+  
+  useEffect(() => {
+    if (completed && checkmarkRef.current) {
+      checkmarkRef.current.play();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [completed]);
+
+  return (
+    <View style={styles.checkmarkContainer}>
+      {completed ? (
+        <LottieView
+          ref={checkmarkRef}
+          source={require('./assets/checkmark.json')}
+          style={styles.checkmark}
+          loop={false}
+        />
+      ) : (
+        <View style={styles.emptyCheck} />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  checkmarkContainer: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmark: {
+    width: 32,
+    height: 32,
+  },
+  emptyCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#C9C2D3',
+  },
+});
+```
+
+### **3. Swipe Actions on Cards**
+
+```typescript
+import { Swipeable } from 'react-native-gesture-handler';
+
+const SwipeableConversationCard = ({ conversation, onArchive, onDelete }) => {
+  const renderRightActions = () => (
+    <View style={styles.rightActions}>
+      <TouchableOpacity
+        style={[styles.actionButton, styles.archiveButton]}
+        onPress={onArchive}
+      >
+        <Text style={styles.actionIcon}>📦</Text>
+        <Text style={styles.actionText}>Archive</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[styles.actionButton, styles.deleteButton]}
+        onPress={onDelete}
+      >
+        <Text style={styles.actionIcon}>🗑️</Text>
+        <Text style={styles.actionText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <Swipeable
+      renderRightActions={renderRightActions}
+      friction={2}
+      overshootFriction={8}
+    >
+      <ConversationCard conversation={conversation} />
+    </Swipeable>
+  );
+};
+
+const styles = StyleSheet.create({
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  actionButton: {
+    width: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  archiveButton: {
+    backgroundColor: '#8B9D83',
+  },
+  deleteButton: {
+    backgroundColor: '#E07A5F',
+  },
+  actionIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    color: '#FFFFFF',
+  },
+});
+```
+
+---
+
+## 🎊 PART 6: CELEBRATION ANIMATIONS (More Personality)
+
+### **Milestone Achievement Modal**
+
+```typescript
+import Confetti from 'react-native-confetti-cannon';
+
+const MilestoneModal = ({ visible, milestone, onClose }) => {
+  const confettiRef = useRef(null);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      // Trigger confetti
+      confettiRef.current?.start();
+      
+      // Animate modal
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }).start();
+      
+      // Haptic celebration
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.overlay}>
+        <Animated.View
+          style={[
+            styles.modalContent,
+            { transform: [{ scale: scaleAnim }] }
+          ]}
+        >
+          {/* Confetti */}
+          <Confetti
+            ref={confettiRef}
+            count={50}
+            origin={{ x: width / 2, y: 0 }}
+            colors={['#6B9F9A', '#8B9D83', '#FAD6A5', '#B8D8D8']}
+            fadeOut
+          />
+
+          {/* Content with glassmorphism */}
+          <BlurView blurType="light" blurAmount={10} style={styles.modalBlur}>
+            <View style={styles.modalInner}>
+              {/* Animated icon */}
+              <LottieView
+                source={require('./assets/celebration.json')}
+                autoPlay
+                loop={false}
+                style={styles.celebrationAnimation}
+              />
+
+              <Text style={styles.milestoneTitle}>
+                🎊 {milestone.title}
+              </Text>
+              
+              <Text style={styles.milestoneMessage}>
+                {milestone.message}
+              </Text>
+
+              {/* Continue button */}
+              <DelightfulButton onPress={onClose}>
+                <LinearGradient
+                  colors={['#6B9F9A', '#5A8B87']}
+                  style={styles.continueButton}
+                >
+                  <Text style={styles.continueText}>
+                    Keep Going ✨
+                  </Text>
+                </LinearGradient>
+              </DelightfulButton>
+            </View>
+          </BlurView>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  
+  modalBlur: {
+    backgroundColor: 'rgba(245, 241, 232, 0.95)',
+  },
+  
+  modalInner: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  
+  celebrationAnimation: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+  },
+  
+  milestoneTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: '#2C3E50',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  
+  milestoneMessage: {
+    fontSize: 17,
+    letterSpacing: 0.3,
+    lineHeight: 26,
+    color: '#5A6C7D',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  
+  continueButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 16,
+  },
+  
+  continueText: {
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    color: '#FFFFFF',
+  },
+});
+```
+
+---
+
+(FILE GETTING LONG - CONTINUING IN PART 2...)

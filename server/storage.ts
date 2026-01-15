@@ -59,6 +59,15 @@ export interface IStorage {
   clickRecommendationCard(id: number): Promise<void>;
   completeRecommendationCard(id: number): Promise<void>;
   rateRecommendationCard(id: number, rating: number): Promise<void>;
+
+  // User Stats
+  getUserStats(): Promise<{
+    conversationCount: number;
+    messageCount: number;
+    practicesCompleted: number;
+    currentStreak: number;
+    longestStreak: number;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -363,6 +372,101 @@ export class MemStorage implements IStorage {
     if (card) {
       card.helpfulRating = rating;
     }
+  }
+
+  // User Stats
+  async getUserStats(): Promise<{
+    conversationCount: number;
+    messageCount: number;
+    practicesCompleted: number;
+    currentStreak: number;
+    longestStreak: number;
+  }> {
+    const conversations = Array.from(this.conversations.values());
+    const messages = Array.from(this.messages.values());
+    const cards = Array.from(this.recommendationCards.values());
+    
+    const conversationCount = conversations.length;
+    const messageCount = messages.filter(m => m.role === "user").length;
+    const practicesCompleted = cards.filter(c => c.completed === 1).length;
+    
+    // Calculate streaks based on message activity dates
+    const activityDates = new Set<string>();
+    messages.forEach(m => {
+      if (m.role === "user" && m.createdAt) {
+        const dateStr = new Date(m.createdAt).toISOString().split('T')[0];
+        activityDates.add(dateStr);
+      }
+    });
+    
+    // Also count practice completions
+    cards.forEach(c => {
+      if (c.completed === 1 && c.createdAt) {
+        const dateStr = new Date(c.createdAt).toISOString().split('T')[0];
+        activityDates.add(dateStr);
+      }
+    });
+    
+    const sortedDates = Array.from(activityDates).sort().reverse();
+    
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    // Check if there's activity today or yesterday to start counting
+    if (sortedDates.length > 0) {
+      const mostRecent = sortedDates[0];
+      if (mostRecent === today || mostRecent === yesterday) {
+        let expectedDate = new Date(mostRecent);
+        
+        for (const dateStr of sortedDates) {
+          const currentDate = new Date(dateStr);
+          const expectedStr = expectedDate.toISOString().split('T')[0];
+          
+          if (dateStr === expectedStr) {
+            tempStreak++;
+            expectedDate = new Date(expectedDate.getTime() - 86400000);
+          } else if (dateStr < expectedStr) {
+            // Gap in dates, check if this starts a new streak
+            if (tempStreak > longestStreak) longestStreak = tempStreak;
+            tempStreak = 1;
+            expectedDate = new Date(currentDate.getTime() - 86400000);
+          }
+        }
+        
+        currentStreak = tempStreak;
+        if (tempStreak > longestStreak) longestStreak = tempStreak;
+      } else {
+        // No recent activity, calculate just longest streak
+        let expectedDate = new Date(sortedDates[0]);
+        for (const dateStr of sortedDates) {
+          const currentDate = new Date(dateStr);
+          const expectedStr = expectedDate.toISOString().split('T')[0];
+          
+          if (dateStr === expectedStr) {
+            tempStreak++;
+            expectedDate = new Date(expectedDate.getTime() - 86400000);
+          } else {
+            if (tempStreak > longestStreak) longestStreak = tempStreak;
+            tempStreak = 1;
+            expectedDate = new Date(currentDate.getTime() - 86400000);
+          }
+        }
+        if (tempStreak > longestStreak) longestStreak = tempStreak;
+        currentStreak = 0;
+      }
+    }
+    
+    return {
+      conversationCount,
+      messageCount,
+      practicesCompleted,
+      currentStreak,
+      longestStreak: Math.max(longestStreak, currentStreak),
+    };
   }
 }
 
