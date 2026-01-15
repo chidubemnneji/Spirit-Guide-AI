@@ -1,0 +1,955 @@
+# NEXT TASK: Build the Chat Interface
+
+## What This Is
+
+The chat interface where users have conversations with their AI spiritual companion. This is where all your work comes together:
+- System Prompt Builder generates personalized responses
+- User's persona data shapes the AI's tone
+- Pastoral response phases (acknowledge → console → reflect → recommend) are visible
+- Conversation history is saved
+
+---
+
+## What You're Building
+
+### 5 Components + 1 Backend Controller
+
+**Frontend Components:**
+1. **ChatInterface.tsx** - Main chat screen
+2. **MessageBubble.tsx** - Individual message display
+3. **MessageInput.tsx** - Text input with send button
+4. **TypingIndicator.tsx** - Shows when AI is "thinking"
+5. **WelcomeMessage.tsx** - First message when chat opens
+
+**Backend:**
+6. **chatController.js** - Enhanced with System Prompt Builder
+
+---
+
+## COMPONENT 1: Chat Interface (Main Screen)
+
+**File:** `/client/src/components/Chat/ChatInterface.tsx`
+
+```typescript
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  SafeAreaView
+} from 'react-native';
+import { useChat } from '../../context/ChatContext';
+import { useAuth } from '../../context/AuthContext';
+import MessageBubble from './MessageBubble';
+import MessageInput from './MessageInput';
+import TypingIndicator from './TypingIndicator';
+import WelcomeMessage from './WelcomeMessage';
+
+const ChatInterface: React.FC = () => {
+  const { user } = useAuth();
+  const {
+    currentConversation,
+    messages,
+    isLoading,
+    isSending,
+    loadConversation,
+    sendMessage,
+    createNewConversation
+  } = useChat();
+
+  const flatListRef = useRef<FlatList>(null);
+  const [inputText, setInputText] = useState('');
+
+  // Load or create conversation on mount
+  useEffect(() => {
+    initializeChat();
+  }, []);
+
+  const initializeChat = async () => {
+    if (!currentConversation) {
+      await createNewConversation();
+    }
+  };
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!inputText.trim() || isSending) return;
+
+    const message = inputText.trim();
+    setInputText('');
+
+    try {
+      await sendMessage(message);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Optionally show error to user
+    }
+  };
+
+  const handleNewConversation = async () => {
+    await createNewConversation();
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#14b8a6" />
+        <Text style={styles.loadingText}>Loading conversation...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>AI Companion</Text>
+            <Text style={styles.headerSubtitle}>
+              Your personal spiritual guide
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.newChatButton}
+            onPress={handleNewConversation}
+          >
+            <Text style={styles.newChatButtonText}>+ New</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Messages */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <MessageBubble message={item} />}
+          contentContainerStyle={styles.messagesList}
+          ListEmptyComponent={<WelcomeMessage userName={user?.name} />}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+        />
+
+        {/* Typing Indicator */}
+        {isSending && <TypingIndicator />}
+
+        {/* Input */}
+        <MessageInput
+          value={inputText}
+          onChangeText={setInputText}
+          onSend={handleSend}
+          disabled={isSending}
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
+  newChatButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#14b8a6',
+    borderRadius: 8,
+  },
+  newChatButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  messagesList: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
+  },
+});
+
+export default ChatInterface;
+```
+
+---
+
+## COMPONENT 2: Message Bubble
+
+**File:** `/client/src/components/Chat/MessageBubble.tsx`
+
+```typescript
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Message } from '../../types/chat.types';
+
+interface MessageBubbleProps {
+  message: Message;
+}
+
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+  const isUser = message.role === 'user';
+
+  return (
+    <View style={[
+      styles.container,
+      isUser ? styles.userContainer : styles.assistantContainer
+    ]}>
+      <View style={[
+        styles.bubble,
+        isUser ? styles.userBubble : styles.assistantBubble
+      ]}>
+        <Text style={[
+          styles.text,
+          isUser ? styles.userText : styles.assistantText
+        ]}>
+          {message.content}
+        </Text>
+        <Text style={[
+          styles.timestamp,
+          isUser ? styles.userTimestamp : styles.assistantTimestamp
+        ]}>
+          {formatTime(message.createdAt)}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const formatTime = (date: Date | string): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 16,
+  },
+  userContainer: {
+    alignItems: 'flex-end',
+  },
+  assistantContainer: {
+    alignItems: 'flex-start',
+  },
+  bubble: {
+    maxWidth: '80%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  userBubble: {
+    backgroundColor: '#14b8a6',
+    borderBottomRightRadius: 4,
+  },
+  assistantBubble: {
+    backgroundColor: '#f3f4f6',
+    borderBottomLeftRadius: 4,
+  },
+  text: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  userText: {
+    color: '#ffffff',
+  },
+  assistantText: {
+    color: '#1f2937',
+  },
+  timestamp: {
+    fontSize: 11,
+    marginTop: 6,
+  },
+  userTimestamp: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'right',
+  },
+  assistantTimestamp: {
+    color: '#9ca3af',
+  },
+});
+
+export default MessageBubble;
+```
+
+---
+
+## COMPONENT 3: Message Input
+
+**File:** `/client/src/components/Chat/MessageInput.tsx`
+
+```typescript
+import React from 'react';
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Platform
+} from 'react-native';
+
+interface MessageInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  onSend: () => void;
+  disabled?: boolean;
+}
+
+const MessageInput: React.FC<MessageInputProps> = ({
+  value,
+  onChangeText,
+  onSend,
+  disabled = false
+}) => {
+  const handleSend = () => {
+    if (value.trim() && !disabled) {
+      onSend();
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Share what's on your heart..."
+          value={value}
+          onChangeText={onChangeText}
+          multiline
+          maxLength={1000}
+          editable={!disabled}
+          placeholderTextColor="#9ca3af"
+        />
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            (!value.trim() || disabled) && styles.sendButtonDisabled
+          ]}
+          onPress={handleSend}
+          disabled={!value.trim() || disabled}
+        >
+          <Text style={styles.sendButtonText}>↑</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#f9fafb',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 48,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1f2937',
+    maxHeight: 120,
+    paddingTop: Platform.OS === 'ios' ? 12 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 12 : 8,
+  },
+  sendButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#14b8a6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#d1d5db',
+  },
+  sendButtonText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+});
+
+export default MessageInput;
+```
+
+---
+
+## COMPONENT 4: Typing Indicator
+
+**File:** `/client/src/components/Chat/TypingIndicator.tsx`
+
+```typescript
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+
+const TypingIndicator: React.FC = () => {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = (dot: Animated.Value, delay: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    animate(dot1, 0);
+    animate(dot2, 200);
+    animate(dot3, 400);
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.bubble}>
+        <Text style={styles.label}>AI is thinking</Text>
+        <View style={styles.dots}>
+          <Animated.View
+            style={[
+              styles.dot,
+              {
+                opacity: dot1.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.dot,
+              {
+                opacity: dot2.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.dot,
+              {
+                opacity: dot3.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+              },
+            ]}
+          />
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'flex-start',
+  },
+  bubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+    borderBottomLeftRadius: 4,
+  },
+  label: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 8,
+  },
+  dots: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#14b8a6',
+  },
+});
+
+export default TypingIndicator;
+```
+
+---
+
+## COMPONENT 5: Welcome Message
+
+**File:** `/client/src/components/Chat/WelcomeMessage.tsx`
+
+```typescript
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+interface WelcomeMessageProps {
+  userName?: string;
+}
+
+const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ userName }) => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.emoji}>🕊️</Text>
+      <Text style={styles.title}>
+        Welcome{userName ? `, ${userName}` : ''}
+      </Text>
+      <Text style={styles.subtitle}>
+        I'm here to walk with you on your spiritual journey. This is a safe space to share what's on your heart—your struggles, questions, doubts, or anything you're experiencing.
+      </Text>
+      <Text style={styles.prompt}>
+        What's on your heart today?
+      </Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 60,
+  },
+  emoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  prompt: {
+    fontSize: 15,
+    color: '#14b8a6',
+    fontWeight: '500',
+  },
+});
+
+export default WelcomeMessage;
+```
+
+---
+
+## BACKEND: Enhanced Chat Controller
+
+**File:** `/server/controllers/chatController.js`
+
+```javascript
+const db = require('../services/databaseService');
+const anthropic = require('../services/anthropicService');
+const systemPromptBuilder = require('../services/systemPromptBuilder');
+
+/**
+ * Create new conversation
+ */
+exports.createConversation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await db.query(
+      `INSERT INTO conversations (user_id, title, message_count, current_phase)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, title, created_at`,
+      [userId, 'New Conversation', 0, 'acknowledgment']
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create conversation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create conversation'
+    });
+  }
+};
+
+/**
+ * Get conversation by ID
+ */
+exports.getConversation = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.id;
+
+    // Get conversation
+    const conversationResult = await db.query(
+      `SELECT * FROM conversations 
+       WHERE id = $1 AND user_id = $2`,
+      [conversationId, userId]
+    );
+
+    if (conversationResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Conversation not found'
+      });
+    }
+
+    // Get messages
+    const messagesResult = await db.query(
+      `SELECT * FROM messages 
+       WHERE conversation_id = $1 
+       ORDER BY created_at ASC`,
+      [conversationId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        conversation: conversationResult.rows[0],
+        messages: messagesResult.rows
+      }
+    });
+  } catch (error) {
+    console.error('Get conversation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get conversation'
+    });
+  }
+};
+
+/**
+ * Send message and get AI response
+ */
+exports.sendMessage = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    // Verify conversation belongs to user
+    const conversationResult = await db.query(
+      `SELECT message_count FROM conversations 
+       WHERE id = $1 AND user_id = $2`,
+      [conversationId, userId]
+    );
+
+    if (conversationResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Conversation not found'
+      });
+    }
+
+    const messageCount = conversationResult.rows[0].message_count;
+
+    // Get user persona
+    const personaResult = await db.query(
+      `SELECT 
+        u.name as user_name,
+        up.primary_struggle,
+        up.depth_layer_responses,
+        up.daily_rhythm,
+        up.past_connection_moment,
+        up.connection_recency,
+        up.peak_energy_time,
+        up.obstacles,
+        up.transformation_goals,
+        up.primary_persona,
+        up.persona_modifiers
+      FROM user_personas up
+      JOIN users u ON up.user_id = u.id
+      WHERE up.user_id = $1`,
+      [userId]
+    );
+
+    if (personaResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'User persona not found. Please complete onboarding.'
+      });
+    }
+
+    const userPersona = personaResult.rows[0];
+
+    // Build system prompt with current phase
+    const systemPrompt = systemPromptBuilder.buildPrompt(userPersona, messageCount);
+
+    // Get conversation history
+    const historyResult = await db.query(
+      `SELECT role, content 
+       FROM messages 
+       WHERE conversation_id = $1 
+       ORDER BY created_at ASC`,
+      [conversationId]
+    );
+
+    const messages = historyResult.rows.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // Add new user message
+    messages.push({
+      role: 'user',
+      content: content
+    });
+
+    // Call Claude API
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      system: systemPrompt,
+      messages: messages,
+      max_tokens: 1000
+    });
+
+    const aiResponse = response.content[0].text;
+
+    // Save user message
+    const userMessageResult = await db.query(
+      `INSERT INTO messages (conversation_id, role, content)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [conversationId, 'user', content]
+    );
+
+    // Save AI message
+    const aiMessageResult = await db.query(
+      `INSERT INTO messages (conversation_id, role, content)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [conversationId, 'assistant', aiResponse]
+    );
+
+    // Update conversation
+    const newMessageCount = messageCount + 2;
+    const newPhase = determinePhase(newMessageCount);
+
+    await db.query(
+      `UPDATE conversations 
+       SET message_count = $1,
+           current_phase = $2,
+           updated_at = NOW()
+       WHERE id = $3`,
+      [newMessageCount, newPhase, conversationId]
+    );
+
+    // Update conversation title if it's the first message
+    if (messageCount === 0) {
+      const title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+      await db.query(
+        'UPDATE conversations SET title = $1 WHERE id = $2',
+        [title, conversationId]
+      );
+    }
+
+    res.json({
+      success: true,
+      data: {
+        userMessage: userMessageResult.rows[0],
+        aiMessage: aiMessageResult.rows[0]
+      }
+    });
+
+  } catch (error) {
+    console.error('Send message error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send message'
+    });
+  }
+};
+
+/**
+ * Get user's conversations
+ */
+exports.getUserConversations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await db.query(
+      `SELECT id, title, message_count, current_phase, created_at, updated_at
+       FROM conversations
+       WHERE user_id = $1
+       ORDER BY updated_at DESC
+       LIMIT 20`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Get conversations error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get conversations'
+    });
+  }
+};
+
+/**
+ * Determine conversation phase based on message count
+ */
+function determinePhase(messageCount) {
+  if (messageCount <= 1) return 'acknowledgment';
+  if (messageCount === 2) return 'consolation';
+  if (messageCount === 3) return 'reflection';
+  return 'recommendation';
+}
+```
+
+---
+
+## Chat Routes
+
+**File:** `/server/routes/chat.js`
+
+```javascript
+const express = require('express');
+const router = express.Router();
+const chatController = require('../controllers/chatController');
+const { authenticate } = require('../middleware/authMiddleware');
+
+// All routes require authentication
+router.use(authenticate);
+
+router.post('/conversations', chatController.createConversation);
+router.get('/conversations', chatController.getUserConversations);
+router.get('/conversations/:conversationId', chatController.getConversation);
+router.post('/conversations/:conversationId/messages', chatController.sendMessage);
+
+module.exports = router;
+```
+
+---
+
+## Copy-Paste Replit Prompt
+
+```
+Build the complete chat interface with these components:
+
+FRONTEND (React Native):
+1. ChatInterface.tsx - Main chat screen with header, messages list, and input
+2. MessageBubble.tsx - Individual message display (user vs AI styling)
+3. MessageInput.tsx - Text input with send button
+4. TypingIndicator.tsx - Animated "AI is thinking" indicator
+5. WelcomeMessage.tsx - First message shown in empty chat
+
+BACKEND (Node.js):
+6. chatController.js - Enhanced with System Prompt Builder integration
+7. chat.js routes - API endpoints for conversations and messages
+
+CRITICAL REQUIREMENTS:
+- Use System Prompt Builder to generate AI responses with pastoral phases
+- Track message_count in conversations to determine phase
+- Auto-scroll to bottom when new messages arrive
+- Show typing indicator while AI is responding
+- Save all messages to database
+- Update conversation title from first user message
+- Use teal color (#14b8a6) for user messages
+- Gray background for AI messages
+
+This is where users see the pastoral AI responses in action.
+```
+
+---
+
+## What This Gives You
+
+✅ Complete chat UI (looks like iMessage/WhatsApp)
+✅ Typing indicator (feels responsive)
+✅ Welcome message (warm greeting)
+✅ Message history (saved to database)
+✅ AI responses using System Prompt Builder
+✅ Pastoral phases working correctly
+
+**After this, you just need navigation to connect everything!**

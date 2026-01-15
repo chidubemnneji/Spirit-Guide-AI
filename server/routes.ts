@@ -7,7 +7,7 @@ import { buildAISystemPrompt } from "./utils/aiPromptBuilder";
 import { bibleAPI } from "./bibleAPI";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { createHash, randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 import type { InsertUserPersona } from "@shared/schema";
 import { signupSchema, loginSchema } from "@shared/schema";
 
@@ -20,17 +20,13 @@ const anthropic = new Anthropic({
   baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
 });
 
-// Simple password hashing (for demo - use bcrypt in production)
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const hash = createHash("sha256").update(password + salt).digest("hex");
-  return `${salt}:${hash}`;
+// Secure password hashing with bcrypt
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
-function verifyPassword(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(":");
-  const checkHash = createHash("sha256").update(password + salt).digest("hex");
-  return hash === checkHash;
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  return bcrypt.compare(password, stored);
 }
 
 // Zod schemas for request validation
@@ -83,7 +79,7 @@ export async function registerRoutes(
       }
 
       // Hash password and create user
-      const passwordHash = hashPassword(password);
+      const passwordHash = await hashPassword(password);
       const user = await storage.createUser({ name, email, passwordHash });
 
       // Set session
@@ -119,7 +115,7 @@ export async function registerRoutes(
       const { email, password } = parseResult.data;
 
       const user = await storage.getUserByEmail(email);
-      if (!user || !verifyPassword(password, user.passwordHash)) {
+      if (!user || !(await verifyPassword(password, user.passwordHash))) {
         return res.status(401).json({
           success: false,
           error: "Invalid email or password",

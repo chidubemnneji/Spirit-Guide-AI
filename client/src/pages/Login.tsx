@@ -46,7 +46,14 @@ export default function Login() {
     setIsLoading(false);
     
     if (result.success) {
-      setLocation("/chat");
+      // Check if user has completed onboarding
+      const response = await fetch("/api/auth/me", { credentials: "include" });
+      const data = await response.json();
+      if (data.success && data.user) {
+        setLocation(data.user.hasCompletedOnboarding ? "/chat" : "/onboarding");
+      } else {
+        setLocation("/onboarding");
+      }
     } else {
       toast({
         variant: "destructive",
