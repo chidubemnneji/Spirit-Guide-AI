@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { assignPersona } from "./utils/personaAssignment";
 import { buildAISystemPrompt } from "./utils/aiPromptBuilder";
+import { bibleAPI } from "./bibleAPI";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import type { InsertUserPersona } from "@shared/schema";
@@ -53,11 +54,11 @@ export async function registerRoutes(
       const onboardingData = parseResult.data;
 
       // Assign persona based on responses
-      const personaAssignment = assignPersona(onboardingData);
+      const personaAssignment = assignPersona(onboardingData as any);
 
       // Build persona object for storage
       const personaData: InsertUserPersona = {
-        primaryStruggle: onboardingData.primaryStruggle,
+        primaryStruggle: onboardingData.primaryStruggle || null,
         depthLayerResponses: onboardingData.depthLayer,
         dailyRhythm: onboardingData.behavioralReality?.dailyRhythm || [],
         pastConnectionMoment: onboardingData.behavioralReality?.pastConnectionMoment || null,
@@ -284,6 +285,65 @@ export async function registerRoutes(
       } else {
         res.status(500).json({ error: "Failed to send message" });
       }
+    }
+  });
+
+  // Bible API routes
+  app.get("/api/bible/versions", async (req: Request, res: Response) => {
+    try {
+      const versions = await bibleAPI.getVersions();
+      res.json(versions);
+    } catch (error) {
+      console.error("Error fetching Bible versions:", error);
+      res.status(500).json({ error: "Failed to fetch Bible versions" });
+    }
+  });
+
+  app.get("/api/bible/:bibleId/books", async (req: Request, res: Response) => {
+    try {
+      const { bibleId } = req.params;
+      const books = await bibleAPI.getBooks(bibleId);
+      res.json(books);
+    } catch (error) {
+      console.error("Error fetching books:", error);
+      res.status(500).json({ error: "Failed to fetch books" });
+    }
+  });
+
+  app.get("/api/bible/:bibleId/books/:bookId/chapters", async (req: Request, res: Response) => {
+    try {
+      const { bibleId, bookId } = req.params;
+      const chapters = await bibleAPI.getChapters(bibleId, bookId);
+      res.json(chapters);
+    } catch (error) {
+      console.error("Error fetching chapters:", error);
+      res.status(500).json({ error: "Failed to fetch chapters" });
+    }
+  });
+
+  app.get("/api/bible/:bibleId/chapters/:chapterId", async (req: Request, res: Response) => {
+    try {
+      const { bibleId, chapterId } = req.params;
+      const chapter = await bibleAPI.getChapter(bibleId, chapterId);
+      res.json(chapter);
+    } catch (error) {
+      console.error("Error fetching chapter:", error);
+      res.status(500).json({ error: "Failed to fetch chapter" });
+    }
+  });
+
+  app.get("/api/bible/:bibleId/search", async (req: Request, res: Response) => {
+    try {
+      const { bibleId } = req.params;
+      const query = req.query.query as string;
+      if (!query) {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+      const results = await bibleAPI.search(bibleId, query);
+      res.json(results);
+    } catch (error) {
+      console.error("Error searching Bible:", error);
+      res.status(500).json({ error: "Failed to search Bible" });
     }
   });
 
