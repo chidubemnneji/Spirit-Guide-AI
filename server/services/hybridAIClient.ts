@@ -84,14 +84,22 @@ async function* streamFromOpenAI(options: HybridStreamOptions): AsyncGenerator<S
 export async function* hybridStreamChat(
   options: HybridStreamOptions
 ): AsyncGenerator<StreamChunk> {
+  let hasYieldedContent = false;
+  
   try {
     console.log("[HybridAI] Attempting Claude...");
     for await (const chunk of streamFromClaude(options)) {
+      if (!chunk.done && chunk.content) {
+        hasYieldedContent = true;
+      }
       yield chunk;
     }
     console.log("[HybridAI] Claude completed successfully");
   } catch (error) {
     if (isAnthropicTransientError(error)) {
+      if (hasYieldedContent) {
+        console.warn("[HybridAI] Claude failed mid-stream after yielding content. Partial response may be incomplete.");
+      }
       console.log("[HybridAI] Claude unavailable, falling back to GPT-4o-mini...", error);
       try {
         for await (const chunk of streamFromOpenAI(options)) {
