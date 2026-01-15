@@ -5,20 +5,15 @@ import { storage } from "./storage";
 import { assignPersona } from "./utils/personaAssignment";
 import { buildAISystemPrompt } from "./utils/aiPromptBuilder";
 import { bibleAPI } from "./bibleAPI";
-import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import type { InsertUserPersona } from "@shared/schema";
 import { signupSchema, loginSchema } from "@shared/schema";
+import { hybridAIClient } from "./services/hybridAIClient";
 
 interface SessionWithUser extends Session {
   userId?: number;
 }
-
-const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
-});
 
 // Secure password hashing with bcrypt
 async function hashPassword(password: string): Promise<string> {
@@ -554,7 +549,7 @@ I'm here to listen whenever you're ready to talk.`;
       let fullResponse = "";
 
       // Check if AI is available before attempting call
-      const aiAvailable = !!(process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY);
+      const aiAvailable = !!(process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY);
       
       if (!aiAvailable) {
         // Provide phase-appropriate fallback without AI
@@ -585,7 +580,7 @@ I'm here to listen whenever you're ready to talk.`;
             const { recommendationEngine } = await import("./services/recommendationEngine");
             const cardData = await recommendationEngine.generateRecommendationCards(
               content,
-              persona,
+              persona || null,
               emotionalState
             );
             
@@ -617,22 +612,20 @@ I'm here to listen whenever you're ready to talk.`;
       }
 
       try {
-        // Stream response from Anthropic
-        const stream = anthropic.messages.stream({
-          model: "claude-sonnet-4-5",
-          max_tokens: 1024,
-          system: systemPrompt,
+        let usedProvider: "claude" | "openai" = "claude";
+        
+        for await (const chunk of hybridAIClient.streamChat({
+          systemPrompt,
           messages: chatMessages,
-        });
-
-        for await (const event of stream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const text = event.delta.text;
-            if (text) {
-              fullResponse += text;
-              res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
-            }
+          maxTokens: 1024,
+        })) {
+          if (chunk.done) {
+            usedProvider = chunk.provider;
+            console.log(`[Chat] AI response completed using ${usedProvider}`);
+            break;
           }
+          fullResponse += chunk.content;
+          res.write(`data: ${JSON.stringify({ content: chunk.content })}\n\n`);
         }
 
         // Save assistant message
@@ -649,7 +642,7 @@ I'm here to listen whenever you're ready to talk.`;
             const { recommendationEngine } = await import("./services/recommendationEngine");
             const cardData = await recommendationEngine.generateRecommendationCards(
               content,
-              persona,
+              persona || null,
               emotionalState
             );
             
@@ -701,7 +694,7 @@ I'm here to listen whenever you're ready to talk.`;
             const { recommendationEngine } = await import("./services/recommendationEngine");
             const cardData = await recommendationEngine.generateRecommendationCards(
               content,
-              persona,
+              persona || null,
               emotionalState
             );
             console.log(`[Chat] Generated ${cardData.length} recommendation cards`);
