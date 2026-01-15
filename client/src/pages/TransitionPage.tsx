@@ -58,7 +58,7 @@ export default function TransitionPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-primary/5 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950 p-8">
       <div 
         className={`max-w-2xl text-center space-y-6 transition-all duration-1000 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"

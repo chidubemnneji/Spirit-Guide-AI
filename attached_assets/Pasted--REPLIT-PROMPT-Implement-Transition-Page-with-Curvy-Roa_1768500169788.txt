@@ -1,0 +1,336 @@
+# REPLIT PROMPT: Implement Transition Page with Curvy Road & Bible Verses
+
+## Overview
+Create a transition page that appears after onboarding completion, showing a **curvy road illustration with center line** paired with **persona-specific Bible verses** before users enter the chat interface.
+
+---
+
+## Component to Create: TransitionPage.jsx
+
+**Location:** `/client/src/components/Onboarding/TransitionPage.jsx`
+
+---
+
+## Complete Component Code
+
+```jsx
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useOnboarding } from '../../context/OnboardingContext';
+
+const TransitionPage = () => {
+  const navigate = useNavigate();
+  const { onboardingData } = useOnboarding();
+  
+  const bibleVerses = {
+    distant_from_god: {
+      verse: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.",
+      reference: "Psalm 34:18",
+      supportingText: "Even when you can't feel Him, He's there. The silence doesn't mean absence. We'll walk this road together, one day at a time."
+    },
+    
+    wrestling_doubts: {
+      verse: "Lord, I believe; help my unbelief!",
+      reference: "Mark 9:24",
+      supportingText: "Faith and doubt can coexist. Your questions don't disqualify you—they're part of the journey. Let's explore them together."
+    },
+    
+    feel_alone: {
+      verse: "I will never leave you nor forsake you.",
+      reference: "Hebrews 13:5",
+      supportingText: "Thousands of people here know exactly what you're feeling. You've taken the hardest step: admitting you need companionship. You're not alone anymore."
+    },
+    
+    guilt_shame: {
+      verse: "There is now no condemnation for those who are in Christ Jesus.",
+      reference: "Romans 8:1",
+      supportingText: "The guilt you carry isn't yours to carry alone. Grace isn't something you earn—it's something you receive. Let's start there."
+    },
+    
+    life_overwhelming: {
+      verse: "Come to me, all who are weary and burdened, and I will give you rest.",
+      reference: "Matthew 11:28",
+      supportingText: "Your life is full and overwhelming right now. We're not here to add more pressure—just to walk with you in the 30 seconds you have. That's enough."
+    },
+    
+    new_to_faith: {
+      verse: "I am the way, the truth, and the life.",
+      reference: "John 14:6",
+      supportingText: "You're at the beginning of something beautiful. There's no rush, no test, no 'right way' except His way. Let's discover it together, one step at a time."
+    }
+  };
+
+  const content = bibleVerses[onboardingData.primary_struggle] || bibleVerses.new_to_faith;
+
+  // Auto-advance after 10 seconds (allows time to reflect on verse)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate('/chat');
+    }, 10000);
+    
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
+  const handleContinue = () => {
+    navigate('/chat');
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-indigo-100 p-8">
+      <div className="max-w-2xl text-center space-y-6 animate-fade-in">
+        
+        {/* Curvy Road Icon */}
+        <div className="mb-14 flex justify-center">
+          <svg 
+            className="w-56 h-52 opacity-65" 
+            viewBox="0 0 200 200"
+            style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+          >
+            {/* Road base (full width of road) */}
+            <path 
+              d="M 40 170 Q 60 120, 80 100 T 120 60 T 160 30" 
+              stroke="#14b8a6" 
+              strokeWidth="35" 
+              fill="none" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            />
+            
+            {/* Center dashed line (like highway center line) */}
+            <path 
+              d="M 40 170 Q 60 120, 80 100 T 120 60 T 160 30" 
+              stroke="#f0fdfa" 
+              strokeWidth="2.5" 
+              fill="none" 
+              strokeDasharray="8 6" 
+              strokeLinecap="round" 
+            />
+            
+            {/* Starting point marker (you are here) */}
+            <circle cx="40" cy="170" r="6" fill="#0d9488" />
+          </svg>
+        </div>
+        
+        {/* Bible Verse (quoted) */}
+        <h3 className="text-2xl font-semibold text-gray-800 leading-snug px-4">
+          "{content.verse}"
+        </h3>
+        
+        {/* Scripture Reference */}
+        <p className="text-base text-gray-600 font-light italic">
+          {content.reference}
+        </p>
+        
+        {/* Supporting Text */}
+        <p className="text-sm text-gray-700 leading-relaxed mt-6 px-8 max-w-lg mx-auto">
+          {content.supportingText}
+        </p>
+        
+        {/* Continue Button */}
+        <div className="mt-12 pt-8">
+          <button 
+            onClick={handleContinue}
+            className="text-gray-500 hover:text-gray-700 text-sm transition-colors duration-200"
+          >
+            Continue →
+          </button>
+        </div>
+
+        {/* Loading Dots */}
+        <div className="flex justify-center gap-2 mt-8">
+          <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TransitionPage;
+```
+
+---
+
+## Tailwind Config Updates
+
+**File:** `/client/tailwind.config.js`
+
+Add these animations to the `theme.extend` section:
+
+```javascript
+module.exports = {
+  theme: {
+    extend: {
+      animation: {
+        'fade-in': 'fadeIn 1s ease-in',
+        'pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## Update Phase4_Hope.jsx
+
+**Change the final navigation:**
+
+```jsx
+const handleComplete = async () => {
+  if (selected.length > 0) {
+    updateOnboarding({ transformation_goals: selected });
+    await submitOnboarding();
+    navigate('/transition'); // Changed from '/chat' to '/transition'
+  }
+};
+```
+
+---
+
+## Add Route to App.jsx
+
+**File:** `/client/src/App.jsx`
+
+```jsx
+import TransitionPage from './components/Onboarding/TransitionPage';
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/onboarding" element={<OnboardingFlow />} />
+      <Route path="/transition" element={<TransitionPage />} />
+      <Route path="/chat" element={<ChatInterface />} />
+      {/* Other routes */}
+    </Routes>
+  );
+}
+```
+
+---
+
+## Visual Design Specs
+
+### Curvy Road Icon:
+- **Size:** 224px wide × 208px tall (w-56 h-52)
+- **Color:** Teal (#14b8a6) with 65% opacity
+- **Road width:** 35px stroke
+- **Center line:** White (#f0fdfa), 2.5px stroke, dashed (8px dash, 6px gap)
+- **Starting marker:** 6px radius circle, darker teal (#0d9488)
+- **Path:** Smooth curves using quadratic Bézier curves (Q command)
+
+### Text Hierarchy:
+1. **Bible Verse:** 24px (text-2xl), semi-bold, dark gray (#1f2937), quoted
+2. **Reference:** 16px (text-base), light weight, medium gray (#4b5563), italic
+3. **Supporting Text:** 14px (text-sm), regular, gray (#374151), max-width 512px
+
+### Spacing:
+- Icon to verse: 56px margin
+- Verse to reference: 24px margin
+- Reference to supporting text: 24px margin
+- Supporting text to continue button: 48px margin
+
+### Timing:
+- Fade-in animation: 1 second
+- Display duration: 10 seconds (allows reflection on Bible verse)
+- User can skip immediately via "Continue →" button
+
+---
+
+## User Flow
+
+```
+User completes Phase 4 onboarding
+    ↓
+Phase4_Hope.jsx calls submitOnboarding()
+    ↓
+Backend processes persona assignment
+    ↓
+Frontend navigates to /transition
+    ↓
+TransitionPage displays:
+  - Curvy road icon (journey metaphor)
+  - Bible verse specific to their struggle
+  - Scripture reference
+  - Supporting encouragement text
+    ↓
+10 seconds pass (or user clicks Continue)
+    ↓
+Auto-navigates to /chat
+    ↓
+Chat interface loads with AI ready
+```
+
+---
+
+## Bible Verses by Persona
+
+| Persona | Bible Verse | Reference |
+|---------|-------------|-----------|
+| Distant from God | "The Lord is close to the brokenhearted and saves those who are crushed in spirit." | Psalm 34:18 |
+| Wrestling Doubts | "Lord, I believe; help my unbelief!" | Mark 9:24 |
+| Feel Alone | "I will never leave you nor forsake you." | Hebrews 13:5 |
+| Guilt/Shame | "There is now no condemnation for those who are in Christ Jesus." | Romans 8:1 |
+| Life Overwhelming | "Come to me, all who are weary and burdened, and I will give you rest." | Matthew 11:28 |
+| New to Faith | "I am the way, the truth, and the life." | John 14:6 |
+
+---
+
+## Why This Design Works
+
+1. **Visual Metaphor:** Curvy road = life's journey isn't straight, but there's guidance (center line)
+2. **Biblical Foundation:** Users receive Truth from Scripture, not motivational quotes
+3. **Persona-Specific:** Each verse speaks directly to their stated struggle
+4. **Reflection Time:** 10 seconds allows the verse to sink in before action
+5. **Hope-Oriented:** Every verse points to God's presence/provision
+6. **Memorable:** Short verses users can carry throughout their journey
+7. **Accessible:** Easy to understand, no complex theology
+
+---
+
+## Testing Checklist
+
+After implementation, verify:
+
+- [ ] TransitionPage appears after Phase 4 completion
+- [ ] Correct Bible verse displays based on primary_struggle
+- [ ] Curvy road icon renders properly (with center line visible)
+- [ ] Fade-in animation works smoothly
+- [ ] Auto-advances to /chat after 10 seconds
+- [ ] "Continue →" button works immediately if clicked
+- [ ] Loading dots animate properly
+- [ ] Looks good on mobile, tablet, desktop
+- [ ] Works for all 6 primary struggle types
+- [ ] OnboardingContext properly passes primary_struggle
+
+---
+
+## Optional Enhancements (Phase 2)
+
+1. **Background Music:** Add subtle instrumental hymn (optional, user toggle)
+2. **Verse Animation:** Fade in verse word-by-word for emphasis
+3. **Save Verse:** Allow user to save "their verse" to profile
+4. **Share Verse:** Option to share verse (without personal context)
+5. **Multiple Verses:** Rotate through 2-3 relevant verses per persona
+6. **Audio Option:** Text-to-speech reading of the verse (accessibility)
+
+---
+
+## Notes
+
+- **10-second duration** (longer than typical transitions) gives users time to meditate on Scripture
+- **Curvy road metaphor** reinforces that spiritual growth isn't linear
+- **Center line** symbolizes God's guidance along the journey
+- **"You are here" marker** acknowledges current position without judgment
+- **Road going upward** provides visual hope and forward momentum
+
+---
+
+**Copy this entire prompt into Replit and implement the TransitionPage component exactly as specified.**
