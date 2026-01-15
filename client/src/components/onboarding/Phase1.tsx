@@ -104,6 +104,6 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
       </div>
 
       <ContinueButton onClick={handleNext} disabled={selected.length === 0} />
-    </div>
+    </motion.div>
   );
 }
