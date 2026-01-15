@@ -2,51 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE */
+/* LIGHT MODE - Enhanced Spiritual Palette */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
-  --background: 35 25% 97%;
-  --foreground: 220 15% 18%;
-  --border: 35 15% 88%;
-  --card: 35 20% 95%;
-  --card-foreground: 220 15% 18%;
-  --card-border: 35 15% 88%;
-  --sidebar: 35 18% 93%;
-  --sidebar-foreground: 220 15% 18%;
-  --sidebar-border: 35 15% 85%;
-  --sidebar-primary: 215 65% 50%;
+  
+  /* Core spiritual colors */
+  --sage: 98 12% 56%;
+  --teal: 173 21% 52%;
+  --beige: 40 33% 94%;
+  --navy: 207 28% 24%;
+  
+  /* Emotional state colors */
+  --struggling: 14 60% 75%;
+  --peaceful: 185 30% 78%;
+  --hopeful: 35 90% 81%;
+  --overwhelmed: 265 20% 81%;
+  
+  /* System semantic colors */
+  --success: 135 30% 60%;
+  --warning: 28 86% 65%;
+  --error: 12 65% 63%;
+  
+  /* Glass surfaces */
+  --glass: 40 33% 94% / 0.85;
+  --glass-border: 173 21% 52% / 0.2;
+  
+  /* Updated palette using spiritual colors */
+  --background: 40 33% 96%;
+  --foreground: 207 28% 24%;
+  --border: 40 20% 88%;
+  --card: 40 30% 95%;
+  --card-foreground: 207 28% 24%;
+  --card-border: 40 20% 88%;
+  --sidebar: 40 25% 93%;
+  --sidebar-foreground: 207 28% 24%;
+  --sidebar-border: 40 18% 85%;
+  --sidebar-primary: 173 21% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 35 15% 88%;
-  --sidebar-accent-foreground: 220 15% 18%;
-  --sidebar-ring: 215 65% 50%;
-  --popover: 35 20% 93%;
-  --popover-foreground: 220 15% 18%;
-  --popover-border: 35 15% 85%;
-  --primary: 215 65% 50%;
+  --sidebar-accent: 40 20% 88%;
+  --sidebar-accent-foreground: 207 28% 24%;
+  --sidebar-ring: 173 21% 52%;
+  --popover: 40 30% 94%;
+  --popover-foreground: 207 28% 24%;
+  --popover-border: 40 18% 85%;
+  --primary: 173 21% 52%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 35 15% 90%;
-  --secondary-foreground: 220 15% 18%;
-  --muted: 35 12% 88%;
-  --muted-foreground: 220 10% 45%;
-  --accent: 170 45% 45%;
+  --secondary: 98 12% 56%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 40 15% 88%;
+  --muted-foreground: 207 15% 45%;
+  --accent: 173 21% 48%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 55%;
+  --destructive: 12 65% 55%;
   --destructive-foreground: 0 0% 100%;
-  --input: 35 15% 75%;
-  --ring: 215 65% 50%;
-  --chart-1: 215 65% 50%;
-  --chart-2: 170 45% 45%;
-  --chart-3: 35 75% 55%;
-  --chart-4: 340 65% 55%;
-  --chart-5: 25 85% 55%;
+  --input: 40 18% 78%;
+  --ring: 173 21% 52%;
+  --chart-1: 173 21% 52%;
+  --chart-2: 98 12% 56%;
+  --chart-3: 35 90% 65%;
+  --chart-4: 185 30% 60%;
+  --chart-5: 14 60% 65%;
   --font-sans: Inter, sans-serif;
   --font-serif: Crimson Pro, Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: .5rem;
+  --radius: .75rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(240 6% 10% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(240 6% 10% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(240 6% 10% / 0.00), 0px 1px 2px -1px hsl(240 6% 10% / 0.00);
@@ -93,40 +116,63 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
-  --background: 220 18% 12%;
-  --foreground: 35 20% 95%;
+  
+  /* Core spiritual colors (adjusted for dark mode) */
+  --sage: 98 15% 45%;
+  --teal: 173 25% 45%;
+  --beige: 40 20% 18%;
+  --navy: 207 25% 85%;
+  
+  /* Emotional state colors (adjusted for dark mode) */
+  --struggling: 14 50% 55%;
+  --peaceful: 185 25% 55%;
+  --hopeful: 35 80% 60%;
+  --overwhelmed: 265 20% 60%;
+  
+  /* System semantic colors */
+  --success: 135 35% 50%;
+  --warning: 28 80% 55%;
+  --error: 12 60% 55%;
+  
+  /* Glass surfaces (dark mode) */
+  --glass: 220 18% 16% / 0.85;
+  --glass-border: 173 25% 45% / 0.25;
+  
+  /* Updated dark mode palette */
+  --background: 220 18% 11%;
+  --foreground: 40 25% 92%;
   --border: 220 15% 22%;
-  --card: 220 16% 15%;
-  --card-foreground: 35 20% 95%;
+  --card: 220 16% 14%;
+  --card-foreground: 40 25% 92%;
   --card-border: 220 15% 20%;
-  --sidebar: 220 16% 14%;
-  --sidebar-foreground: 35 20% 95%;
+  --sidebar: 220 16% 13%;
+  --sidebar-foreground: 40 25% 92%;
   --sidebar-border: 220 15% 20%;
-  --sidebar-primary: 215 70% 58%;
+  --sidebar-primary: 173 25% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 220 15% 20%;
-  --sidebar-accent-foreground: 35 20% 95%;
-  --sidebar-ring: 215 70% 58%;
-  --popover: 220 16% 17%;
-  --popover-foreground: 35 20% 95%;
+  --sidebar-accent-foreground: 40 25% 92%;
+  --sidebar-ring: 173 25% 50%;
+  --popover: 220 16% 16%;
+  --popover-foreground: 40 25% 92%;
   --popover-border: 220 15% 24%;
-  --primary: 215 70% 58%;
+  --primary: 173 25% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 15% 22%;
-  --secondary-foreground: 35 20% 95%;
+  --secondary: 98 15% 35%;
+  --secondary-foreground: 0 0% 100%;
   --muted: 220 14% 20%;
-  --muted-foreground: 35 10% 60%;
-  --accent: 170 50% 50%;
+  --muted-foreground: 40 12% 60%;
+  --accent: 173 25% 45%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 55%;
+  --destructive: 12 60% 50%;
   --destructive-foreground: 0 0% 100%;
-  --input: 220 15% 30%;
-  --ring: 215 70% 58%;
-  --chart-1: 215 70% 65%;
-  --chart-2: 170 50% 55%;
-  --chart-3: 35 70% 60%;
-  --chart-4: 340 65% 60%;
-  --chart-5: 25 80% 60%;
+  --input: 220 15% 28%;
+  --ring: 173 25% 50%;
+  --chart-1: 173 25% 55%;
+  --chart-2: 98 15% 50%;
+  --chart-3: 35 75% 55%;
+  --chart-4: 185 25% 55%;
+  --chart-5: 14 50% 55%;
   --shadow-2xs: 0px 2px 0px 0px hsl(240 5% 96% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(240 5% 96% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(240 5% 96% / 0.00), 0px 1px 2px -1px hsl(240 5% 96% / 0.00);
@@ -284,5 +330,206 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
+  }
+
+  /* ========================================
+   * GLASSMORPHISM UTILITIES
+   * Inspired by iOS/Apple design patterns
+   * ======================================== */
+  
+  .glass {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+  
+  .glass-subtle {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+  
+  .glass-strong {
+    background: hsl(var(--glass));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--glass-border));
+  }
+
+  /* ========================================
+   * ENHANCED SHADOWS
+   * Colored shadows for primary actions
+   * ======================================== */
+  
+  .shadow-subtle {
+    box-shadow: 0 2px 4px hsl(var(--navy) / 0.08);
+  }
+  
+  .shadow-elevated {
+    box-shadow: 0 4px 8px hsl(var(--navy) / 0.12);
+  }
+  
+  .shadow-floating {
+    box-shadow: 0 8px 16px hsl(var(--navy) / 0.16);
+  }
+  
+  .shadow-primary {
+    box-shadow: 0 4px 12px hsl(var(--teal) / 0.25);
+  }
+  
+  .shadow-sage {
+    box-shadow: 0 4px 12px hsl(var(--sage) / 0.25);
+  }
+
+  /* ========================================
+   * GRADIENT UTILITIES
+   * Premium gradient backgrounds
+   * ======================================== */
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--teal)), hsl(173 21% 45%));
+  }
+  
+  .gradient-sage {
+    background: linear-gradient(135deg, hsl(var(--sage)), hsl(98 12% 50%));
+  }
+  
+  .gradient-warm {
+    background: linear-gradient(180deg, #FFFFFF, hsl(var(--beige)));
+  }
+  
+  .dark .gradient-warm {
+    background: linear-gradient(180deg, hsl(var(--background)), hsl(220 18% 8%));
+  }
+
+  /* ========================================
+   * TYPOGRAPHY ENHANCEMENTS
+   * Premium letter-spacing for refined feel
+   * ======================================== */
+  
+  .tracking-refined {
+    letter-spacing: 0.3px;
+  }
+  
+  .tracking-premium {
+    letter-spacing: 0.5px;
+  }
+  
+  .tracking-display {
+    letter-spacing: 0.8px;
+  }
+
+  /* ========================================
+   * ANIMATION UTILITIES
+   * Smooth micro-interactions
+   * ======================================== */
+  
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-bounce {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Icon pulse animation for recommendation cards */
+  @keyframes pulse-gentle {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.15;
+    }
+  }
+  
+  .animate-pulse-gentle {
+    animation: pulse-gentle 2s ease-in-out infinite;
+  }
+
+  /* Shimmer loading animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.5) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Fade up entrance animation */
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-up {
+    animation: fade-up 0.4s ease-out forwards;
+  }
+
+  /* ========================================
+   * BADGE UTILITIES
+   * Duration and difficulty badges
+   * ======================================== */
+  
+  .badge-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: hsl(var(--teal) / 0.15);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(var(--teal));
+  }
+  
+  .badge-difficulty {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: hsl(var(--sage) / 0.15);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(var(--sage));
+  }
+
+  /* ========================================
+   * CARD GLOW BORDER
+   * Subtle teal glow on cards
+   * ======================================== */
+  
+  .glow-border {
+    position: relative;
+  }
+  
+  .glow-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid hsl(var(--teal) / 0.3);
+    border-radius: inherit;
+    pointer-events: none;
   }
 }
