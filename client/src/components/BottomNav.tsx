@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { path: "/community", icon: Users, label: "Community" },
   { path: "/devotion", icon: Heart, label: "Devotion" },
-  { path: "/chat", icon: MessageCircle, label: "AI" },
+  { path: "/chat", icon: MessageCircle, label: "Chat" },
   { path: "/bible", icon: BookOpen, label: "Bible" },
   { path: "/account", icon: User, label: "Account" },
 ];
