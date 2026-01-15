@@ -41,6 +41,22 @@ export default function Chat() {
     queryKey: ["/api/persona"],
   });
 
+  const loadExistingConversation = useCallback(async (convId: number) => {
+    try {
+      const response = await fetch(`/api/conversations/${convId}/messages`);
+      if (response.ok) {
+        const data = await response.json();
+        setConversationId(convId);
+        setMessages(data.messages || []);
+        localStorage.setItem("soulguide_conversation_id", String(convId));
+        return true;
+      }
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    }
+    return false;
+  }, []);
+
   const createConversation = useCallback(async () => {
     setIsInitializing(true);
     setInitError(null);
@@ -55,6 +71,7 @@ export default function Chat() {
         const data = await response.json();
         setConversationId(data.id);
         setMessages([]);
+        localStorage.setItem("soulguide_conversation_id", String(data.id));
       } else {
         setInitError("Could not start a conversation. Please try again.");
       }
@@ -66,12 +83,30 @@ export default function Chat() {
     }
   }, []);
 
-  // Initialize conversation on mount
+  // Initialize conversation on mount - load existing or create new
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    createConversation();
-  }, [createConversation]);
+    
+    const initChat = async () => {
+      setIsInitializing(true);
+      
+      // Try to load existing conversation from localStorage
+      const savedConvId = localStorage.getItem("soulguide_conversation_id");
+      if (savedConvId) {
+        const loaded = await loadExistingConversation(parseInt(savedConvId));
+        if (loaded) {
+          setIsInitializing(false);
+          return;
+        }
+      }
+      
+      // No existing conversation, create new one
+      await createConversation();
+    };
+    
+    initChat();
+  }, [createConversation, loadExistingConversation]);
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || isStreaming) return;
@@ -164,6 +199,8 @@ export default function Chat() {
   const handleNewChat = () => {
     initRef.current = false;
     setConversationId(null);
+    setMessages([]);
+    localStorage.removeItem("soulguide_conversation_id");
     createConversation();
   };
 

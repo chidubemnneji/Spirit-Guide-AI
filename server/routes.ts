@@ -333,6 +333,25 @@ export async function registerRoutes(
     }
   });
 
+  // Get messages for a conversation
+  app.get("/api/conversations/:id/messages", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+      const conversation = await storage.getConversation(id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      const messages = await storage.getMessages(id);
+      res.json({ messages });
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
   // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
@@ -374,9 +393,12 @@ export async function registerRoutes(
         content: m.content,
       }));
 
-      // Build system prompt if persona exists
+      // Count user turns for phase determination (new message is already saved and included)
+      const userTurnCount = allMessages.filter(m => m.role === "user").length;
+
+      // Build system prompt if persona exists (with user turn count for phases)
       const systemPrompt = persona
-        ? buildAISystemPrompt(persona)
+        ? buildAISystemPrompt(persona, userTurnCount)
         : "You are a warm, empathetic spiritual companion. Help the user explore their faith journey with kindness and without judgment.";
 
       // Set up SSE

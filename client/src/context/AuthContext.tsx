@@ -81,6 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/auth/logout", {});
     } finally {
       setUser(null);
+      // Clear conversation to prevent cross-user chat mix-ups
+      localStorage.removeItem("soulguide_conversation_id");
     }
   };
 
