@@ -45,16 +45,21 @@ const options = [
 
 export function Phase1({ onNext, onBack }: Phase1Props) {
   const { updateOnboarding } = useOnboarding();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
 
   const handleSelect = (optionId: string) => {
-    setSelected(optionId);
+    setSelected((prev) =>
+      prev.includes(optionId)
+        ? prev.filter((id) => id !== optionId)
+        : [...prev, optionId]
+    );
   };
 
   const handleNext = () => {
-    if (selected) {
-      updateOnboarding({ primaryStruggle: selected });
-      onNext(selected);
+    if (selected.length > 0) {
+      // Use the first selected as primary for persona assignment
+      updateOnboarding({ primaryStruggle: selected[0] });
+      onNext(selected[0]);
     }
   };
 
@@ -69,7 +74,7 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
           Before we begin, we want to understand where you are right now.
         </h1>
         <p className="text-lg text-muted-foreground">
-          Which of these feels most true for you today?
+          Select all that feel true for you today
         </p>
       </div>
 
@@ -80,13 +85,13 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
             id={option.id}
             text={option.text}
             icon={option.icon}
-            selected={selected === option.id}
+            selected={selected.includes(option.id)}
             onClick={() => handleSelect(option.id)}
           />
         ))}
       </div>
 
-      <ContinueButton onClick={handleNext} disabled={!selected} />
+      <ContinueButton onClick={handleNext} disabled={selected.length === 0} />
     </div>
   );
 }
