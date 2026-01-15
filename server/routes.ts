@@ -585,6 +585,79 @@ I'm here to listen whenever you're ready to talk.`;
     }
   });
 
+  // Recommendation Card API routes
+  app.get("/api/messages/:messageId/recommendations", async (req: Request, res: Response) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ error: "Invalid message ID" });
+      }
+      const cards = await storage.getRecommendationCardsForMessage(messageId);
+      res.json({ cards });
+    } catch (error) {
+      console.error("Error fetching recommendation cards:", error);
+      res.status(500).json({ error: "Failed to fetch recommendation cards" });
+    }
+  });
+
+  app.post("/api/recommendations/:cardId/click", async (req: Request, res: Response) => {
+    try {
+      const cardId = parseInt(req.params.cardId);
+      if (isNaN(cardId)) {
+        return res.status(400).json({ error: "Invalid card ID" });
+      }
+      const card = await storage.getRecommendationCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+      await storage.clickRecommendationCard(cardId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking card click:", error);
+      res.status(500).json({ error: "Failed to track click" });
+    }
+  });
+
+  app.post("/api/recommendations/:cardId/complete", async (req: Request, res: Response) => {
+    try {
+      const cardId = parseInt(req.params.cardId);
+      if (isNaN(cardId)) {
+        return res.status(400).json({ error: "Invalid card ID" });
+      }
+      const card = await storage.getRecommendationCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+      await storage.completeRecommendationCard(cardId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking card completion:", error);
+      res.status(500).json({ error: "Failed to track completion" });
+    }
+  });
+
+  app.post("/api/recommendations/:cardId/rate", async (req: Request, res: Response) => {
+    try {
+      const cardId = parseInt(req.params.cardId);
+      const { rating } = req.body;
+      if (isNaN(cardId)) {
+        return res.status(400).json({ error: "Invalid card ID" });
+      }
+      if (typeof rating !== "number" || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+      const card = await storage.getRecommendationCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+      await storage.rateRecommendationCard(cardId, rating);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking card rating:", error);
+      res.status(500).json({ error: "Failed to track rating" });
+    }
+  });
+
   // Bible API routes
   app.get("/api/bible/versions", async (req: Request, res: Response) => {
     try {
