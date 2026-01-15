@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle } from "lucide-react";
+import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Heart, HelpCircle, Sunrise, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RecommendationCards from "@/components/RecommendationCards";
 import type { Message, Conversation, RecommendationCard } from "@shared/schema";
@@ -332,19 +333,23 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border/50 glass">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary" />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-gentle" />
+              <div className="relative w-9 h-9 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
             </div>
-            <span className="font-serif font-semibold text-lg">Soulguide</span>
+            <span className="font-serif font-bold text-lg tracking-premium">Soulguide</span>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleNewChat}
+              className="hover:shadow-subtle transition-all"
               data-testid="button-new-chat"
             >
               <RotateCcw className="w-4 h-4" />
@@ -372,17 +377,14 @@ export default function Chat() {
               </Button>
             </div>
           ) : messages.length === 0 && !streamingContent ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <MessageCircle className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="font-serif text-2xl font-semibold mb-3">
-                {isInitializing ? "Starting your conversation..." : getWelcomeMessage()}
-              </h2>
-              <p className="text-muted-foreground max-w-md">
-                {isInitializing ? "Just a moment..." : "This is a safe space to share your thoughts, ask questions, and explore your faith."}
-              </p>
-            </div>
+            <EmptyChatState 
+              isInitializing={isInitializing}
+              welcomeMessage={getWelcomeMessage()}
+              onStarterPress={(text) => {
+                setInput(text);
+                textareaRef.current?.focus();
+              }}
+            />
           ) : (
             <div className="space-y-4">
               {messages.map((message) => (
@@ -404,33 +406,39 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="border-t border-border bg-background p-4">
+        <div className="border-t border-border/50 glass p-4">
           <div className="max-w-3xl mx-auto">
-            <Card className="flex items-end gap-2 p-2 bg-card">
+            <Card className="flex items-end gap-2 p-2 glass-subtle glow-border shadow-subtle">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Share what's on your heart..."
-                className="min-h-[48px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 text-base"
+                className="min-h-[48px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 text-base tracking-refined"
                 rows={1}
                 data-testid="input-message"
               />
-              <Button
-                onClick={sendMessage}
-                disabled={!input.trim() || isStreaming || !conversationId || isInitializing}
-                size="icon"
-                data-testid="button-send"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                {isStreaming ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
+                <Button
+                  onClick={sendMessage}
+                  disabled={!input.trim() || isStreaming || !conversationId || isInitializing}
+                  size="icon"
+                  className="gradient-primary shadow-primary"
+                  data-testid="button-send"
+                >
+                  {isStreaming ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </motion.div>
             </Card>
-            <p className="text-xs text-muted-foreground text-center mt-2">
+            <p className="text-xs text-muted-foreground text-center mt-2 tracking-refined">
               Your conversations are private and meant to support, not replace, spiritual community.
             </p>
           </div>
@@ -494,6 +502,93 @@ function parseContentWithVerseLinks(
   return parts.length > 0 ? parts : [content];
 }
 
+const conversationStarters = [
+  { icon: Heart, text: "I'm feeling distant from God", color: "text-rose-500 dark:text-rose-400" },
+  { icon: HelpCircle, text: "I have questions about prayer", color: "text-blue-500 dark:text-blue-400" },
+  { icon: Sunrise, text: "I'm struggling with doubt", color: "text-amber-500 dark:text-amber-400" },
+  { icon: Lightbulb, text: "I want to deepen my faith", color: "text-emerald-500 dark:text-emerald-400" },
+];
+
+function EmptyChatState({ 
+  isInitializing, 
+  welcomeMessage,
+  onStarterPress 
+}: { 
+  isInitializing: boolean; 
+  welcomeMessage: string;
+  onStarterPress: (text: string) => void;
+}) {
+  return (
+    <motion.div 
+      className="h-full flex flex-col items-center justify-center text-center px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div 
+        className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 shadow-primary"
+        initial={{ scale: 0.8 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+      >
+        <MessageCircle className="w-10 h-10 text-primary" />
+      </motion.div>
+      
+      <motion.h2 
+        className="font-serif text-2xl sm:text-3xl font-bold tracking-display mb-3 text-foreground"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        {isInitializing ? "Starting your conversation..." : welcomeMessage}
+      </motion.h2>
+      
+      <motion.p 
+        className="text-muted-foreground max-w-md tracking-refined"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        {isInitializing ? "Just a moment..." : "This is a safe space to share your thoughts, ask questions, and explore your faith."}
+      </motion.p>
+
+      {!isInitializing && (
+        <motion.div 
+          className="mt-8 w-full max-w-sm space-y-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-premium mb-3">
+            Not sure where to start?
+          </p>
+          {conversationStarters.map((starter, index) => (
+            <motion.button
+              key={starter.text}
+              onClick={() => onStarterPress(starter.text)}
+              className="w-full flex items-center gap-3 p-4 rounded-xl glass-subtle glow-border shadow-subtle hover:shadow-elevated transition-all text-left group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 + index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              data-testid={`button-starter-${index}`}
+            >
+              <starter.icon className={cn("w-5 h-5", starter.color)} />
+              <span className="flex-1 text-sm font-medium tracking-refined text-foreground">
+                {starter.text}
+              </span>
+              <span className="text-muted-foreground group-hover:text-primary transition-colors">
+                <Send className="w-4 h-4" />
+              </span>
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
 function MessageBubble({
   message,
   isStreaming = false,
@@ -505,31 +600,41 @@ function MessageBubble({
   const isUser = message.role === "user";
 
   return (
-    <div
+    <motion.div
       className={cn(
         "flex gap-3",
         isUser ? "justify-end" : "justify-start"
       )}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
       data-testid={`message-${message.role}-${message.id}`}
     >
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-          <Sparkles className="w-4 h-4 text-primary" />
+        <div className="relative flex-shrink-0 mt-1">
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-gentle" />
+          <div className="relative w-9 h-9 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
         </div>
       )}
       <div className="flex flex-col max-w-[80%] sm:max-w-md">
         <div
           className={cn(
-            "rounded-2xl px-4 py-3",
+            "rounded-2xl px-4 py-3 tracking-refined",
             isUser
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-card border border-border rounded-bl-md"
+              ? "gradient-primary text-white shadow-primary rounded-br-md"
+              : "glass-subtle glow-border shadow-subtle rounded-bl-md"
           )}
         >
           <p className="text-base leading-relaxed whitespace-pre-wrap">
             {parseContentWithVerseLinks(message.content, navigate, isUser)}
             {isStreaming && (
-              <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
+              <span className="inline-flex items-center gap-1 ml-2">
+                <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </span>
             )}
           </p>
         </div>
@@ -538,6 +643,6 @@ function MessageBubble({
           <RecommendationCards cards={message.recommendationCards} />
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,6 @@
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ContinueButtonProps {
@@ -18,27 +19,43 @@ export function ContinueButton({
   children,
 }: ContinueButtonProps) {
   return (
-    <Button
-      onClick={onClick}
-      disabled={disabled || loading}
-      size="lg"
-      data-testid="button-continue"
-      className={cn(
-        "w-full py-6 text-base font-semibold transition-all duration-200",
-        variant === "complete" && "bg-accent hover:bg-accent/90"
-      )}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.3 }}
     >
-      {loading ? (
-        <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Processing...
-        </>
-      ) : (
-        <>
-          {children || "Continue"}
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </>
-      )}
-    </Button>
+      <Button
+        onClick={onClick}
+        disabled={disabled || loading}
+        size="lg"
+        data-testid="button-continue"
+        className={cn(
+          "w-full py-6 text-base font-semibold tracking-premium transition-all duration-300",
+          !disabled && "gradient-primary shadow-primary hover:shadow-floating",
+          variant === "complete" && "gradient-sage shadow-sage"
+        )}
+      >
+        {loading ? (
+          <motion.span 
+            className="flex items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Processing...
+          </motion.span>
+        ) : (
+          <motion.span 
+            className="flex items-center gap-2"
+            whileHover={{ x: 3 }}
+            transition={{ type: "spring", stiffness: 400 }}
+          >
+            {variant === "complete" && <Sparkles className="h-5 w-5" />}
+            {children || "Continue"}
+            <ArrowRight className="h-5 w-5" />
+          </motion.span>
+        )}
+      </Button>
+    </motion.div>
   );
 }

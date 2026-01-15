@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { OptionCard } from "./OptionCard";
 import { ContinueButton } from "./ContinueButton";
@@ -64,22 +65,32 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <motion.div 
+      className="space-y-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="space-y-2">
         <BackButton onClick={onBack} />
       </div>
 
-      <div className="text-center space-y-4">
-        <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
+      <motion.div 
+        className="text-center space-y-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+      >
+        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-foreground leading-tight tracking-display">
           Before we begin, we want to understand where you are right now.
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-lg text-muted-foreground tracking-refined">
           Select all that feel true for you today
         </p>
-      </div>
+      </motion.div>
 
       <div className="space-y-3">
-        {options.map((option) => (
+        {options.map((option, index) => (
           <OptionCard
             key={option.id}
             id={option.id}
@@ -87,6 +98,7 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
             icon={option.icon}
             selected={selected.includes(option.id)}
             onClick={() => handleSelect(option.id)}
+            index={index}
           />
         ))}
       </div>
