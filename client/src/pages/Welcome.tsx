@@ -32,11 +32,20 @@ export default function Welcome() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
             <Button
               size="lg"
-              onClick={() => setLocation("/onboarding")}
-              data-testid="button-begin-journey"
+              onClick={() => setLocation("/signup")}
+              data-testid="button-get-started"
               className="px-8 py-6 text-base font-semibold"
             >
-              Begin Your Journey
+              Get Started
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setLocation("/login")}
+              data-testid="button-sign-in"
+              className="px-8 py-6 text-base font-semibold"
+            >
+              Sign In
             </Button>
           </div>
 

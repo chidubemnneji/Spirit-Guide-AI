@@ -6,8 +6,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { BibleProvider } from "@/context/BibleContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { BottomNav } from "@/components/BottomNav";
 import Welcome from "@/pages/Welcome";
+import Signup from "@/pages/Signup";
+import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import TransitionPage from "@/pages/TransitionPage";
 import Chat from "@/pages/Chat";
@@ -17,12 +20,14 @@ import Devotion from "@/pages/Devotion";
 import Account from "@/pages/Account";
 import NotFound from "@/pages/not-found";
 
-const ONBOARDING_ROUTES = ["/", "/onboarding", "/transition"];
+const ONBOARDING_ROUTES = ["/", "/signup", "/login", "/onboarding", "/transition"];
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Welcome} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/login" component={Login} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/transition" component={TransitionPage} />
       <Route path="/chat" component={Chat} />
@@ -51,14 +56,16 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <OnboardingProvider>
-          <BibleProvider>
-            <TooltipProvider>
-              <Toaster />
-              <AppContent />
-            </TooltipProvider>
-          </BibleProvider>
-        </OnboardingProvider>
+        <AuthProvider>
+          <OnboardingProvider>
+            <BibleProvider>
+              <TooltipProvider>
+                <Toaster />
+                <AppContent />
+              </TooltipProvider>
+            </BibleProvider>
+          </OnboardingProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

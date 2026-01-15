@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import type { Session } from "express-session";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { assignPersona } from "./utils/personaAssignment";
@@ -6,12 +7,31 @@ import { buildAISystemPrompt } from "./utils/aiPromptBuilder";
 import { bibleAPI } from "./bibleAPI";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { createHash, randomBytes } from "crypto";
 import type { InsertUserPersona } from "@shared/schema";
+import { signupSchema, loginSchema } from "@shared/schema";
+
+interface SessionWithUser extends Session {
+  userId?: number;
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
 });
+
+// Simple password hashing (for demo - use bcrypt in production)
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = createHash("sha256").update(password + salt).digest("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  const checkHash = createHash("sha256").update(password + salt).digest("hex");
+  return hash === checkHash;
+}
 
 // Zod schemas for request validation
 const onboardingSchema = z.object({
@@ -39,6 +59,139 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Auth: Signup
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    try {
+      const parseResult = signupSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid signup data",
+          details: parseResult.error.flatten(),
+        });
+      }
+
+      const { name, email, password } = parseResult.data;
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: "An account with this email already exists",
+        });
+      }
+
+      // Hash password and create user
+      const passwordHash = hashPassword(password);
+      const user = await storage.createUser({ name, email, passwordHash });
+
+      // Set session
+      (req.session as SessionWithUser).userId = user.id;
+
+      res.status(201).json({
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          hasCompletedOnboarding: false,
+        },
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ success: false, error: "Failed to create account" });
+    }
+  });
+
+  // Auth: Login
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const parseResult = loginSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid login data",
+          details: parseResult.error.flatten(),
+        });
+      }
+
+      const { email, password } = parseResult.data;
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !verifyPassword(password, user.passwordHash)) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid email or password",
+        });
+      }
+
+      // Update last active
+      await storage.updateUser(user.id, { lastActive: new Date() });
+
+      // Set session
+      (req.session as SessionWithUser).userId = user.id;
+
+      // Get persona if exists
+      const persona = await storage.getPersona(user.id);
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          hasCompletedOnboarding: !!user.hasCompletedOnboarding,
+        },
+        persona: persona || null,
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ success: false, error: "Failed to login" });
+    }
+  });
+
+  // Auth: Logout
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy((err: Error | null) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: "Failed to logout" });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  // Auth: Get current user
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ success: false, error: "User not found" });
+      }
+
+      const persona = await storage.getPersona(user.id);
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          hasCompletedOnboarding: !!user.hasCompletedOnboarding,
+        },
+        persona: persona || null,
+      });
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ success: false, error: "Failed to get user" });
+    }
+  });
+
   // Submit onboarding data and create persona
   app.post("/api/onboarding", async (req: Request, res: Response) => {
     try {
@@ -52,12 +205,14 @@ export async function registerRoutes(
       }
 
       const onboardingData = parseResult.data;
+      const userId = (req.session as any)?.userId;
 
       // Assign persona based on responses
       const personaAssignment = assignPersona(onboardingData as any);
 
       // Build persona object for storage
       const personaData: InsertUserPersona = {
+        userId: userId || null,
         primaryStruggle: onboardingData.primaryStruggle || null,
         depthLayerResponses: onboardingData.depthLayer,
         dailyRhythm: onboardingData.behavioralReality?.dailyRhythm || [],
@@ -72,6 +227,11 @@ export async function registerRoutes(
 
       // Save to storage
       await storage.createPersona(personaData);
+
+      // Mark user as having completed onboarding
+      if (userId) {
+        await storage.updateUser(userId, { hasCompletedOnboarding: 1 });
+      }
 
       res.status(200).json({
         success: true,
