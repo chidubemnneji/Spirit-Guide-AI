@@ -1,7 +1,7 @@
 import type { BibleVersion, Book, Chapter } from "../shared/bible.types";
 
 const API_KEY = process.env.BIBLE_API_KEY || "";
-const BASE_URL = "https://api.scripture.api.bible/v1";
+const BASE_URL = "https://rest.api.bible/v1";
 
 const OLD_TESTAMENT_BOOKS = [
   "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA",
