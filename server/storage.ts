@@ -8,15 +8,16 @@ import {
   type Message,
   type InsertMessage,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
 
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
 
   // User Personas
-  getPersona(): Promise<UserPersona | undefined>;
+  getPersona(userId?: number): Promise<UserPersona | undefined>;
   createPersona(persona: InsertUserPersona): Promise<UserPersona>;
   updatePersona(id: number, updates: Partial<InsertUserPersona>): Promise<UserPersona | undefined>;
 
@@ -57,12 +58,18 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.email === email);
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.nextUserId++;
     const user: User = {
       id,
-      email: insertUser.email ?? null,
-      name: insertUser.name ?? null,
+      email: insertUser.email,
+      name: insertUser.name,
+      passwordHash: insertUser.passwordHash,
+      hasCompletedOnboarding: 0,
       createdAt: new Date(),
       lastActive: new Date(),
     };
@@ -70,16 +77,28 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  // User Personas - only one active persona at a time for simplicity
-  async getPersona(): Promise<UserPersona | undefined> {
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    const updatedUser = { ...user, ...updates, lastActive: new Date() };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  // User Personas
+  async getPersona(userId?: number): Promise<UserPersona | undefined> {
+    if (userId) {
+      return Array.from(this.personas.values()).find(p => p.userId === userId);
+    }
     const personas = Array.from(this.personas.values());
-    return personas[personas.length - 1]; // Return most recent
+    return personas[personas.length - 1];
   }
 
   async createPersona(persona: InsertUserPersona): Promise<UserPersona> {
     const id = this.nextPersonaId++;
     const newPersona: UserPersona = {
       id,
+      userId: persona.userId ?? null,
       primaryStruggle: persona.primaryStruggle ?? null,
       depthLayerResponses: persona.depthLayerResponses ?? null,
       dailyRhythm: persona.dailyRhythm ?? null,

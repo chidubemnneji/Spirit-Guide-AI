@@ -1,0 +1,93 @@
+# COMPLETE AUTHENTICATION SCREENS
+
+**YOU'RE RIGHT** - we need a proper signup that collects name/email before onboarding builds the persona.
+
+## The Complete Flow
+
+```
+NEW USER:
+WelcomeScreen → SignupScreen → Onboarding (8 questions) → TransitionPage → Chat
+
+RETURNING USER:
+WelcomeScreen → LoginScreen → Chat (skip onboarding)
+```
+
+---
+
+## What to Build Next
+
+Build these 4 screens in order:
+
+### 1. WelcomeScreen
+- App landing page
+- "Get Started" button
+- "Sign In" button
+- Clean, inviting UI
+
+### 2. SignupScreen ⭐ (MOST IMPORTANT)
+- Collects: **Name**, Email, Password
+- Name is used in AI responses
+- Leads directly to onboarding
+- Modern, easy-to-use form
+
+### 3. LoginScreen
+- Simple email/password
+- "Forgot Password?" link
+- Returns to main app
+
+### 4. RootNavigator
+- Routes users based on:
+  - Not logged in → Auth screens
+  - Logged in, no persona → Onboarding
+  - Logged in with persona → Main app
+
+---
+
+## Copy-Paste Replit Prompt
+
+```
+Build the complete authentication flow with these 4 components:
+
+1. WelcomeScreen.tsx - Landing page with logo, tagline, and CTA buttons
+2. SignupScreen.tsx - Collects Name (for personalization), Email, Password, Confirm Password
+3. LoginScreen.tsx - Email/password login with forgot password link
+4. RootNavigator.tsx - Routes based on: isAuthenticated, hasCompletedOnboarding
+
+CRITICAL: 
+- Name collected in signup is used in ALL AI responses
+- After signup, user goes IMMEDIATELY to onboarding
+- After onboarding, persona is created and AI is ready
+- Use teal color (#14b8a6) as primary accent
+- Include password show/hide toggle
+- Validate all inputs before submission
+- Show loading states during API calls
+
+The SignupScreen is most important because it collects the NAME that makes AI responses personal.
+```
+
+---
+
+## Files Included in Full Version
+
+I've created detailed implementations of all 4 screens with:
+- Complete TypeScript code
+- Proper styling (modern, clean)
+- Validation logic
+- Error handling
+- Loading states
+- Navigation flow
+
+Check the previous file "NEXT_TASK_System_Prompt_Builder.md" for the AI backend, and this handles the frontend entry point.
+
+---
+
+## Build Order
+
+1. ✅ **System Prompt Builder** (AI backend - already documented)
+2. ✅ **Auth Screens** (this file - user entry point)
+3. Next: **Chat Interface** (where AI responses appear)
+4. Then: **Navigation** (connect everything)
+
+You now have the TWO most critical pieces documented:
+- How AI generates pastoral responses (System Prompt Builder)
+- How users sign up and create personas (Auth Screens)

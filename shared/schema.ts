@@ -6,8 +6,10 @@ import { z } from "zod";
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: varchar("email", { length: 255 }).unique(),
-  name: varchar("name", { length: 255 }),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  hasCompletedOnboarding: integer("has_completed_onboarding").default(0),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   lastActive: timestamp("last_active").default(sql`CURRENT_TIMESTAMP`),
 });
@@ -15,6 +17,7 @@ export const users = pgTable("users", {
 // User Personas table
 export const userPersonas = pgTable("user_personas", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
   
   // Phase 1: Emotional Entry
   primaryStruggle: varchar("primary_struggle", { length: 100 }),
@@ -62,7 +65,23 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   lastActive: true,
+  hasCompletedOnboarding: true,
 });
+
+// Auth schemas
+export const signupSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type SignupData = z.infer<typeof signupSchema>;
+export type LoginData = z.infer<typeof loginSchema>;
 
 export const insertUserPersonaSchema = createInsertSchema(userPersonas).omit({
   id: true,
