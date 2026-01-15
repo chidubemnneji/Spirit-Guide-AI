@@ -1,0 +1,104 @@
+Hey! I need you to verify that Sprint 1 ("Make It Work") is fully complete and functional. 
+
+Please check that ALL of these features are implemented and working:
+
+## AUTHENTICATION ✓
+- [ ] User can sign up (name, email, password collected)
+- [ ] User can log in with email/password
+- [ ] JWT tokens are generated and stored
+- [ ] User stays logged in after closing app
+- [ ] Logout functionality works
+- [ ] Password validation (minimum 8 characters)
+
+## ONBOARDING ✓
+- [ ] New users automatically go to onboarding after signup
+- [ ] Phase 1: Emotional Entry Point (6 options displayed)
+- [ ] Phase 2: Depth Layer (branching questions based on Phase 1 selection)
+- [ ] Phase 3: Behavioral Reality (4 questions about daily rhythm, past connection, energy, obstacles)
+- [ ] Phase 4: Hope Layer (transformation goals)
+- [ ] Persona assignment algorithm runs after Phase 4
+- [ ] User persona data saved to `user_personas` table
+- [ ] Returning users skip onboarding if already completed
+
+## TRANSITION PAGE ✓
+- [ ] Shows after onboarding completion
+- [ ] Displays curvy road icon with center line
+- [ ] Shows persona-specific Bible verse
+- [ ] Auto-advances to chat after 10 seconds
+- [ ] User can skip immediately with "Continue" button
+
+## CHAT INTERFACE ✓
+- [ ] User can send messages
+- [ ] AI responds using Claude API
+- [ ] System Prompt Builder generates personalized prompts based on user persona
+- [ ] Pastoral response phases work correctly:
+  - Message 1: Acknowledgment only (no recommendations)
+  - Message 2: Consolation with scripture (no recommendations)
+  - Message 3: Reflection with questions (no recommendations)
+  - Message 4+: Can now offer recommendations
+- [ ] Messages are saved to database (`messages` table)
+- [ ] Conversation history persists and loads correctly
+- [ ] Message count increments properly
+- [ ] Conversation phase updates (acknowledgment → consolation → reflection → recommendation)
+- [ ] Typing indicator shows while AI is responding
+- [ ] Welcome message displays in empty chat
+- [ ] Auto-scrolls to bottom when new messages arrive
+
+## SYSTEM PROMPT BUILDER (BACKEND) ✓
+- [ ] `/server/services/systemPromptBuilder.js` exists and is functional
+- [ ] Generates prompts based on user persona data (8 types)
+- [ ] Includes phase-specific instructions (acknowledgment/consolation/reflection/recommendation)
+- [ ] Uses actual user data (name, primary_struggle, behavioral patterns)
+- [ ] Includes persona-specific strategies and avoidance rules
+- [ ] chatController.js calls System Prompt Builder before Claude API
+
+## NAVIGATION ✓
+- [ ] RootNavigator handles routing based on auth state:
+  - Not authenticated → Shows Welcome/Signup/Login screens
+  - Authenticated but no persona → Shows Onboarding
+  - Authenticated with persona → Shows Main App
+- [ ] Bottom tab navigation works (5 tabs: Community, Devotion, AI, Bible, Account)
+- [ ] Can navigate between tabs without losing state
+- [ ] Chat tab is default when entering main app
+
+## ACCOUNT SETTINGS ✓
+- [ ] Profile screen shows user name and email
+- [ ] Logout button works (clears tokens, returns to welcome screen)
+- [ ] Settings screen exists (even if minimal)
+
+## DATABASE ✓
+Verify these tables exist and are being used:
+- [ ] `users` (id, email, password_hash, name, created_at, last_login)
+- [ ] `user_personas` (user_id, primary_struggle, all persona fields)
+- [ ] `conversations` (id, user_id, message_count, current_phase)
+- [ ] `messages` (id, conversation_id, role, content, created_at)
+- [ ] `refresh_tokens` (for JWT)
+
+## CRITICAL END-TO-END TEST ✓
+Run this complete user flow and confirm it works:
+
+1. Sign up new user with name "Sarah"
+2. Complete all 8 onboarding questions
+3. See transition page with Bible verse
+4. Auto-advance to chat
+5. Send message: "I feel so distant from God"
+6. AI responds with acknowledgment using name "Sarah" (NO recommendations)
+7. Send second message: "Yeah, I just feel empty"
+8. AI responds with scripture/consolation (NO recommendations)
+9. Send third message: "That's comforting but I don't know what to do"
+10. AI responds with reflection/questions (NO recommendations)
+11. Send fourth message: "I barely have time to pray"
+12. AI NOW offers recommendations tailored to user's persona
+13. Close app and reopen - conversation persists
+14. Log out - returns to welcome screen
+15. Log back in - conversation history still there
+
+---
+
+Please verify each item and let me know:
+- What's ✅ COMPLETE and working
+- What's ⚠️ PARTIALLY working (and what's missing)
+- What's ❌ NOT implemented yet
+- Any errors or bugs you find
+
+This will help me understand exactly what needs to be finished before Sprint 1 is done.
