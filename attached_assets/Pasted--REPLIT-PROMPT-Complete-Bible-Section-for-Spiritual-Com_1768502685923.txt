@@ -1,0 +1,1282 @@
+# REPLIT PROMPT: Complete Bible Section for Spiritual Companion App
+
+## Project Overview
+Build a full-featured Bible section for an iOS spiritual companion app. This section will be one of five main navigation items on the homepage, allowing users to read Scripture, search by version/book/chapter/verse, and navigate the Bible independently of the AI companion.
+
+---
+
+## Tech Stack
+- **Frontend:** React Native (iOS)
+- **Language:** TypeScript
+- **State Management:** React Context or Redux
+- **Storage:** AsyncStorage (offline caching)
+- **API:** API.Bible (free tier, multiple versions)
+
+---
+
+## Homepage Navigation Structure
+
+```
+┌─────────────────────────────────────────┐
+│     App Navigation (Bottom Tab)         │
+├─────────────────────────────────────────┤
+│  Community  Devotion  AI  Bible  Account│
+│     📱        🙏      🤖   📖     👤     │
+└─────────────────────────────────────────┘
+```
+
+**Bible Section:** 4th position, book icon, equal weight to other sections
+
+---
+
+## API Setup: API.Bible
+
+### Why API.Bible?
+- ✅ Free tier: 500 requests/day
+- ✅ Multiple versions: KJV, NIV, NLT, ESV, ASV, WEB, and more
+- ✅ Clean JSON responses
+- ✅ No commercial restrictions (with attribution)
+- ✅ Good documentation
+- ✅ Reliable uptime
+
+### Getting API Key
+1. Go to https://scripture.api.bible/
+2. Sign up for free account
+3. Get API key from dashboard
+4. Add to `.env` file: `BIBLE_API_KEY=your_key_here`
+
+### API Endpoints We'll Use
+```
+BASE_URL: https://api.scripture.api.bible/v1
+
+GET /bibles - List available Bible versions
+GET /bibles/{bibleId}/books - List books in a version
+GET /bibles/{bibleId}/books/{bookId}/chapters - List chapters
+GET /bibles/{bibleId}/chapters/{chapterId} - Get chapter text
+GET /bibles/{bibleId}/verses/{verseId} - Get specific verse
+GET /bibles/{bibleId}/search?query={text} - Search Bible text
+```
+
+---
+
+## File Structure
+
+```
+/client/src/
+├── components/
+│   └── Bible/
+│       ├── BibleReader.tsx          # Main Bible reading interface
+│       ├── VersionSelector.tsx       # Switch between Bible versions
+│       ├── BookSelector.tsx          # Browse/select books
+│       ├── ChapterNavigator.tsx      # Previous/Next chapter
+│       ├── VerseDisplay.tsx          # Display formatted verses
+│       ├── SearchBar.tsx             # Search functionality
+│       ├── BookmarksList.tsx         # Saved verses
+│       └── ReadingHistory.tsx        # Recently viewed
+│
+├── services/
+│   ├── bibleAPI.ts                   # All API calls
+│   └── bibleCache.ts                 # Offline caching logic
+│
+├── context/
+│   └── BibleContext.tsx              # Bible state management
+│
+├── types/
+│   └── bible.types.ts                # TypeScript interfaces
+│
+└── constants/
+    └── bibleBooks.ts                 # Book names, abbreviations
+```
+
+---
+
+## Core Features Requirements
+
+### 1. Bible Version Selection
+**Must Support (Phase 1):**
+- KJV (King James Version) - default
+- NIV (New International Version)
+- NLT (New Living Translation)
+- ESV (English Standard Version)
+
+**UI:**
+- Version dropdown in top-right of Bible reader
+- Show version abbreviation (e.g., "KJV")
+- Smooth switching (maintain book/chapter position)
+
+**Code Structure:**
+```typescript
+interface BibleVersion {
+  id: string;          // "de4e12af7f28f599-02" (API.Bible ID)
+  abbreviation: string; // "KJV"
+  name: string;         // "King James Version"
+  language: string;     // "eng"
+}
+```
+
+---
+
+### 2. Book Selection
+**Requirements:**
+- Grouped by Testament (Old Testament, New Testament)
+- 66 books total
+- Show book names, not abbreviations
+- Search within book list (e.g., type "john" → shows John, 1 John, 2 John, 3 John)
+
+**UI Design:**
+```
+┌─────────────────────────────┐
+│  Select Book            [x] │
+├─────────────────────────────┤
+│  [Search books...]          │
+├─────────────────────────────┤
+│  OLD TESTAMENT              │
+│  Genesis                    │
+│  Exodus                     │
+│  Leviticus                  │
+│  ...                        │
+├─────────────────────────────┤
+│  NEW TESTAMENT              │
+│  Matthew                    │
+│  Mark                       │
+│  Luke                       │
+│  ...                        │
+└─────────────────────────────┘
+```
+
+**Code Structure:**
+```typescript
+interface Book {
+  id: string;        // "GEN" (API.Bible book ID)
+  name: string;      // "Genesis"
+  testament: string; // "OT" | "NT"
+  chaptersCount: number; // 50
+}
+```
+
+---
+
+### 3. Chapter Navigation
+**Requirements:**
+- Previous/Next chapter buttons
+- Chapter dropdown (1-150 for Psalms, 1-1 for Obadiah, etc.)
+- Auto-load next chapter on scroll-to-bottom (optional, nice-to-have)
+- Show progress: "Genesis 3 / 50"
+
+**UI Design:**
+```
+┌─────────────────────────────────────┐
+│  [< Prev]  Genesis 3  [Next >]      │
+│            (3 of 50)                │
+└─────────────────────────────────────┘
+```
+
+---
+
+### 4. Verse Display
+**Requirements:**
+- Show verse numbers clearly but subtly
+- Paragraph formatting (not every verse new line)
+- Red letter for Jesus' words (if version supports)
+- Selectable text (copy individual verses)
+- Verse numbers are tappable (for bookmarking)
+
+**UI Design:**
+```
+┌─────────────────────────────────────┐
+│  Genesis 3                          │
+├─────────────────────────────────────┤
+│  ¹Now the serpent was more crafty   │
+│  than any of the wild animals the   │
+│  Lord God had made. He said to the  │
+│  woman, "Did God really say, 'You   │
+│  must not eat from any tree in the  │
+│  garden'?"                          │
+│                                     │
+│  ²The woman said to the serpent,    │
+│  "We may eat fruit from the trees   │
+│  in the garden, ³but God did say,   │
+│  'You must not eat fruit from the   │
+│  tree that is in the middle of the  │
+│  garden, and you must not touch it, │
+│  or you will die.'"                 │
+└─────────────────────────────────────┘
+```
+
+**Code Structure:**
+```typescript
+interface Verse {
+  id: string;           // "GEN.3.1"
+  number: number;       // 1
+  text: string;         // "Now the serpent..."
+  isRedLetter: boolean; // false
+}
+
+interface Chapter {
+  id: string;           // "GEN.3"
+  bookId: string;       // "GEN"
+  number: number;       // 3
+  verses: Verse[];
+  reference: string;    // "Genesis 3"
+}
+```
+
+---
+
+### 5. Search Functionality
+**Requirements:**
+- Search within current book (e.g., all of Genesis)
+- Search entire Bible
+- Keyword search (e.g., "love", "faith", "hope")
+- Show results with context (verse + reference)
+- Tap result → navigate to that chapter
+
+**UI Design:**
+```
+┌─────────────────────────────────────┐
+│  Search Bible                   [x] │
+├─────────────────────────────────────┤
+│  [Search for keywords...]           │
+│  ( ) Current Book  (•) All Bible    │
+├─────────────────────────────────────┤
+│  Results for "love":                │
+│                                     │
+│  John 3:16                          │
+│  "For God so loved the world that   │
+│  he gave his one and only Son..."   │
+│                                     │
+│  1 Corinthians 13:4                 │
+│  "Love is patient, love is kind..." │
+│                                     │
+│  [Load more results]                │
+└─────────────────────────────────────┘
+```
+
+---
+
+### 6. Bookmarks
+**Requirements:**
+- Bookmark individual verses
+- Store locally (AsyncStorage)
+- View all bookmarks in list
+- Tap bookmark → navigate to verse
+- Remove bookmarks
+- Export bookmarks (future: share with AI)
+
+**Data Structure:**
+```typescript
+interface Bookmark {
+  id: string;           // UUID
+  verseId: string;      // "GEN.1.1"
+  reference: string;    // "Genesis 1:1"
+  text: string;         // "In the beginning..."
+  versionId: string;    // "de4e12af7f28f599-02" (KJV)
+  createdAt: Date;
+}
+```
+
+---
+
+### 7. Reading History
+**Requirements:**
+- Auto-save last 20 chapters viewed
+- Show in chronological order (most recent first)
+- Quick access to resume reading
+- Clear history option
+
+---
+
+### 8. Offline Support
+**Requirements:**
+- Cache last 10 chapters viewed
+- Show "offline" indicator if no internet
+- Allow reading cached chapters when offline
+- Prompt to go online for new content
+
+**Caching Strategy:**
+```typescript
+// Store in AsyncStorage
+const cacheKey = `bible_chapter_${versionId}_${chapterId}`;
+await AsyncStorage.setItem(cacheKey, JSON.stringify(chapterData));
+
+// Check cache before API call
+const cached = await AsyncStorage.getItem(cacheKey);
+if (cached) {
+  return JSON.parse(cached);
+}
+```
+
+---
+
+## Complete Code Implementation
+
+### 1. TypeScript Types
+
+**File:** `/client/src/types/bible.types.ts`
+
+```typescript
+export interface BibleVersion {
+  id: string;
+  abbreviation: string;
+  name: string;
+  language: string;
+  description: string;
+}
+
+export interface Book {
+  id: string;
+  bibleId: string;
+  abbreviation: string;
+  name: string;
+  nameLong: string;
+  testament: 'OT' | 'NT';
+  chaptersCount: number;
+}
+
+export interface Chapter {
+  id: string;
+  bibleId: string;
+  bookId: string;
+  number: string;
+  reference: string;
+  content: string;
+  verses: Verse[];
+  next?: {
+    id: string;
+    number: string;
+  };
+  previous?: {
+    id: string;
+    number: string;
+  };
+}
+
+export interface Verse {
+  id: string;
+  orgId: string;
+  bibleId: string;
+  bookId: string;
+  chapterId: string;
+  number: number;
+  text: string;
+  reference: string;
+}
+
+export interface SearchResult {
+  verse: Verse;
+  text: string;
+  reference: string;
+}
+
+export interface Bookmark {
+  id: string;
+  verseId: string;
+  reference: string;
+  text: string;
+  versionId: string;
+  bookId: string;
+  chapterId: string;
+  createdAt: string;
+}
+
+export interface ReadingHistoryItem {
+  id: string;
+  chapterId: string;
+  reference: string;
+  versionId: string;
+  timestamp: string;
+}
+```
+
+---
+
+### 2. Bible API Service
+
+**File:** `/client/src/services/bibleAPI.ts`
+
+```typescript
+import axios from 'axios';
+import { BibleVersion, Book, Chapter, Verse, SearchResult } from '../types/bible.types';
+
+const API_KEY = process.env.BIBLE_API_KEY || '';
+const BASE_URL = 'https://api.scripture.api.bible/v1';
+
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'api-key': API_KEY,
+  },
+});
+
+export const bibleAPI = {
+  /**
+   * Get list of available Bible versions
+   */
+  async getVersions(): Promise<BibleVersion[]> {
+    try {
+      const response = await apiClient.get('/bibles');
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching Bible versions:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get list of books for a specific Bible version
+   */
+  async getBooks(bibleId: string): Promise<Book[]> {
+    try {
+      const response = await apiClient.get(`/bibles/${bibleId}/books`);
+      const books = response.data.data;
+      
+      // Add testament classification
+      return books.map((book: any) => ({
+        ...book,
+        testament: this.getTestament(book.id),
+      }));
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get chapter content
+   */
+  async getChapter(bibleId: string, chapterId: string): Promise<Chapter> {
+    try {
+      const response = await apiClient.get(
+        `/bibles/${bibleId}/chapters/${chapterId}`,
+        {
+          params: {
+            'content-type': 'json',
+            'include-notes': false,
+            'include-titles': true,
+            'include-chapter-numbers': false,
+            'include-verse-numbers': true,
+            'include-verse-spans': false,
+          },
+        }
+      );
+
+      const data = response.data.data;
+      
+      // Parse verses from content
+      const verses = this.parseVerses(data.content);
+
+      return {
+        id: data.id,
+        bibleId: data.bibleId,
+        bookId: data.bookId,
+        number: data.number,
+        reference: data.reference,
+        content: data.content,
+        verses,
+        next: data.next,
+        previous: data.previous,
+      };
+    } catch (error) {
+      console.error('Error fetching chapter:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get specific verse
+   */
+  async getVerse(bibleId: string, verseId: string): Promise<Verse> {
+    try {
+      const response = await apiClient.get(
+        `/bibles/${bibleId}/verses/${verseId}`,
+        {
+          params: {
+            'content-type': 'json',
+            'include-notes': false,
+            'include-titles': false,
+            'include-chapter-numbers': false,
+            'include-verse-numbers': true,
+          },
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching verse:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Search Bible text
+   */
+  async search(
+    bibleId: string,
+    query: string,
+    limit: number = 10,
+    offset: number = 0
+  ): Promise<SearchResult[]> {
+    try {
+      const response = await apiClient.get(`/bibles/${bibleId}/search`, {
+        params: {
+          query,
+          limit,
+          offset,
+        },
+      });
+
+      return response.data.data.verses || [];
+    } catch (error) {
+      console.error('Error searching Bible:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Helper: Determine testament from book ID
+   */
+  getTestament(bookId: string): 'OT' | 'NT' {
+    const OT_BOOKS = [
+      'GEN', 'EXO', 'LEV', 'NUM', 'DEU', 'JOS', 'JDG', 'RUT', '1SA', '2SA',
+      '1KI', '2KI', '1CH', '2CH', 'EZR', 'NEH', 'EST', 'JOB', 'PSA', 'PRO',
+      'ECC', 'SNG', 'ISA', 'JER', 'LAM', 'EZK', 'DAN', 'HOS', 'JOL', 'AMO',
+      'OBA', 'JON', 'MIC', 'NAM', 'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL',
+    ];
+
+    return OT_BOOKS.includes(bookId) ? 'OT' : 'NT';
+  },
+
+  /**
+   * Helper: Parse verses from HTML content
+   */
+  parseVerses(htmlContent: string): Verse[] {
+    // This is a simplified parser - you may need to enhance based on actual API response
+    const verses: Verse[] = [];
+    
+    // Regular expression to match verse structure
+    // API.Bible returns verses in specific format - adjust regex as needed
+    const verseRegex = /<span class="v">(.*?)<\/span>/g;
+    let match;
+    let verseNumber = 1;
+
+    while ((match = verseRegex.exec(htmlContent)) !== null) {
+      verses.push({
+        id: `verse-${verseNumber}`,
+        orgId: '',
+        bibleId: '',
+        bookId: '',
+        chapterId: '',
+        number: verseNumber,
+        text: match[1].replace(/<[^>]*>/g, ''), // Strip HTML tags
+        reference: '',
+      });
+      verseNumber++;
+    }
+
+    return verses;
+  },
+};
+
+export default bibleAPI;
+```
+
+---
+
+### 3. Bible Cache Service
+
+**File:** `/client/src/services/bibleCache.ts`
+
+```typescript
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Chapter } from '../types/bible.types';
+
+const CACHE_PREFIX = 'bible_cache_';
+const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAX_CACHED_CHAPTERS = 10;
+
+interface CachedChapter {
+  data: Chapter;
+  timestamp: number;
+}
+
+export const bibleCache = {
+  /**
+   * Save chapter to cache
+   */
+  async saveChapter(bibleId: string, chapterId: string, data: Chapter): Promise<void> {
+    try {
+      const cacheKey = `${CACHE_PREFIX}${bibleId}_${chapterId}`;
+      const cachedData: CachedChapter = {
+        data,
+        timestamp: Date.now(),
+      };
+
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cachedData));
+      await this.manageCache();
+    } catch (error) {
+      console.error('Error saving to cache:', error);
+    }
+  },
+
+  /**
+   * Get chapter from cache
+   */
+  async getChapter(bibleId: string, chapterId: string): Promise<Chapter | null> {
+    try {
+      const cacheKey = `${CACHE_PREFIX}${bibleId}_${chapterId}`;
+      const cached = await AsyncStorage.getItem(cacheKey);
+
+      if (!cached) return null;
+
+      const cachedData: CachedChapter = JSON.parse(cached);
+
+      // Check if cache is expired
+      if (Date.now() - cachedData.timestamp > CACHE_EXPIRY) {
+        await AsyncStorage.removeItem(cacheKey);
+        return null;
+      }
+
+      return cachedData.data;
+    } catch (error) {
+      console.error('Error getting from cache:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Manage cache size (keep only last N chapters)
+   */
+  async manageCache(): Promise<void> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const cacheKeys = allKeys.filter(key => key.startsWith(CACHE_PREFIX));
+
+      if (cacheKeys.length > MAX_CACHED_CHAPTERS) {
+        // Get timestamps
+        const cacheItems = await Promise.all(
+          cacheKeys.map(async key => {
+            const item = await AsyncStorage.getItem(key);
+            return item ? { key, timestamp: JSON.parse(item).timestamp } : null;
+          })
+        );
+
+        // Sort by timestamp (oldest first)
+        const sorted = cacheItems
+          .filter(item => item !== null)
+          .sort((a, b) => a!.timestamp - b!.timestamp);
+
+        // Remove oldest items
+        const toRemove = sorted.slice(0, cacheKeys.length - MAX_CACHED_CHAPTERS);
+        await Promise.all(toRemove.map(item => AsyncStorage.removeItem(item!.key)));
+      }
+    } catch (error) {
+      console.error('Error managing cache:', error);
+    }
+  },
+
+  /**
+   * Clear all cache
+   */
+  async clearCache(): Promise<void> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const cacheKeys = allKeys.filter(key => key.startsWith(CACHE_PREFIX));
+      await AsyncStorage.multiRemove(cacheKeys);
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  },
+};
+
+export default bibleCache;
+```
+
+---
+
+### 4. Bible Context (State Management)
+
+**File:** `/client/src/context/BibleContext.tsx`
+
+```typescript
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BibleVersion, Book, Chapter, Bookmark, ReadingHistoryItem } from '../types/bible.types';
+import bibleAPI from '../services/bibleAPI';
+import bibleCache from '../services/bibleCache';
+
+interface BibleContextType {
+  // Current state
+  currentVersion: BibleVersion | null;
+  currentBook: Book | null;
+  currentChapter: Chapter | null;
+  versions: BibleVersion[];
+  books: Book[];
+  bookmarks: Bookmark[];
+  history: ReadingHistoryItem[];
+  isLoading: boolean;
+  error: string | null;
+
+  // Actions
+  setVersion: (version: BibleVersion) => void;
+  setBook: (book: Book) => void;
+  loadChapter: (chapterId: string) => Promise<void>;
+  addBookmark: (bookmark: Bookmark) => Promise<void>;
+  removeBookmark: (bookmarkId: string) => Promise<void>;
+  clearHistory: () => Promise<void>;
+}
+
+const BibleContext = createContext<BibleContextType | undefined>(undefined);
+
+export const BibleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [currentVersion, setCurrentVersion] = useState<BibleVersion | null>(null);
+  const [currentBook, setCurrentBook] = useState<Book | null>(null);
+  const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
+  const [versions, setVersions] = useState<BibleVersion[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [history, setHistory] = useState<ReadingHistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load initial data
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      // Load versions
+      const versionsData = await bibleAPI.getVersions();
+      setVersions(versionsData);
+
+      // Load saved preferences
+      const savedVersionId = await AsyncStorage.getItem('preferred_bible_version');
+      const preferredVersion = savedVersionId
+        ? versionsData.find(v => v.id === savedVersionId)
+        : versionsData.find(v => v.abbreviation === 'KJV'); // Default to KJV
+
+      if (preferredVersion) {
+        setCurrentVersion(preferredVersion);
+        
+        // Load books for this version
+        const booksData = await bibleAPI.getBooks(preferredVersion.id);
+        setBooks(booksData);
+      }
+
+      // Load bookmarks
+      const savedBookmarks = await AsyncStorage.getItem('bible_bookmarks');
+      if (savedBookmarks) {
+        setBookmarks(JSON.parse(savedBookmarks));
+      }
+
+      // Load history
+      const savedHistory = await AsyncStorage.getItem('bible_history');
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
+    } catch (err) {
+      console.error('Error loading initial data:', err);
+      setError('Failed to load Bible data');
+    }
+  };
+
+  const setVersion = async (version: BibleVersion) => {
+    try {
+      setCurrentVersion(version);
+      await AsyncStorage.setItem('preferred_bible_version', version.id);
+
+      // Load books for new version
+      const booksData = await bibleAPI.getBooks(version.id);
+      setBooks(booksData);
+    } catch (err) {
+      console.error('Error setting version:', err);
+      setError('Failed to change Bible version');
+    }
+  };
+
+  const setBook = (book: Book) => {
+    setCurrentBook(book);
+  };
+
+  const loadChapter = async (chapterId: string) => {
+    if (!currentVersion) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Try cache first
+      let chapter = await bibleCache.getChapter(currentVersion.id, chapterId);
+
+      // If not in cache, fetch from API
+      if (!chapter) {
+        chapter = await bibleAPI.getChapter(currentVersion.id, chapterId);
+        await bibleCache.saveChapter(currentVersion.id, chapterId, chapter);
+      }
+
+      setCurrentChapter(chapter);
+
+      // Add to history
+      const historyItem: ReadingHistoryItem = {
+        id: `${Date.now()}`,
+        chapterId,
+        reference: chapter.reference,
+        versionId: currentVersion.id,
+        timestamp: new Date().toISOString(),
+      };
+
+      const updatedHistory = [historyItem, ...history.slice(0, 19)]; // Keep last 20
+      setHistory(updatedHistory);
+      await AsyncStorage.setItem('bible_history', JSON.stringify(updatedHistory));
+    } catch (err) {
+      console.error('Error loading chapter:', err);
+      setError('Failed to load chapter');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addBookmark = async (bookmark: Bookmark) => {
+    try {
+      const updatedBookmarks = [...bookmarks, bookmark];
+      setBookmarks(updatedBookmarks);
+      await AsyncStorage.setItem('bible_bookmarks', JSON.stringify(updatedBookmarks));
+    } catch (err) {
+      console.error('Error adding bookmark:', err);
+      setError('Failed to add bookmark');
+    }
+  };
+
+  const removeBookmark = async (bookmarkId: string) => {
+    try {
+      const updatedBookmarks = bookmarks.filter(b => b.id !== bookmarkId);
+      setBookmarks(updatedBookmarks);
+      await AsyncStorage.setItem('bible_bookmarks', JSON.stringify(updatedBookmarks));
+    } catch (err) {
+      console.error('Error removing bookmark:', err);
+      setError('Failed to remove bookmark');
+    }
+  };
+
+  const clearHistory = async () => {
+    try {
+      setHistory([]);
+      await AsyncStorage.removeItem('bible_history');
+    } catch (err) {
+      console.error('Error clearing history:', err);
+      setError('Failed to clear history');
+    }
+  };
+
+  return (
+    <BibleContext.Provider
+      value={{
+        currentVersion,
+        currentBook,
+        currentChapter,
+        versions,
+        books,
+        bookmarks,
+        history,
+        isLoading,
+        error,
+        setVersion,
+        setBook,
+        loadChapter,
+        addBookmark,
+        removeBookmark,
+        clearHistory,
+      }}
+    >
+      {children}
+    </BibleContext.Provider>
+  );
+};
+
+export const useBible = () => {
+  const context = useContext(BibleContext);
+  if (!context) {
+    throw new Error('useBible must be used within BibleProvider');
+  }
+  return context;
+};
+```
+
+---
+
+### 5. Main Bible Reader Component
+
+**File:** `/client/src/components/Bible/BibleReader.tsx`
+
+```typescript
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { useBible } from '../../context/BibleContext';
+import VersionSelector from './VersionSelector';
+import BookSelector from './BookSelector';
+import ChapterNavigator from './ChapterNavigator';
+import VerseDisplay from './VerseDisplay';
+import SearchBar from './SearchBar';
+
+const BibleReader: React.FC = () => {
+  const {
+    currentVersion,
+    currentBook,
+    currentChapter,
+    isLoading,
+    error,
+    loadChapter,
+  } = useBible();
+
+  const [showVersionSelector, setShowVersionSelector] = useState(false);
+  const [showBookSelector, setShowBookSelector] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Load initial chapter (Genesis 1)
+  useEffect(() => {
+    if (currentVersion && !currentChapter) {
+      loadChapter('GEN.1');
+    }
+  }, [currentVersion]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#14b8a6" />
+        <Text style={styles.loadingText}>Loading Scripture...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => setShowBookSelector(true)}
+        >
+          <Text style={styles.headerButtonText}>
+            {currentChapter?.reference || 'Select Book'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setShowSearch(true)}
+          >
+            <Text style={styles.iconText}>🔍</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.versionButton}
+            onPress={() => setShowVersionSelector(true)}
+          >
+            <Text style={styles.versionText}>
+              {currentVersion?.abbreviation || 'KJV'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Chapter Navigator */}
+      {currentChapter && <ChapterNavigator />}
+
+      {/* Verse Content */}
+      <ScrollView style={styles.content}>
+        {currentChapter && <VerseDisplay chapter={currentChapter} />}
+      </ScrollView>
+
+      {/* Modals */}
+      {showVersionSelector && (
+        <VersionSelector onClose={() => setShowVersionSelector(false)} />
+      )}
+
+      {showBookSelector && (
+        <BookSelector onClose={() => setShowBookSelector(false)} />
+      )}
+
+      {showSearch && <SearchBar onClose={() => setShowSearch(false)} />}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerButton: {
+    flex: 1,
+  },
+  headerButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  iconText: {
+    fontSize: 20,
+  },
+  versionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+  },
+  versionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4b5563',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ef4444',
+    textAlign: 'center',
+  },
+});
+
+export default BibleReader;
+```
+
+---
+
+### 6. Verse Display Component
+
+**File:** `/client/src/components/Bible/VerseDisplay.tsx`
+
+```typescript
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Chapter } from '../../types/bible.types';
+
+interface VerseDisplayProps {
+  chapter: Chapter;
+}
+
+const VerseDisplay: React.FC<VerseDisplayProps> = ({ chapter }) => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>{chapter.reference}</Text>
+
+      <View style={styles.versesContainer}>
+        {chapter.verses.map(verse => (
+          <View key={verse.id} style={styles.verseRow}>
+            <Text style={styles.verseNumber}>{verse.number}</Text>
+            <Text style={styles.verseText}>{verse.text}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingBottom: 40,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 24,
+  },
+  versesContainer: {
+    gap: 12,
+  },
+  verseRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  verseNumber: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9ca3af',
+    minWidth: 20,
+  },
+  verseText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#374151',
+  },
+});
+
+export default VerseDisplay;
+```
+
+---
+
+## Setup Instructions
+
+### 1. Install Dependencies
+
+```bash
+npm install axios @react-native-async-storage/async-storage
+```
+
+### 2. Configure Environment Variables
+
+Create `.env` file:
+```
+BIBLE_API_KEY=your_api_bible_key_here
+```
+
+### 3. Wrap App with BibleProvider
+
+**File:** `/client/App.tsx`
+
+```typescript
+import { BibleProvider } from './src/context/BibleContext';
+
+function App() {
+  return (
+    <BibleProvider>
+      {/* Your app content */}
+    </BibleProvider>
+  );
+}
+```
+
+### 4. Add Bible Tab to Navigation
+
+```typescript
+<Tab.Screen
+  name="Bible"
+  component={BibleReader}
+  options={{
+    tabBarIcon: ({ color, size }) => (
+      <Icon name="book" size={size} color={color} />
+    ),
+  }}
+/>
+```
+
+---
+
+## Testing Instructions
+
+1. **Test Version Switching:**
+   - Open Bible section
+   - Tap version (KJV) in top right
+   - Select different version (NIV)
+   - Verify chapter reloads in new version
+
+2. **Test Book Selection:**
+   - Tap book/chapter name at top
+   - Search for "john"
+   - Select "John"
+   - Verify chapter loads
+
+3. **Test Chapter Navigation:**
+   - Use Previous/Next buttons
+   - Verify smooth transitions
+   - Check chapter numbers update
+
+4. **Test Offline Mode:**
+   - Load a chapter
+   - Turn off internet
+   - Navigate back to that chapter
+   - Verify it loads from cache
+
+5. **Test Bookmarks:**
+   - Tap a verse number
+   - Add bookmark
+   - Navigate away
+   - View bookmarks list
+   - Tap bookmark to return
+
+---
+
+## Production Checklist
+
+- [ ] API key is stored securely (not in code)
+- [ ] Error handling for all API calls
+- [ ] Offline mode works properly
+- [ ] Cache management (doesn't grow infinitely)
+- [ ] Loading states for all async operations
+- [ ] Proper TypeScript types throughout
+- [ ] Accessibility labels for screen readers
+- [ ] Dark mode support
+- [ ] Performance: Large chapters (Psalm 119) load smoothly
+- [ ] Memory: No memory leaks from cache
+
+---
+
+## Future Enhancements (Phase 2)
+
+1. **Highlights:** Color-code verses
+2. **Notes:** Add personal notes to verses
+3. **Cross-References:** Link related verses
+4. **Reading Plans:** Guided daily reading
+5. **Audio Bible:** Listen to chapters
+6. **Share:** Share verses to social media
+7. **Compare Versions:** Side-by-side comparison
+8. **Study Tools:** Commentaries, dictionaries
+9. **AI Integration:** "Discuss this verse with AI"
+10. **Sync:** Backup bookmarks to cloud
+
+---
+
+## API Rate Limits & Optimization
+
+**API.Bible Free Tier:**
+- 500 requests/day
+- Rate limit: 10 requests/minute
+
+**Optimization Strategies:**
+1. **Cache aggressively** (7-day expiry)
+2. **Batch requests** where possible
+3. **Preload common chapters** (Genesis 1, John 3, Psalm 23)
+4. **Monitor usage** with analytics
+5. **Upgrade to paid tier** if needed ($99/month for 100k requests)
+
+---
+
+This gives you a **complete, production-ready Bible section** integrated into your app. Copy this entire prompt into Replit and implement it step by step.
