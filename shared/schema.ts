@@ -60,6 +60,49 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+// Conversation Topics - for memory across conversations
+export const conversationTopics = pgTable("conversation_topics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  topic: varchar("topic", { length: 100 }).notNull(),
+  firstMentioned: timestamp("first_mentioned").default(sql`CURRENT_TIMESTAMP`),
+  lastMentioned: timestamp("last_mentioned").default(sql`CURRENT_TIMESTAMP`),
+  mentionCount: integer("mention_count").default(1),
+  sentiment: varchar("sentiment", { length: 50 }), // "struggling", "improving", "resolved"
+});
+
+// Emotional Check-ins
+export const emotionalCheckins = pgTable("emotional_checkins", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  emotionalState: varchar("emotional_state", { length: 50 }).notNull(),
+  intensity: integer("intensity"), // 1-10
+  context: text("context"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Crisis Alerts
+export const crisisAlerts = pgTable("crisis_alerts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  crisisLevel: varchar("crisis_level", { length: 20 }).notNull(), // "none", "concern", "moderate", "high", "immediate"
+  indicators: text("indicators").array(),
+  messageExcerpt: text("message_excerpt"),
+  reviewed: integer("reviewed").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Memorable Moments
+export const memorableMoments = pgTable("memorable_moments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  conversationId: integer("conversation_id").references(() => conversations.id),
+  momentType: varchar("moment_type", { length: 50 }), // "breakthrough", "insight", "commitment"
+  summary: text("summary"),
+  emotionalState: varchar("emotional_state", { length: 50 }),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -111,6 +154,29 @@ export type Conversation = typeof conversations.$inferSelect;
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+// New types for AI intelligence features
+export type ConversationTopic = typeof conversationTopics.$inferSelect;
+export type EmotionalCheckin = typeof emotionalCheckins.$inferSelect;
+export type CrisisAlert = typeof crisisAlerts.$inferSelect;
+export type MemorableMoment = typeof memorableMoments.$inferSelect;
+
+// Emotional state detection result
+export interface EmotionalState {
+  primaryEmotion: string;
+  intensity: number;
+  urgency: "low" | "medium" | "high" | "crisis";
+  needs: string[];
+  toneRecommendation: string;
+}
+
+// Crisis assessment result
+export interface CrisisAssessment {
+  crisisLevel: "none" | "concern" | "moderate" | "high" | "immediate";
+  indicators: string[];
+  immediateActionNeeded: boolean;
+  recommendedResponse: string;
+}
 
 // Onboarding data type for frontend
 export interface OnboardingData {

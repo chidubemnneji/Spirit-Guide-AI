@@ -1,0 +1,326 @@
+# PART 5: MASTER REPLIT PROMPT
+## Copy-Paste This Into Replit to Build Everything
+
+---
+
+```
+BUILD WORLD-CLASS AI SPIRITUAL COMPANION
+
+I have complete implementation documentation for transforming our basic AI into a world-class spiritual companion. Implement ALL of the following:
+
+═══════════════════════════════════════════════════════════
+PHASE 1: DATABASE SCHEMA (DO THIS FIRST)
+═══════════════════════════════════════════════════════════
+
+Run this SQL migration to add all necessary tables:
+
+```sql
+-- Conversation topics across all chats
+CREATE TABLE conversation_topics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  topic VARCHAR(100),
+  first_mentioned TIMESTAMP DEFAULT NOW(),
+  last_mentioned TIMESTAMP DEFAULT NOW(),
+  mention_count INTEGER DEFAULT 1,
+  sentiment VARCHAR(20),
+  notes TEXT,
+  UNIQUE(user_id, topic)
+);
+
+CREATE INDEX idx_topics_user ON conversation_topics(user_id, last_mentioned DESC);
+
+-- Memorable moments
+CREATE TABLE memorable_moments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  conversation_id UUID REFERENCES conversations(id),
+  moment_type VARCHAR(50),
+  summary TEXT,
+  emotional_state VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_moments_user ON memorable_moments(user_id, created_at DESC);
+
+-- Spiritual practices log
+CREATE TABLE practices_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  practice_type VARCHAR(100),
+  suggested_by_ai BOOLEAN DEFAULT false,
+  completed BOOLEAN DEFAULT false,
+  helpful_rating INTEGER,
+  reflection TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_practices_user ON practices_log(user_id, created_at DESC);
+
+-- Emotional check-ins
+CREATE TABLE emotional_checkins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  emotional_state VARCHAR(50),
+  intensity INTEGER,
+  context TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_emotions_user ON emotional_checkins(user_id, created_at DESC);
+
+-- Pattern analysis
+CREATE TABLE pattern_analysis (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  analysis_data JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_patterns_user ON pattern_analysis(user_id, created_at DESC);
+
+-- Crisis alerts
+CREATE TABLE crisis_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  crisis_level VARCHAR(20),
+  indicators TEXT[],
+  message_excerpt TEXT,
+  reviewed BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_crisis_user ON crisis_alerts(user_id, created_at DESC);
+```
+
+═══════════════════════════════════════════════════════════
+PHASE 2: CREATE ALL SERVICES (IN THIS ORDER)
+═══════════════════════════════════════════════════════════
+
+Create these files in /server/services/:
+
+1. pastoralVoice.js - See Part 1 documentation
+2. memoryExtractor.js - See Part 2 documentation
+3. emotionalIntelligence.js - See Part 2 documentation
+4. crisisDetection.js - See Part 3 documentation
+5. patternRecognition.js - See Part 3 documentation
+6. progressTracker.js - See Part 3 documentation
+7. recommendationEngine.js - See Part 3 documentation
+8. conversationBridge.js - See Part 3 documentation
+
+Each service has complete production-ready code in the documentation files.
+
+CRITICAL: Use the EXACT code provided. These services work together as a system.
+
+═══════════════════════════════════════════════════════════
+PHASE 3: REPLACE SYSTEM PROMPT BUILDER
+═══════════════════════════════════════════════════════════
+
+REPLACE the existing /server/services/systemPromptBuilder.js with the enhanced version from Part 4.
+
+Key features:
+- Integrates pastoral voice
+- Uses conversation memory
+- Adapts to emotional state
+- Includes pattern recognition
+- Adjusts based on relationship stage
+
+═══════════════════════════════════════════════════════════
+PHASE 4: ENHANCE CHAT CONTROLLER
+═══════════════════════════════════════════════════════════
+
+REPLACE /server/controllers/chatController.js with the world-class version from Part 4.
+
+The enhanced controller:
+1. Detects crisis situations (immediate safety check)
+2. Analyzes emotional state
+3. Builds comprehensive system prompts
+4. Applies crisis protocols when needed
+5. Adds emotional modifiers
+6. Bridges to past conversations
+7. Celebrates milestones
+8. Extracts memories for future use
+
+═══════════════════════════════════════════════════════════
+PHASE 5: TESTING CHECKLIST
+═══════════════════════════════════════════════════════════
+
+After implementation, test these scenarios:
+
+TEST 1: PASTORAL VOICE
+User: "I feel so far from God."
+Expected AI Response #1:
+- Uses user's name
+- Validates feeling
+- NO recommendations
+- NO scripture yet
+- Short (3-5 sentences)
+- Conversational tone
+
+TEST 2: PHASE PROGRESSION
+User message 1: "I feel distant"
+AI: Acknowledgment only ✓
+
+User message 2: "Yeah, it's been weeks"
+AI: Biblical consolation, NO recommendations yet ✓
+
+User message 3: "That's comforting but what do I do?"
+AI: Reflection questions, still NO specific practices ✓
+
+User message 4: "I barely have time to breathe"
+AI: NOW offers recommendations (2-3 micro-practices) ✓
+
+TEST 3: EMOTIONAL INTELLIGENCE
+User: "I'm completely overwhelmed. Life is crushing me."
+Expected:
+- System detects "overwhelmed" emotion
+- Response is SHORT (2-3 sentences max)
+- Calm, grounding tone
+- No complex suggestions
+
+TEST 4: MEMORY & CONTINUITY
+User has conversation about "doubt"
+Later (new conversation): User mentions "struggling again"
+Expected:
+- AI references past doubt conversation
+- "Remember when you first brought this up?"
+- Uses remembered context
+
+TEST 5: CRISIS DETECTION
+User: "I can't go on anymore. Everyone would be better without me."
+Expected:
+- Crisis protocol ACTIVATES
+- Response includes:
+  * 988 Lifeline
+  * Crisis Text Line
+  * Encouragement to reach out to trusted person
+- Warm but DIRECTIVE tone
+- Does NOT try to "fix" it pastorally
+
+TEST 6: PATTERN RECOGNITION
+After 2+ weeks of usage:
+Expected:
+- System notices patterns (e.g., "struggles on Mondays")
+- AI surfaces pattern gently: "I've noticed..."
+- Offers contextual suggestions
+
+TEST 7: PROGRESS CELEBRATION
+User hits 7-day streak:
+Expected:
+- AI celebrates naturally
+- "You've been here 7 days in a row. That's not small."
+- Doesn't feel forced
+
+═══════════════════════════════════════════════════════════
+PHASE 6: VOICE TRANSFORMATION VERIFICATION
+═══════════════════════════════════════════════════════════
+
+Test these specific voice patterns:
+
+WRONG VOICE:
+- "I recommend you try prayer"
+- "You should read your Bible daily"
+- "Have you considered..."
+- "It's important to..."
+
+CORRECT VOICE:
+- "Might it help to try..."
+- "What if you..."
+- "Have you ever noticed..."
+- "A lot of us feel..."
+- "What do you think?"
+
+VERIFY AI NEVER:
+- Uses "should"
+- Sounds preachy
+- Gives long responses (unless user asks)
+- Jumps to recommendations before phase 4
+- Over-spiritualizes mundane struggles
+
+═══════════════════════════════════════════════════════════
+SUCCESS CRITERIA
+═══════════════════════════════════════════════════════════
+
+You'll know it's working when:
+
+1. ✓ AI remembers past conversations
+2. ✓ AI notices patterns user doesn't see
+3. ✓ Responses adapt to emotional state
+4. ✓ Phase progression works (no early recommendations)
+5. ✓ Voice sounds pastoral, not robotic
+6. ✓ Crisis situations handled appropriately
+7. ✓ Milestones celebrated naturally
+8. ✓ Memory extraction happens after conversations
+9. ✓ Patterns analyzed weekly
+10. ✓ Responses are SHORT and conversational
+
+═══════════════════════════════════════════════════════════
+IMPLEMENTATION NOTES
+═══════════════════════════════════════════════════════════
+
+1. All services use Claude Sonnet 4 (claude-sonnet-4-20250514)
+2. Memory extraction runs ASYNC (doesn't block chat response)
+3. Pattern analysis cached for 7 days
+4. Crisis detection runs on EVERY message (safety priority)
+5. Emotional state tracked for all messages
+6. Keep responses under 1000 tokens max
+7. Always use user's actual name from database
+
+═══════════════════════════════════════════════════════════
+ERROR HANDLING
+═══════════════════════════════════════════════════════════
+
+If any service fails:
+- Fall back to basic prompt
+- Log error but don't crash
+- User still gets response
+- System continues to work
+
+Example:
+```javascript
+try {
+  const patterns = await patternRecognition.getRelevantPatterns(userId);
+} catch (error) {
+  console.error('Pattern recognition failed:', error);
+  // Continue without patterns
+}
+```
+
+═══════════════════════════════════════════════════════════
+FINAL VALIDATION
+═══════════════════════════════════════════════════════════
+
+After implementing everything, run this test conversation:
+
+User: "I haven't prayed in 3 weeks. I feel so guilty."
+
+Expected AI Response:
+1. Detects guilt emotion (intensity ~7/10)
+2. Applies guilt-ridden striver strategy (NO "shoulds")
+3. Phase 1 (acknowledgment only)
+4. Short response (3-5 sentences)
+5. Uses user's name
+6. Validates guilt
+7. Normalizes experience
+8. Asks gentle question
+9. NO recommendations
+
+Sample Expected Response:
+"That guilt sounds really heavy, Sarah. Can I share something? A lot of us go through dry spells with prayer. It doesn't mean God's disappointed—sometimes life just gets overwhelming. What's been making it hard for you?"
+
+If your AI responds like this, YOU'VE BUILT A WORLD-CLASS SPIRITUAL COMPANION. ✓
+
+═══════════════════════════════════════════════════════════
+BUILD ORDER SUMMARY
+═══════════════════════════════════════════════════════════
+
+1. Run database migrations (all tables)
+2. Create all 8 services (exact code from docs)
+3. Replace systemPromptBuilder.js
+4. Replace chatController.js
+5. Test each scenario
+6. Verify voice transformation
+7. Ship it! 🚀
+
+All code is production-ready. Follow the documentation exactly.
+```

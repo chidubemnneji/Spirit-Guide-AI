@@ -80,6 +80,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // === ENVIRONMENT VALIDATION ===
+  // Check AI credentials at startup and log warning if missing
+  if (!process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY) {
+    console.warn("⚠️  WARNING: AI_INTEGRATIONS_ANTHROPIC_API_KEY is not configured.");
+    console.warn("   AI chat features will use templated fallback responses.");
+    console.warn("   To enable full AI functionality, please configure the Anthropic integration.");
+  } else {
+    log("AI integration configured with Anthropic API", "config");
+  }
+  
+  if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === "soulguide-dev-secret") {
+    console.warn("⚠️  WARNING: Using default SESSION_SECRET. Set a secure secret for production.");
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

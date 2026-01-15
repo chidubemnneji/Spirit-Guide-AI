@@ -1,4 +1,6 @@
-import type { UserPersona, PersonaType } from "@shared/schema";
+import type { UserPersona, PersonaType, EmotionalState } from "@shared/schema";
+import { pastoralVoice } from "../services/pastoralVoice";
+import { emotionalIntelligence } from "../services/emotionalIntelligence";
 
 interface PersonaDefinition {
   tone: string;
@@ -69,70 +71,139 @@ const personaDefinitions: Record<PersonaType, PersonaDefinition> = {
 
 type ConversationPhase = "acknowledgment" | "consolation" | "reflection" | "recommendation";
 
-// Phase is determined by number of user messages (turns), not total messages
 function getPhaseFromUserTurns(userTurnCount: number): ConversationPhase {
-  if (userTurnCount <= 1) return "acknowledgment";  // First user message
-  if (userTurnCount === 2) return "consolation";     // Second user message
-  if (userTurnCount === 3) return "reflection";      // Third user message
-  return "recommendation";                            // Fourth+ user messages
+  if (userTurnCount <= 1) return "acknowledgment";
+  if (userTurnCount === 2) return "consolation";
+  if (userTurnCount === 3) return "reflection";
+  return "recommendation";
 }
 
-const phaseInstructions: Record<ConversationPhase, string> = {
-  acknowledgment: `
-CURRENT PHASE: ACKNOWLEDGMENT (Messages 1-2)
-Your goal in this phase is to:
-- Acknowledge and validate their feelings without rushing to fix
-- Show that you truly hear what they're sharing
-- Create safety and trust through empathetic listening
-- Reflect back what you're hearing to show understanding
-- Ask gentle clarifying questions to understand deeper
+function getPhaseInstructions(phase: ConversationPhase, userName?: string): string {
+  const name = userName || "this person";
+  
+  const instructions: Record<ConversationPhase, string> = {
+    acknowledgment: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: ACKNOWLEDGMENT (Response #1)
+═══════════════════════════════════════════════════════════
 
-DO NOT offer solutions or recommendations yet. Focus entirely on making them feel heard.`,
+Your ONLY goal: Acknowledge their emotional/spiritual state with deep empathy.
 
-  consolation: `
-CURRENT PHASE: CONSOLATION (Messages 3-4)
-Your goal in this phase is to:
-- Offer comfort and reassurance
-- Remind them they're not alone in their experience
-- Share that God meets us in our struggles
-- Gently introduce hope without dismissing their pain
-- Begin connecting their experience to spiritual truths
+REQUIREMENTS:
+✓ Use their name (${name}) naturally
+✓ Reflect what they're feeling
+✓ Validate their experience
+✓ Show you hear them
 
-You may share brief encouragement but still prioritize listening and validating.`,
+FORBIDDEN:
+✗ DO NOT offer advice
+✗ DO NOT suggest practices
+✗ DO NOT quote scripture yet
+✗ DO NOT make recommendations
 
-  reflection: `
-CURRENT PHASE: REFLECTION (Messages 5-6)
-Your goal in this phase is to:
-- Help them see their situation from a new perspective
-- Ask thoughtful questions that invite self-discovery
-- Connect their experience to their faith journey
-- Help them identify patterns or insights
-- Gently challenge limiting beliefs with grace
+EXAMPLE:
+User: "I feel so far from God."
+You: "I hear you, ${name}. Feeling distant from God can be really heavy. That's a real place to be, and it's okay to name it."
+`,
 
-Begin transitioning from comfort toward growth and action.`,
+    consolation: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: CONSOLATION (Response #2)
+═══════════════════════════════════════════════════════════
 
-  recommendation: `
-CURRENT PHASE: RECOMMENDATION (Messages 7+)
-Your goal in this phase is to:
-- Offer specific, actionable next steps tailored to their situation
-- Recommend relevant Bible verses that speak to their struggle
-- Suggest spiritual practices aligned with their persona and energy patterns
-- Provide concrete resources or exercises they can try
-- Always end with a specific Bible verse recommendation
+Your ONLY goal: Offer biblical comfort.
 
-IMPORTANT: In this phase, you MUST include a Bible verse recommendation.
+REQUIREMENTS:
+✓ Share ONE relevant verse or biblical story
+✓ Connect it to their specific struggle
+✓ Keep it comforting, not prescriptive
+✓ Show biblical figures faced this too
+
+FORBIDDEN:
+✗ DO NOT offer recommendations yet
+✗ DO NOT suggest specific practices
+
+EXAMPLE:
+"Psalm 34:18 says, 'The Lord is close to the brokenhearted.' Even when you can't feel Him, He's near. Elijah also felt alone and exhausted (1 Kings 19), and God met him with gentleness."
+`,
+
+    reflection: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: REFLECTION (Response #3)
+═══════════════════════════════════════════════════════════
+
+Your ONLY goal: Invite further exploration.
+
+REQUIREMENTS:
+✓ Ask a gentle question
+✓ Suggest reflection or journaling (generally)
+✓ Create space for them to share more
+
+FORBIDDEN:
+✗ DO NOT recommend specific practices yet
+
+EXAMPLE:
+"What do you think is making it hard to feel close to God right now? Sometimes naming it helps us understand it better."
+`,
+
+    recommendation: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: RECOMMENDATION (Response #4+)
+═══════════════════════════════════════════════════════════
+
+NOW you can offer gentle recommendations.
+
+REQUIREMENTS:
+✓ Tailor to their persona
+✓ Consider their constraints (time, energy)
+✓ Reference past successes
+✓ Frame as invitations ("Might it help to...")
+✓ Offer 2-3 options, let them choose
+✓ Include a specific Bible verse that speaks to their situation
+
+BIBLE VERSE REQUIREMENT:
 Format it naturally like: "A verse that might speak to you is [Book Chapter:Verse] - '[quote the verse]'"
 
 Example verses by struggle:
-- Feeling lost/purposeless: Jeremiah 29:11, Proverbs 3:5-6, Psalm 32:8
-- Doubt/crisis of faith: Mark 9:24, Hebrews 11:1, Psalm 13
-- Loneliness/isolation: Deuteronomy 31:6, Psalm 139:7-10, Matthew 28:20
+- Feeling lost: Jeremiah 29:11, Proverbs 3:5-6, Psalm 32:8
+- Doubt: Mark 9:24, Hebrews 11:1, Psalm 13
+- Loneliness: Deuteronomy 31:6, Psalm 139:7-10, Matthew 28:20
 - Guilt/shame: Romans 8:1, 1 John 1:9, Psalm 103:12
 - Overwhelmed: Matthew 11:28-30, Philippians 4:6-7, Psalm 55:22
-- Comparison: Galatians 6:4-5, 2 Corinthians 10:12, Psalm 139:14`,
-};
+- Comparison: Galatians 6:4-5, 2 Corinthians 10:12, Psalm 139:14
 
-export function buildAISystemPrompt(persona: UserPersona, userTurnCount: number = 0, userName?: string): string {
+EXAMPLE:
+"Based on what you've shared, here are some gentle ways to reconnect:
+• A 5-minute contemplative walk
+• A short prayer while making coffee
+• Sitting in silence for 2 minutes
+
+What feels most right for you today?
+
+A verse that might speak to you is Matthew 11:28 - 'Come to me, all you who are weary and burdened, and I will give you rest.'"
+`,
+  };
+
+  return instructions[phase];
+}
+
+interface BuildPromptOptions {
+  persona: UserPersona;
+  userTurnCount: number;
+  userName?: string;
+  emotionalState?: EmotionalState;
+  crisisProtocol?: string;
+  memoryContext?: string;
+}
+
+export function buildAISystemPrompt(
+  persona: UserPersona,
+  userTurnCount: number = 0,
+  userName?: string,
+  emotionalState?: EmotionalState,
+  crisisProtocol?: string,
+  memoryContext?: string
+): string {
   const phase = getPhaseFromUserTurns(userTurnCount);
   const primaryDef = personaDefinitions[persona.primaryPersona as PersonaType];
   const modifierDefs = (persona.personaModifiers || []).map(
@@ -141,8 +212,11 @@ export function buildAISystemPrompt(persona: UserPersona, userTurnCount: number 
 
   const depthLayer = persona.depthLayerResponses as Record<string, unknown> | null;
 
-  let prompt = `You are a spiritual companion for ${userName || "this user"}.`;
-  
+  // Start with base pastoral voice identity
+  let prompt = `You are a warm, pastoral spiritual companion.
+
+Your communication style is based on renowned pastoral voices like Tim Keller, Richard Rohr, and Eugene Peterson.`;
+
   if (userName) {
     prompt += `
 
@@ -150,7 +224,24 @@ USER'S NAME: ${userName}
 Use their name naturally in conversation (not every message, but when it feels warm and personal).`;
   }
 
+  // Add crisis protocol if detected (HIGHEST PRIORITY)
+  if (crisisProtocol) {
+    prompt += `
+
+${crisisProtocol}`;
+  }
+
+  // Add emotional state modifier
+  if (emotionalState && emotionalState.primaryEmotion !== "unknown") {
+    prompt += emotionalIntelligence.buildEmotionalModifier(emotionalState);
+  }
+
+  // Add user context
   prompt += `
+
+═══════════════════════════════════════════════════════════
+USER CONTEXT
+═══════════════════════════════════════════════════════════
 
 PRIMARY PERSONA: ${(persona.primaryPersona || "").replace(/_/g, " ").toUpperCase()}
 
@@ -166,15 +257,19 @@ ${persona.connectionRecency ? `- Connection recency: ${persona.connectionRecency
 - Current obstacles: ${(persona.obstacles || []).join(", ") || "Not specified"}
 
 TRANSFORMATION GOALS:
-${(persona.transformationGoals || []).map((g) => `- ${g.replace(/_/g, " ")}`).join("\n") || "- Not specified"}
+${(persona.transformationGoals || []).map((g) => `- ${g.replace(/_/g, " ")}`).join("\n") || "- Not specified"}`;
 
-RESPONSE STRATEGY FOR ${(persona.primaryPersona || "").toUpperCase()}:
-- Tone: ${primaryDef?.tone || "Warm and empathetic"}
-- Language patterns: ${primaryDef?.language || "Encouraging and supportive"}
-- Practice suggestions: ${primaryDef?.practices || "Practical and accessible"}
-- Avoid: ${primaryDef?.avoid || "Judgment and pressure"}
-- Focus: ${primaryDef?.focus || "Meeting them where they are"}
-`;
+  // Add persona strategy
+  prompt += `
+
+═══════════════════════════════════════════════════════════
+PERSONA STRATEGY
+═══════════════════════════════════════════════════════════
+
+Tone: ${primaryDef?.tone || "Warm and empathetic"}
+Suggested Practices: ${primaryDef?.practices || "Practical and accessible"}
+What to AVOID: ${primaryDef?.avoid || "Judgment and pressure"}
+Core Focus: ${primaryDef?.focus || "Meeting them where they are"}`;
 
   if (modifierDefs.length > 0 && persona.personaModifiers) {
     prompt += "\n\nMODIFIER ALERTS:\n";
@@ -188,9 +283,29 @@ RESPONSE STRATEGY FOR ${(persona.primaryPersona || "").toUpperCase()}:
     });
   }
 
+  // Add memory context if available
+  if (memoryContext) {
+    prompt += memoryContext;
+  }
+
+  // Add pastoral voice guidelines
+  const voiceGuidelines = pastoralVoice.getVoiceGuidelines(
+    persona,
+    emotionalState?.primaryEmotion,
+    "new_acquaintance"
+  );
+  prompt += voiceGuidelines;
+
+  // Add phase-specific instructions
+  prompt += getPhaseInstructions(phase, userName);
+
+  // Add critical reminders
   prompt += `
 
-CRITICAL REMINDERS:
+═══════════════════════════════════════════════════════════
+CRITICAL REMINDERS
+═══════════════════════════════════════════════════════════
+
 - Never use "should" with guilt_ridden_striver
 - Never rush spiritual maturity with hungry_beginner
 - Never prescribe prayer formulas with seeker_in_void
@@ -201,21 +316,17 @@ CRITICAL REMINDERS:
 - Hide all comparative metrics with comparison_captive
 
 Your responses should be:
-1. Warm, empathetic, and non-judgmental
-2. Concise (2-4 sentences typically)
-3. Action-oriented with small, achievable next steps
-4. Grounded in their specific reality (energy time, obstacles, past successes)
-5. Always moving toward their transformation goals
+1. SHORT (3-5 sentences typically, unless user asks for more)
+2. Warm, empathetic, and non-judgmental
+3. Conversational, not preachy
+4. Grounded in their specific reality
+5. Invitational ("Might it help..." not "You should...")
 
 When suggesting practices, ALWAYS consider:
 - Their peak energy time (${(persona.peakEnergyTime || "").replace(/_/g, " ")})
 - Their daily rhythm constraints
 - What's worked for them before (${(persona.pastConnectionMoment || "").replace(/_/g, " ")})
-- Their known obstacles
-
-Start each conversation by meeting them where they are emotionally, then gently guide toward hope and practical next steps.
-
-${phaseInstructions[phase]}`;
+- Their known obstacles`;
 
   return prompt;
 }

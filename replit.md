@@ -43,9 +43,46 @@ The application assigns users one of 8 primary persona types based on onboarding
 
 Each persona has defined characteristics (tone, language, practices, focus areas) that shape AI responses.
 
+### AI Intelligence Services (World-Class Features)
+
+Located in `server/services/`:
+
+1. **Pastoral Voice Service** (`pastoralVoice.ts`)
+   - Voice guidelines based on Tim Keller, Richard Rohr, Eugene Peterson styles
+   - Persona-specific voice adjustments
+   - Emotional state adjustments
+   - Relationship stage adjustments
+
+2. **Emotional Intelligence Service** (`emotionalIntelligence.ts`)
+   - Detects emotional state (struggling, peaceful, hopeful, overwhelmed, guilty, angry, confused, lonely)
+   - Returns intensity (1-10), urgency (low/medium/high/crisis), needs, and tone recommendations
+   - Builds emotional modifiers for AI prompts
+
+3. **Crisis Detection Service** (`crisisDetection.ts`)
+   - Safety-first detection of crisis indicators
+   - Crisis protocols with immediate resources (988 Lifeline, Crisis Text Line)
+   - Levels: none, concern, moderate, high, immediate
+   - Logs crisis alerts for review
+
+4. **Memory Extraction Service** (`memoryExtractor.ts`)
+   - Extracts topics, memorable moments, and themes from conversations
+   - Formats memory context for AI prompts to enable continuity
+
+### Conversation Phases (Pastoral Progression)
+- **Phase 1 (Acknowledgment)**: Pure validation, no advice
+- **Phase 2 (Consolation)**: Biblical comfort, one verse/story
+- **Phase 3 (Reflection)**: Gentle questions, space for exploration
+- **Phase 4+ (Recommendation)**: Personalized practices, Bible verses
+
 ### Key Design Patterns
 - **Progressive Disclosure**: 4-phase onboarding with branching Phase 2 based on primary struggle selection
 - **Persona-Driven AI**: System prompts dynamically built from user persona for personalized responses
+- **Pastoral Phase Progression**: Conversations follow acknowledgment → consolation → reflection → recommendation phases
+- **Safety-First AI**: Crisis detection runs on every message before generating responses
+- **Crisis Short-Circuit**: For HIGH/IMMEDIATE crisis levels, returns predefined safety response with 988/Crisis Text Line resources without relying on AI
+- **Graceful Fallback**: If AI credentials unavailable, provides phase-appropriate templated responses (not an error)
+- **Emotional Intelligence**: AI adapts tone and response length based on detected emotional state
+- **Environment Validation**: Server logs clear warning at startup if AI credentials missing
 - **Shared Types**: Zod schemas in `shared/schema.ts` ensure type consistency across client/server
 
 ## External Dependencies

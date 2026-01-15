@@ -398,9 +398,69 @@ export async function registerRoutes(
       // Count user turns for phase determination (new message is already saved and included)
       const userTurnCount = allMessages.filter(m => m.role === "user").length;
 
-      // Build system prompt if persona exists (with user turn count for phases and user name)
+      // === ENHANCED AI INTELLIGENCE ===
+      // Import services dynamically to avoid circular dependencies
+      const { emotionalIntelligence } = await import("./services/emotionalIntelligence");
+      const { crisisDetection } = await import("./services/crisisDetection");
+      const { memoryExtractor } = await import("./services/memoryExtractor");
+
+      // Get recent message history for context
+      const recentHistory = allMessages.slice(-6).map(m => `${m.role}: ${m.content}`);
+
+      // Run crisis detection first (safety priority)
+      let crisisProtocol: string | undefined;
+      try {
+        const crisisAssessment = await crisisDetection.detectCrisis(content, recentHistory);
+        if (crisisAssessment.crisisLevel !== "none") {
+          crisisProtocol = crisisDetection.getCrisisProtocol(crisisAssessment);
+          // Log crisis alert
+          if (userId) {
+            await storage.saveCrisisAlert(
+              userId,
+              crisisAssessment.crisisLevel,
+              crisisAssessment.indicators,
+              content.substring(0, 500)
+            );
+          }
+        }
+      } catch (crisisError) {
+        console.error("Crisis detection error (continuing):", crisisError);
+      }
+
+      // Detect emotional state
+      let emotionalState;
+      try {
+        emotionalState = await emotionalIntelligence.detectEmotion(content, recentHistory);
+        // Save emotional check-in
+        if (userId) {
+          await storage.saveEmotionalCheckin(
+            userId,
+            emotionalState.primaryEmotion,
+            emotionalState.intensity,
+            content.substring(0, 200)
+          );
+        }
+      } catch (emotionError) {
+        console.error("Emotion detection error (continuing):", emotionError);
+      }
+
+      // Get memory context if available
+      let memoryContext: string | undefined;
+      if (userId) {
+        try {
+          const topics = await storage.getTopicsForUser(userId);
+          const moments = await storage.getRecentMoments(userId);
+          if (topics.length > 0 || moments.length > 0) {
+            memoryContext = memoryExtractor.formatMemoryForPrompt(topics, moments);
+          }
+        } catch (memoryError) {
+          console.error("Memory context error (continuing):", memoryError);
+        }
+      }
+
+      // Build enhanced system prompt with all intelligence
       const systemPrompt = persona
-        ? buildAISystemPrompt(persona, userTurnCount, user?.name)
+        ? buildAISystemPrompt(persona, userTurnCount, user?.name, emotionalState, crisisProtocol, memoryContext)
         : "You are a warm, empathetic spiritual companion. Help the user explore their faith journey with kindness and without judgment.";
 
       // Set up SSE
@@ -408,7 +468,64 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
+      // === CRISIS SHORT-CIRCUIT ===
+      // For high/immediate crisis, return predefined safety response without relying on AI
+      if (crisisProtocol && (crisisProtocol.includes("IMMEDIATE") || crisisProtocol.includes("HIGH"))) {
+        const crisisResponse = `I hear that you're going through something really difficult right now, and I want you to know that you're not alone.
+
+If you're in crisis or having thoughts of harming yourself, please reach out to someone who can help right now:
+- **National Suicide Prevention Lifeline**: 988 (call or text)
+- **Crisis Text Line**: Text HOME to 741741
+- **International Association for Suicide Prevention**: https://www.iasp.info/resources/Crisis_Centres/
+
+Your life matters, and there are people who want to help you through this moment. Please reach out to one of these resources - they're available 24/7 and completely confidential.
+
+I'm here to listen whenever you're ready to talk.`;
+
+        res.write(`data: ${JSON.stringify({ content: crisisResponse })}\n\n`);
+        
+        await storage.createMessage({
+          conversationId,
+          role: "assistant",
+          content: crisisResponse,
+        });
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
+
       let fullResponse = "";
+
+      // Check if AI is available before attempting call
+      const aiAvailable = !!(process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY);
+      
+      if (!aiAvailable) {
+        // Provide phase-appropriate fallback without AI
+        const fallbackResponses: Record<string, string> = {
+          acknowledgment: `Thank you for sharing that with me. I can hear that this is weighing on your heart. Please know that whatever you're feeling is valid, and you're not alone in this.`,
+          consolation: `What you're experiencing is something many have walked through before. "The Lord is close to the brokenhearted and saves those who are crushed in spirit." (Psalm 34:18) Your struggles don't define you, and this season will pass.`,
+          reflection: `I'm wondering - when you think about what you've shared, what feels like the heaviest part right now? Sometimes naming it can help us understand it better.`,
+          recommendation: `Based on what you've shared, here are some gentle ways to reconnect today:\n\n• Take a 5-minute walk outside and notice three things you're grateful for\n• Sit quietly for 2 minutes and simply breathe\n• Read Psalm 23 slowly, pausing at each verse\n\nWhat feels most right for you today?`
+        };
+        
+        const phase = userTurnCount <= 1 ? 'acknowledgment' : 
+                      userTurnCount === 2 ? 'consolation' : 
+                      userTurnCount === 3 ? 'reflection' : 'recommendation';
+        
+        const fallbackMessage = fallbackResponses[phase];
+        res.write(`data: ${JSON.stringify({ content: fallbackMessage })}\n\n`);
+        
+        await storage.createMessage({
+          conversationId,
+          role: "assistant",
+          content: fallbackMessage,
+        });
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
 
       try {
         // Stream response from Anthropic

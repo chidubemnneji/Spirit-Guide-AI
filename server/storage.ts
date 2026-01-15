@@ -7,6 +7,10 @@ import {
   type InsertConversation,
   type Message,
   type InsertMessage,
+  type ConversationTopic,
+  type EmotionalCheckin,
+  type CrisisAlert,
+  type MemorableMoment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -30,6 +34,21 @@ export interface IStorage {
   // Messages
   getMessages(conversationId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+
+  // Conversation Topics (Memory)
+  getTopicsForUser(userId: number): Promise<Array<{ topic: string; mentionCount: number; sentiment: string | null }>>;
+  upsertTopic(userId: number, topic: string, sentiment?: string): Promise<void>;
+
+  // Emotional Check-ins
+  saveEmotionalCheckin(userId: number, emotionalState: string, intensity: number, context: string): Promise<void>;
+  getRecentEmotionalCheckins(userId: number, limit?: number): Promise<EmotionalCheckin[]>;
+
+  // Crisis Alerts
+  saveCrisisAlert(userId: number, crisisLevel: string, indicators: string[], messageExcerpt: string): Promise<void>;
+
+  // Memorable Moments
+  saveMoment(userId: number, conversationId: number, momentType: string, summary: string, emotionalState: string): Promise<void>;
+  getRecentMoments(userId: number, limit?: number): Promise<Array<{ summary: string | null; createdAt: Date }>>;
 }
 
 export class MemStorage implements IStorage {
@@ -37,20 +56,36 @@ export class MemStorage implements IStorage {
   private personas: Map<number, UserPersona>;
   private conversations: Map<number, Conversation>;
   private messages: Map<number, Message>;
+  private topics: Map<string, { userId: number; topic: string; mentionCount: number; sentiment: string | null; lastMentioned: Date }>;
+  private emotionalCheckins: EmotionalCheckin[];
+  private crisisAlerts: CrisisAlert[];
+  private memorableMoments: MemorableMoment[];
   private nextUserId: number;
   private nextPersonaId: number;
   private nextConversationId: number;
   private nextMessageId: number;
+  private nextTopicId: number;
+  private nextCheckinId: number;
+  private nextAlertId: number;
+  private nextMomentId: number;
 
   constructor() {
     this.users = new Map();
     this.personas = new Map();
     this.conversations = new Map();
     this.messages = new Map();
+    this.topics = new Map();
+    this.emotionalCheckins = [];
+    this.crisisAlerts = [];
+    this.memorableMoments = [];
     this.nextUserId = 1;
     this.nextPersonaId = 1;
     this.nextConversationId = 1;
     this.nextMessageId = 1;
+    this.nextTopicId = 1;
+    this.nextCheckinId = 1;
+    this.nextAlertId = 1;
+    this.nextMomentId = 1;
   }
 
   // Users
@@ -179,6 +214,86 @@ export class MemStorage implements IStorage {
     };
     this.messages.set(id, newMessage);
     return newMessage;
+  }
+
+  // Conversation Topics (Memory)
+  async getTopicsForUser(userId: number): Promise<Array<{ topic: string; mentionCount: number; sentiment: string | null }>> {
+    return Array.from(this.topics.values())
+      .filter((t) => t.userId === userId)
+      .sort((a, b) => b.mentionCount - a.mentionCount)
+      .slice(0, 10)
+      .map((t) => ({ topic: t.topic, mentionCount: t.mentionCount, sentiment: t.sentiment }));
+  }
+
+  async upsertTopic(userId: number, topic: string, sentiment?: string): Promise<void> {
+    const key = `${userId}-${topic.toLowerCase()}`;
+    const existing = this.topics.get(key);
+    if (existing) {
+      existing.mentionCount++;
+      existing.lastMentioned = new Date();
+      if (sentiment) existing.sentiment = sentiment;
+    } else {
+      this.topics.set(key, {
+        userId,
+        topic: topic.toLowerCase(),
+        mentionCount: 1,
+        sentiment: sentiment || null,
+        lastMentioned: new Date(),
+      });
+    }
+  }
+
+  // Emotional Check-ins
+  async saveEmotionalCheckin(userId: number, emotionalState: string, intensity: number, context: string): Promise<void> {
+    this.emotionalCheckins.push({
+      id: this.nextCheckinId++,
+      userId,
+      emotionalState,
+      intensity,
+      context,
+      createdAt: new Date(),
+    });
+  }
+
+  async getRecentEmotionalCheckins(userId: number, limit: number = 10): Promise<EmotionalCheckin[]> {
+    return this.emotionalCheckins
+      .filter((c) => c.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+  }
+
+  // Crisis Alerts
+  async saveCrisisAlert(userId: number, crisisLevel: string, indicators: string[], messageExcerpt: string): Promise<void> {
+    this.crisisAlerts.push({
+      id: this.nextAlertId++,
+      userId,
+      crisisLevel,
+      indicators,
+      messageExcerpt,
+      reviewed: 0,
+      createdAt: new Date(),
+    });
+  }
+
+  // Memorable Moments
+  async saveMoment(userId: number, conversationId: number, momentType: string, summary: string, emotionalState: string): Promise<void> {
+    this.memorableMoments.push({
+      id: this.nextMomentId++,
+      userId,
+      conversationId,
+      momentType,
+      summary,
+      emotionalState,
+      createdAt: new Date(),
+    });
+  }
+
+  async getRecentMoments(userId: number, limit: number = 5): Promise<Array<{ summary: string | null; createdAt: Date }>> {
+    return this.memorableMoments
+      .filter((m) => m.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit)
+      .map((m) => ({ summary: m.summary, createdAt: m.createdAt }));
   }
 }
 

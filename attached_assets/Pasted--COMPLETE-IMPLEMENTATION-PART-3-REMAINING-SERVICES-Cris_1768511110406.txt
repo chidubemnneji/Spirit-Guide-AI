@@ -1,0 +1,751 @@
+# COMPLETE IMPLEMENTATION PART 3: REMAINING SERVICES
+## Crisis Detection, Patterns, Progress, Recommendations, Continuity
+
+---
+
+## 🚨 ENHANCEMENT 3: Crisis Detection Service
+
+**File:** `/server/services/crisisDetection.js`
+
+```javascript
+const anthropic = require('./anthropicService');
+const db = require('./databaseService');
+
+class CrisisDetection {
+  /**
+   * Detect if user message indicates crisis
+   */
+  async detectCrisis(message, conversationHistory = []) {
+    try {
+      const context = conversationHistory.length > 0
+        ? `Recent conversation:\n${conversationHistory.slice(-6).join('\n')}\n\nCurrent message: ${message}`
+        : message;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        system: `You are a crisis detection system. Analyze messages for signs of immediate danger.
+
+Return ONLY valid JSON (no markdown):
+{
+  "crisis_level": "none|concern|moderate|high|immediate",
+  "indicators": ["suicidal_ideation", "self_harm", "abuse", "severe_depression"],
+  "immediate_action_needed": true|false,
+  "recommended_response": "description"
+}
+
+Crisis indicators:
+- Suicidal thoughts or plans
+- Self-harm mentions
+- Abuse (current or ongoing)
+- Severe hopelessness with no future plans
+- Statements like "I can't go on", "everyone would be better without me"
+- Expressions of wanting to die or not exist`,
+        messages: [{ role: 'user', content: context }],
+        max_tokens: 400
+      });
+
+      const cleaned = response.content[0].text.replace(/```json|```/g, '').trim();
+      return JSON.parse(cleaned);
+
+    } catch (error) {
+      console.error('Crisis detection error:', error);
+      return {
+        crisis_level: 'none',
+        indicators: [],
+        immediate_action_needed: false,
+        recommended_response: 'normal'
+      };
+    }
+  }
+
+  /**
+   * Get crisis response protocol
+   */
+  getCrisisProtocol(crisisAssessment) {
+    if (crisisAssessment.crisis_level === 'immediate' || crisisAssessment.immediate_action_needed) {
+      return `
+═══════════════════════════════════════════════════════════
+⚠️⚠️⚠️ CRISIS PROTOCOL ACTIVATED ⚠️⚠️⚠️
+═══════════════════════════════════════════════════════════
+
+Crisis indicators: ${crisisAssessment.indicators.join(', ')}
+
+IMMEDIATE RESPONSE REQUIRED:
+
+1. BE PRESENT & VALIDATE
+   "I hear how much pain you're in right now. I'm so glad you're talking to me."
+   
+2. IMMEDIATE RESOURCES (MUST INCLUDE)
+   "If you're having thoughts of harming yourself, please reach out right now to:
+   
+   🇺🇸 US: 988 Suicide & Crisis Lifeline (call or text)
+   🇬🇧 UK: 116 123 (Samaritans)
+   🌍 International: https://findahelpline.com
+   
+   Or text 'HELLO' to 741741 (Crisis Text Line)
+   
+   These are trained professionals available 24/7."
+
+3. ENCOURAGE IMMEDIATE ACTION
+   "Please also reach out to someone you trust right now—a friend, family member, pastor, or therapist. You don't have to face this alone."
+
+4. STAY PRESENT BUT DIRECTIVE
+   - Do NOT engage in extended pastoral conversation
+   - Do NOT try to "fix" the crisis yourself
+   - DO emphasize immediate professional help
+   - DO stay warm but clear
+
+TONE: Calm, present, directive, caring
+
+WHAT NOT TO DO:
+- Don't minimize their pain
+- Don't get philosophical
+- Don't quote Scripture right now
+- Don't try to solve it yourself
+- Don't leave them without concrete next steps
+`;
+    }
+
+    if (crisisAssessment.crisis_level === 'high') {
+      return `
+⚠️ HEIGHTENED CONCERN DETECTED
+
+Indicators: ${crisisAssessment.indicators.join(', ')}
+
+ADJUSTED RESPONSE:
+- Be extra gentle and validating
+- Gently suggest professional support
+- Include crisis resources
+- Check in more frequently
+- Shorter, clearer responses
+
+RECOMMENDED LANGUAGE:
+"What you're going through sounds really heavy. Have you been able to talk to anyone about this—a therapist, counselor, pastor, or close friend? Sometimes having someone trained to walk alongside us can make a real difference.
+
+If things feel urgent, the 988 Lifeline is available 24/7."
+
+Follow up: Ask permission to check in tomorrow.
+`;
+    }
+
+    if (crisisAssessment.crisis_level === 'moderate') {
+      return `
+⚠️ CONCERN NOTED
+
+Indicators: ${crisisAssessment.indicators.join(', ')}
+
+ADJUSTED RESPONSE:
+- Validate their struggle
+- Mention professional support as an option
+- Stay attentive
+- Keep responses supportive
+
+RECOMMENDED LANGUAGE:
+"This sounds like a lot to carry. Have you thought about talking to a counselor or therapist? Sometimes having professional support can really help when things feel this heavy."
+`;
+    }
+
+    return ''; // No crisis detected
+  }
+
+  /**
+   * Log crisis event
+   */
+  async logCrisis(userId, crisisAssessment, userMessage) {
+    try {
+      await db.query(
+        `INSERT INTO crisis_alerts 
+         (user_id, crisis_level, indicators, message_excerpt)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          userId,
+          crisisAssessment.crisis_level,
+          crisisAssessment.indicators,
+          userMessage.substring(0, 500)
+        ]
+      );
+    } catch (error) {
+      console.error('Failed to log crisis:', error);
+    }
+  }
+}
+
+module.exports = new CrisisDetection();
+```
+
+---
+
+## 📊 ENHANCEMENT 4: Pattern Recognition Service
+
+**File:** `/server/services/patternRecognition.js`
+
+```javascript
+const anthropic = require('./anthropicService');
+const db = require('./databaseService');
+
+class PatternRecognition {
+  /**
+   * Analyze user's journey and surface patterns
+   */
+  async analyzePatterns(userId) {
+    try {
+      // Get emotional check-ins
+      const emotions = await db.query(
+        `SELECT emotional_state, intensity, created_at, context
+         FROM emotional_checkins
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 30`,
+        [userId]
+      );
+
+      // Get conversation topics
+      const topics = await db.query(
+        `SELECT topic, mention_count, first_mentioned, last_mentioned, sentiment
+         FROM conversation_topics
+         WHERE user_id = $1
+         ORDER BY mention_count DESC`,
+        [userId]
+      );
+
+      // Get practices
+      const practices = await db.query(
+        `SELECT practice_type, completed, helpful_rating, created_at
+         FROM practices_log
+         WHERE user_id = $1
+         ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      if (emotions.rows.length < 5) {
+        return { patterns: [] }; // Not enough data
+      }
+
+      // Use AI to find patterns
+      const analysisPrompt = `Analyze this user's spiritual journey and identify patterns:
+
+EMOTIONAL DATA (last 30 check-ins):
+${JSON.stringify(emotions.rows, null, 2)}
+
+CONVERSATION TOPICS:
+${JSON.stringify(topics.rows, null, 2)}
+
+PRACTICES:
+${JSON.stringify(practices.rows, null, 2)}
+
+Identify patterns like:
+- Temporal (specific days/times they struggle)
+- Emotional cycles
+- What practices work vs don't
+- Growth areas vs stuck areas
+- Triggers
+
+Return ONLY valid JSON (no markdown):
+{
+  "patterns": [
+    {
+      "type": "temporal|emotional|behavioral|growth",
+      "pattern": "User struggles most on Monday mornings",
+      "insight": "Start of work week triggers anxiety",
+      "actionable": "Suggest Sunday evening grounding practice"
+    }
+  ]
+}
+
+Focus on 3-5 most significant patterns.`;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        messages: [{ role: 'user', content: analysisPrompt }],
+        max_tokens: 2000
+      });
+
+      const cleaned = response.content[0].text.replace(/```json|```/g, '').trim();
+      return JSON.parse(cleaned);
+
+    } catch (error) {
+      console.error('Pattern analysis error:', error);
+      return { patterns: [] };
+    }
+  }
+
+  /**
+   * Get relevant patterns (cached or fresh)
+   */
+  async getRelevantPatterns(userId) {
+    try {
+      // Check if we've analyzed recently
+      const lastAnalysis = await db.query(
+        `SELECT analysis_data, created_at 
+         FROM pattern_analysis 
+         WHERE user_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [userId]
+      );
+
+      // Re-analyze if more than 7 days old or doesn't exist
+      if (!lastAnalysis.rows[0] || this.isStale(lastAnalysis.rows[0].created_at, 7)) {
+        const patterns = await this.analyzePatterns(userId);
+        
+        await db.query(
+          `INSERT INTO pattern_analysis (user_id, analysis_data)
+           VALUES ($1, $2)`,
+          [userId, JSON.stringify(patterns)]
+        );
+
+        return patterns;
+      }
+
+      return JSON.parse(lastAnalysis.rows[0].analysis_data);
+
+    } catch (error) {
+      console.error('Get patterns error:', error);
+      return { patterns: [] };
+    }
+  }
+
+  isStale(date, days) {
+    const diffTime = Math.abs(new Date() - new Date(date));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > days;
+  }
+
+  /**
+   * Format patterns for system prompt
+   */
+  formatPatternsForPrompt(patterns) {
+    if (!patterns || patterns.patterns.length === 0) {
+      return '';
+    }
+
+    let output = '\n═══════════════════════════════════════════════════════════\n';
+    output += 'PATTERNS I\'VE NOTICED\n';
+    output += '═══════════════════════════════════════════════════════════\n\n';
+
+    patterns.patterns.forEach(pattern => {
+      output += `📊 ${pattern.pattern}\n`;
+      output += `   Insight: ${pattern.insight}\n`;
+      if (pattern.actionable) {
+        output += `   Consider: ${pattern.actionable}\n`;
+      }
+      output += '\n';
+    });
+
+    output += 'Surface these patterns gently when relevant. "I\'ve noticed..."\n';
+    output += 'Use them to provide personalized insights the user might not see.\n';
+
+    return output;
+  }
+}
+
+module.exports = new PatternRecognition();
+```
+
+---
+
+## 🎉 ENHANCEMENT 5: Progress Tracker Service
+
+**File:** `/server/services/progressTracker.js`
+
+```javascript
+const db = require('./databaseService');
+
+class ProgressTracker {
+  /**
+   * Detect milestones
+   */
+  async detectMilestones(userId, userName) {
+    const milestones = [];
+
+    try {
+      // Check conversation streak
+      const streak = await this.getConversationStreak(userId);
+      if (streak === 7) {
+        milestones.push({
+          type: 'streak',
+          title: '7 Days of Showing Up',
+          message: `${userName}, you've been here 7 days in a row. That's you choosing to show up for your faith journey every single day this week. That's not small.`
+        });
+      } else if (streak === 30) {
+        milestones.push({
+          type: 'streak',
+          title: '30 Days Strong',
+          message: `A whole month, ${userName}. You've shown up 30 days in a row. Whatever you're doing, it's working.`
+        });
+      }
+
+      // Check emotional improvement
+      const emotionalTrend = await this.getEmotionalTrend(userId);
+      if (emotionalTrend === 'improving') {
+        milestones.push({
+          type: 'emotional',
+          title: 'Growing Peace',
+          message: 'I\'ve noticed something: your emotional check-ins over the past 2 weeks show a shift toward more peace. Whatever you\'re doing, keep going.'
+        });
+      }
+
+      // Check practice completion
+      const practicesCompleted = await this.getPracticeCompletionCount(userId);
+      if (practicesCompleted === 5) {
+        milestones.push({
+          type: 'practice',
+          title: '5 Practices Completed',
+          message: 'You\'ve tried 5 different spiritual practices. That takes courage—especially when you\'re figuring out what works. You\'re exploring.'
+        });
+      } else if (practicesCompleted === 10) {
+        milestones.push({
+          type: 'practice',
+          title: '10 Practices',
+          message: 'Ten practices. You\'re not just talking about faith—you\'re actually doing it. That matters.'
+        });
+      }
+
+      // Check topic resolution
+      const resolvedTopics = await this.getResolvedTopics(userId);
+      if (resolvedTopics.length > 0) {
+        resolvedTopics.forEach(topic => {
+          milestones.push({
+            type: 'breakthrough',
+            title: `Progress on ${topic}`,
+            message: `Remember when you first brought up ${topic}? Look at where you are now. That's growth.`
+          });
+        });
+      }
+
+      return milestones;
+
+    } catch (error) {
+      console.error('Milestone detection error:', error);
+      return [];
+    }
+  }
+
+  async getConversationStreak(userId) {
+    const result = await db.query(
+      `WITH RECURSIVE date_series AS (
+        SELECT CURRENT_DATE - INTERVAL '30 days' as date
+        UNION ALL
+        SELECT date + INTERVAL '1 day'
+        FROM date_series
+        WHERE date < CURRENT_DATE
+      ),
+      user_dates AS (
+        SELECT DISTINCT DATE(created_at) as conversation_date
+        FROM conversations
+        WHERE user_id = $1
+        AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+      ),
+      streak AS (
+        SELECT 
+          ds.date,
+          CASE WHEN ud.conversation_date IS NOT NULL THEN 1 ELSE 0 END as had_conversation,
+          ROW_NUMBER() OVER (ORDER BY ds.date DESC) as rn
+        FROM date_series ds
+        LEFT JOIN user_dates ud ON ds.date = ud.conversation_date
+        WHERE ds.date <= CURRENT_DATE
+        ORDER BY ds.date DESC
+      )
+      SELECT COUNT(*) as streak_length
+      FROM (
+        SELECT had_conversation, 
+               SUM(CASE WHEN had_conversation = 0 THEN 1 ELSE 0 END) 
+                 OVER (ORDER BY rn) as gap_group
+        FROM streak
+        WHERE rn <= 30
+      ) t
+      WHERE gap_group = 0 AND had_conversation = 1`,
+      [userId]
+    );
+
+    return result.rows[0]?.streak_length || 0;
+  }
+
+  async getEmotionalTrend(userId) {
+    const recentEmotions = await db.query(
+      `SELECT emotional_state, intensity, created_at
+       FROM emotional_checkins
+       WHERE user_id = $1
+       AND created_at >= NOW() - INTERVAL '14 days'
+       ORDER BY created_at ASC`,
+      [userId]
+    );
+
+    if (recentEmotions.rows.length < 4) return 'insufficient_data';
+
+    // Compare first half to second half
+    const midpoint = Math.floor(recentEmotions.rows.length / 2);
+    const firstHalf = recentEmotions.rows.slice(0, midpoint);
+    const secondHalf = recentEmotions.rows.slice(midpoint);
+
+    const avgFirst = firstHalf.reduce((sum, e) => sum + e.intensity, 0) / firstHalf.length;
+    const avgSecond = secondHalf.reduce((sum, e) => sum + e.intensity, 0) / secondHalf.length;
+
+    // Lower intensity = better (less struggle)
+    if (avgSecond < avgFirst - 1.5) return 'improving';
+    if (avgSecond > avgFirst + 1.5) return 'worsening';
+    return 'stable';
+  }
+
+  async getPracticeCompletionCount(userId) {
+    const result = await db.query(
+      `SELECT COUNT(*) as count
+       FROM practices_log
+       WHERE user_id = $1 AND completed = true`,
+      [userId]
+    );
+    return parseInt(result.rows[0]?.count || 0);
+  }
+
+  async getResolvedTopics(userId) {
+    const result = await db.query(
+      `SELECT topic
+       FROM conversation_topics
+       WHERE user_id = $1
+       AND sentiment = 'resolved'
+       AND last_mentioned >= NOW() - INTERVAL '30 days'`,
+      [userId]
+    );
+    return result.rows.map(r => r.topic);
+  }
+
+  /**
+   * Format milestone for system prompt
+   */
+  formatMilestoneForPrompt(milestone) {
+    if (!milestone) return '';
+
+    return `
+🎊 CELEBRATION OPPORTUNITY:
+The user has reached a milestone: ${milestone.title}
+
+IF it flows naturally in this conversation, you can acknowledge:
+"${milestone.message}"
+
+But only if appropriate - don't force it.
+`;
+  }
+}
+
+module.exports = new ProgressTracker();
+```
+
+---
+
+## 💡 ENHANCEMENT 6: Recommendation Engine Service
+
+**File:** `/server/services/recommendationEngine.js`
+
+```javascript
+const anthropic = require('./anthropicService');
+const db = require('./databaseService');
+
+class RecommendationEngine {
+  /**
+   * Generate contextually appropriate recommendations
+   */
+  async generateRecommendations(userId, currentMessage, userPersona, emotionalState) {
+    try {
+      // Get successful practices
+      const successfulPractices = await this.getSuccessfulPractices(userId);
+      
+      // Extract constraints from message
+      const constraints = await this.extractConstraints(currentMessage);
+
+      const recommendationPrompt = `Generate 2-3 spiritual practice recommendations for this user:
+
+USER CONTEXT:
+- Name: ${userPersona.user_name}
+- Persona: ${userPersona.primary_persona}
+- Primary struggle: ${userPersona.primary_struggle}
+- Peak energy: ${userPersona.peak_energy_time}
+- Obstacles: ${userPersona.obstacles}
+
+CURRENT STATE:
+- Emotional: ${emotionalState}
+- Message: "${currentMessage}"
+- Constraints: ${JSON.stringify(constraints)}
+
+WHAT WORKED BEFORE:
+${successfulPractices.length > 0 
+  ? successfulPractices.map(p => `- ${p.practice_type} (rated ${p.helpful_rating}/5)`).join('\n')
+  : 'No completed practices yet'}
+
+Generate recommendations that:
+1. Respect time/energy constraints
+2. Build on what worked before
+3. Match emotional state
+4. Are specific and actionable
+5. Feel like invitations, not orders
+
+Return ONLY valid JSON:
+{
+  "recommendations": [
+    {
+      "practice": "5-minute contemplative walk",
+      "duration": "5 minutes",
+      "when": "right now|tonight|tomorrow morning",
+      "why": "Because you mentioned feeling disconnected",
+      "instructions": "Step by step guidance"
+    }
+  ]
+}`;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        messages: [{ role: 'user', content: recommendationPrompt }],
+        max_tokens: 1500
+      });
+
+      const cleaned = response.content[0].text.replace(/```json|```/g, '').trim();
+      return JSON.parse(cleaned);
+
+    } catch (error) {
+      console.error('Recommendation generation error:', error);
+      return { recommendations: [] };
+    }
+  }
+
+  async extractConstraints(message) {
+    // Simple keyword extraction for constraints
+    const constraints = {
+      available_time: 'unknown',
+      energy_level: 'unknown',
+      barriers: []
+    };
+
+    const lowerMessage = message.toLowerCase();
+
+    // Time constraints
+    if (lowerMessage.includes('no time') || lowerMessage.includes('busy')) {
+      constraints.available_time = 'very limited';
+    } else if (lowerMessage.includes('few minutes') || lowerMessage.includes('quick')) {
+      constraints.available_time = 'under 5 minutes';
+    }
+
+    // Energy level
+    if (lowerMessage.includes('exhausted') || lowerMessage.includes('tired') || lowerMessage.includes('drained')) {
+      constraints.energy_level = 'very low';
+    } else if (lowerMessage.includes('overwhelmed')) {
+      constraints.energy_level = 'low';
+    }
+
+    return constraints;
+  }
+
+  async getSuccessfulPractices(userId) {
+    const result = await db.query(
+      `SELECT practice_type, helpful_rating, COUNT(*) as times_completed
+       FROM practices_log
+       WHERE user_id = $1
+       AND completed = true
+       AND helpful_rating >= 4
+       GROUP BY practice_type, helpful_rating
+       ORDER BY helpful_rating DESC, times_completed DESC
+       LIMIT 3`,
+      [userId]
+    );
+
+    return result.rows;
+  }
+}
+
+module.exports = new RecommendationEngine();
+```
+
+---
+
+## 🔗 ENHANCEMENT 7: Conversation Bridge Service
+
+**File:** `/server/services/conversationBridge.js`
+
+```javascript
+const db = require('./databaseService');
+
+class ConversationBridge {
+  /**
+   * Generate opening that bridges to past conversations
+   */
+  async generateBridgeContext(userId, userName) {
+    try {
+      // Get last conversation
+      const lastConvo = await db.query(
+        `SELECT c.title, c.updated_at,
+                m.content as last_user_message
+         FROM conversations c
+         LEFT JOIN LATERAL (
+           SELECT content FROM messages 
+           WHERE conversation_id = c.id AND role = 'user'
+           ORDER BY created_at DESC LIMIT 1
+         ) m ON true
+         WHERE c.user_id = $1
+         ORDER BY c.updated_at DESC
+         LIMIT 1 OFFSET 1`,
+        [userId]
+      );
+
+      if (lastConvo.rows.length === 0) {
+        return ''; // First conversation
+      }
+
+      const last = lastConvo.rows[0];
+      const daysSince = Math.floor(
+        (Date.now() - new Date(last.updated_at)) / (1000 * 60 * 60 * 24)
+      );
+
+      // Get recent memorable moments
+      const moments = await db.query(
+        `SELECT summary, emotional_state, created_at
+         FROM memorable_moments
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 2`,
+        [userId]
+      );
+
+      let bridgeContext = '\n═══════════════════════════════════════════════════════════\n';
+      bridgeContext += 'CONVERSATION CONTINUITY\n';
+      bridgeContext += '═══════════════════════════════════════════════════════════\n\n';
+      bridgeContext += `Last conversation: ${daysSince} day${daysSince === 1 ? '' : 's'} ago\n`;
+      bridgeContext += `Topic: ${last.title}\n\n`;
+
+      if (moments.rows.length > 0) {
+        bridgeContext += 'Recent moments you might reference:\n';
+        moments.rows.forEach(m => {
+          const daysAgo = Math.floor((Date.now() - new Date(m.created_at)) / (1000 * 60 * 60 * 24));
+          bridgeContext += `- ${m.summary} (${daysAgo} days ago)\n`;
+        });
+        bridgeContext += '\n';
+      }
+
+      bridgeContext += 'OPENING SUGGESTIONS:\n\n';
+
+      if (daysSince <= 2) {
+        bridgeContext += `Since it's been just ${daysSince} day${daysSince === 1 ? '' : 's'}, you might say:\n`;
+        bridgeContext += `"Good to see you again, ${userName}. How have things been since we talked about ${last.title}?"\n\n`;
+      } else if (daysSince <= 7) {
+        bridgeContext += `It's been about a week, so you might say:\n`;
+        bridgeContext += `"Hey ${userName}, it's been a few days. I've been thinking about what you shared last time..."\n\n`;
+      } else {
+        bridgeContext += `It's been a while (${daysSince} days), so you might say:\n`;
+        bridgeContext += `"${userName}, it's good to hear from you. It's been a little while—how have you been?"\n\n`;
+      }
+
+      bridgeContext += 'Only reference past conversations if it feels natural.\n';
+      bridgeContext += 'If the user jumps straight into something new, follow their lead.\n';
+
+      return bridgeContext;
+
+    } catch (error) {
+      console.error('Conversation bridge error:', error);
+      return '';
+    }
+  }
+}
+
+module.exports = new ConversationBridge();
+```
+
+---
+
+(Continuing to Part 4...)

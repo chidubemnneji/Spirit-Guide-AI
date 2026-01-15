@@ -1,0 +1,698 @@
+# COMPLETE IMPLEMENTATION PART 4: INTEGRATION
+## Enhanced Chat Controller + System Prompt Builder
+
+---
+
+## 🧠 ENHANCED SYSTEM PROMPT BUILDER
+
+**File:** `/server/services/systemPromptBuilder.js` (COMPLETE REWRITE)
+
+```javascript
+const db = require('./databaseService');
+const pastoralVoice = require('./pastoralVoice');
+const patternRecognition = require('./patternRecognition');
+
+class SystemPromptBuilder {
+  /**
+   * Build complete world-class system prompt
+   */
+  async buildCompletePrompt(userId, userPersona, messageCount) {
+    try {
+      // Get all context
+      const memory = await this.getMemoryContext(userId);
+      const emotionalState = await this.getCurrentEmotionalState(userId);
+      const relationshipStage = await this.getRelationshipStage(userId);
+      const patterns = await patternRecognition.getRelevantPatterns(userId);
+
+      // Build base prompt
+      let prompt = this.getBasePrompt();
+      
+      // Add phase instructions
+      prompt += this.getPhaseInstructions(messageCount, userPersona.user_name);
+      
+      // Add user context
+      prompt += this.getUserContext(userPersona);
+      
+      // Add persona strategy
+      prompt += this.getPersonaStrategy(userPersona);
+      
+      // Add memory context
+      if (memory) {
+        prompt += memory;
+      }
+      
+      // Add patterns
+      if (patterns && patterns.patterns.length > 0) {
+        prompt += patternRecognition.formatPatternsForPrompt(patterns);
+      }
+      
+      // Add pastoral voice guidelines
+      prompt += pastoralVoice.getVoiceGuidelines(
+        userPersona,
+        emotionalState,
+        relationshipStage
+      );
+
+      return prompt;
+
+    } catch (error) {
+      console.error('System prompt build error:', error);
+      // Return basic prompt if error
+      return this.getBasicPrompt(userPersona, messageCount);
+    }
+  }
+
+  getBasePrompt() {
+    return `You are a warm, pastoral spiritual companion.
+
+Your communication style is based on renowned pastoral voices like Tim Keller, Richard Rohr, and Eugene Peterson.
+
+CORE PRINCIPLES:
+- Ask more than tell
+- Comfortable with mystery and "I don't know"
+- See God in ordinary moments
+- Invite, never prescribe
+- Celebrate small steps
+- Keep responses short (3-5 sentences typically)
+- Real language, not religious jargon
+
+`;
+  }
+
+  getPhaseInstructions(messageCount, userName) {
+    const phase = this.determinePhase(messageCount);
+
+    const instructions = {
+      acknowledgment: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: ACKNOWLEDGMENT (Response #1)
+═══════════════════════════════════════════════════════════
+
+Your ONLY goal: Acknowledge their emotional/spiritual state with deep empathy.
+
+REQUIREMENTS:
+✓ Use their name (${userName})
+✓ Reflect what they're feeling
+✓ Validate their experience
+✓ Show you hear them
+
+FORBIDDEN:
+✗ DO NOT offer advice
+✗ DO NOT suggest practices
+✗ DO NOT quote scripture yet
+✗ DO NOT make recommendations
+
+EXAMPLE:
+User: "I feel so far from God."
+You: "I hear you, ${userName}. Feeling distant from God can be really heavy. That's a real place to be, and it's okay to name it."
+`,
+
+      consolation: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: CONSOLATION (Response #2)
+═══════════════════════════════════════════════════════════
+
+Your ONLY goal: Offer biblical comfort.
+
+REQUIREMENTS:
+✓ Share ONE relevant verse or biblical story
+✓ Connect it to their specific struggle
+✓ Keep it comforting, not prescriptive
+✓ Show biblical figures faced this too
+
+FORBIDDEN:
+✗ DO NOT offer recommendations yet
+✗ DO NOT suggest specific practices
+
+EXAMPLE:
+"Psalm 34:18 says, 'The Lord is close to the brokenhearted.' Even when you can't feel Him, He's near. Elijah also felt alone and exhausted (1 Kings 19), and God met him with gentleness."
+`,
+
+      reflection: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: REFLECTION (Response #3)
+═══════════════════════════════════════════════════════════
+
+Your ONLY goal: Invite further exploration.
+
+REQUIREMENTS:
+✓ Ask a gentle question
+✓ Suggest reflection or journaling (generally)
+✓ Create space for them to share more
+
+FORBIDDEN:
+✗ DO NOT recommend specific practices yet
+
+EXAMPLE:
+"What do you think is making it hard to feel close to God right now? Sometimes naming it helps us understand it better."
+`,
+
+      recommendation: `
+═══════════════════════════════════════════════════════════
+CURRENT PHASE: RECOMMENDATION (Response #4+)
+═══════════════════════════════════════════════════════════
+
+NOW you can offer gentle recommendations.
+
+REQUIREMENTS:
+✓ Tailor to their persona
+✓ Consider their constraints (time, energy)
+✓ Reference past successes
+✓ Frame as invitations ("Might it help to...")
+✓ Offer 2-3 options, let them choose
+
+EXAMPLE:
+"Based on what you've shared, here are some gentle ways to reconnect:
+• A 5-minute contemplative walk
+• A short prayer while making coffee
+• Sitting in silence for 2 minutes
+
+What feels most right for you today?"
+`
+    };
+
+    return instructions[phase];
+  }
+
+  determinePhase(messageCount) {
+    if (messageCount === 0 || messageCount === 1) return 'acknowledgment';
+    if (messageCount === 2) return 'consolation';
+    if (messageCount === 3) return 'reflection';
+    return 'recommendation';
+  }
+
+  getUserContext(userPersona) {
+    return `
+═══════════════════════════════════════════════════════════
+USER CONTEXT
+═══════════════════════════════════════════════════════════
+
+Name: ${userPersona.user_name}
+Primary Struggle: ${this.formatStruggle(userPersona.primary_struggle)}
+Persona: ${userPersona.primary_persona}
+
+Behavioral Reality:
+• Daily rhythm: ${Array.isArray(userPersona.daily_rhythm) ? userPersona.daily_rhythm.join(', ') : userPersona.daily_rhythm}
+• Peak energy: ${userPersona.peak_energy_time}
+• Past connection: ${userPersona.past_connection_moment}
+
+Obstacles: ${Array.isArray(userPersona.obstacles) ? userPersona.obstacles.join(', ') : userPersona.obstacles}
+Goals: ${Array.isArray(userPersona.transformation_goals) ? userPersona.transformation_goals.join(', ') : userPersona.transformation_goals}
+`;
+  }
+
+  getPersonaStrategy(userPersona) {
+    const strategies = {
+      seeker_in_void: {
+        tone: 'Gentle, spacious, permission-giving',
+        practices: 'Contemplative walks, silence, noticing exercises',
+        avoid: 'Performance metrics, "try harder"',
+        focus: 'Presence over performance. God in the emptiness.'
+      },
+      doubter_in_crisis: {
+        tone: 'Intellectually honest, curious, affirming',
+        practices: 'Question-exploring, journaling doubts, reading faith struggles',
+        avoid: '"You just need more faith"',
+        focus: 'Questions deepen faith—they don\'t weaken it.'
+      },
+      isolated_wanderer: {
+        tone: 'Companionable, "we" language, warm',
+        practices: 'Small group suggestions, discussion prompts',
+        avoid: 'Over-emphasizing solo spirituality',
+        focus: 'Connection. You were never meant to walk alone.'
+      },
+      guilt_ridden_striver: {
+        tone: 'Grace-saturated, shame-free, gentle',
+        practices: 'Grace reminders, identity affirmations (5-10 min)',
+        avoid: 'NEVER use "should", any guilt language',
+        focus: 'You are loved as-is. Grace is not earned.'
+      },
+      overwhelmed_survivor: {
+        tone: 'Ultra-practical, validating exhaustion',
+        practices: '30-second prayers, one verse, noticing God in chaos',
+        avoid: 'Long devotionals, "prioritize better"',
+        focus: 'God meets you in the mess. Tiny steps count.'
+      },
+      hungry_beginner: {
+        tone: 'Encouraging guide, zero assumptions',
+        practices: 'Simple readings, foundational prayers, Bible basics',
+        avoid: 'Insider language, assuming knowledge',
+        focus: 'You\'re not behind. Every journey starts here.'
+      },
+      momentum_breaker: {
+        tone: 'Celebration-focused, anti-perfectionist',
+        practices: 'Suggest 2x/week not daily, celebrate any engagement',
+        avoid: 'Long-term commitments, all-or-nothing',
+        focus: 'You showed up today. That\'s the win.'
+      },
+      comparison_captive: {
+        tone: 'Your-journey-only focus, individualized',
+        practices: 'Solo reflections, personal discoveries, no metrics',
+        avoid: 'ANY comparison, "most people", social sharing',
+        focus: 'This is YOUR journey. Not anyone else\'s.'
+      }
+    };
+
+    const strategy = strategies[userPersona.primary_persona] || strategies.hungry_beginner;
+
+    return `
+═══════════════════════════════════════════════════════════
+PERSONA STRATEGY
+═══════════════════════════════════════════════════════════
+
+Tone: ${strategy.tone}
+Suggested Practices: ${strategy.practices}
+What to AVOID: ${strategy.avoid}
+Core Focus: ${strategy.focus}
+`;
+  }
+
+  async getMemoryContext(userId) {
+    try {
+      // Get conversation topics
+      const topics = await db.query(
+        `SELECT topic, mention_count, sentiment, notes
+         FROM conversation_topics
+         WHERE user_id = $1
+         ORDER BY last_mentioned DESC
+         LIMIT 5`,
+        [userId]
+      );
+
+      // Get memorable moments
+      const moments = await db.query(
+        `SELECT moment_type, summary, emotional_state, created_at
+         FROM memorable_moments
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 5`,
+        [userId]
+      );
+
+      // Get practices
+      const practices = await db.query(
+        `SELECT practice_type, completed, helpful_rating
+         FROM practices_log
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 5`,
+        [userId]
+      );
+
+      if (topics.rows.length === 0) return '';
+
+      let memory = '\n═══════════════════════════════════════════════════════════\n';
+      memory += 'CONVERSATION MEMORY\n';
+      memory += '═══════════════════════════════════════════════════════════\n\n';
+
+      if (topics.rows.length > 0) {
+        memory += 'RECURRING TOPICS:\n';
+        topics.rows.forEach(topic => {
+          memory += `• ${topic.topic} (${topic.mention_count}x, ${topic.sentiment})\n`;
+        });
+        memory += '\n';
+      }
+
+      if (moments.rows.length > 0) {
+        memory += 'MEMORABLE MOMENTS:\n';
+        moments.rows.forEach(moment => {
+          const daysAgo = Math.floor((Date.now() - new Date(moment.created_at)) / (1000 * 60 * 60 * 24));
+          memory += `• ${moment.summary} (${daysAgo} days ago)\n`;
+        });
+        memory += '\n';
+      }
+
+      if (practices.rows.length > 0) {
+        memory += 'PRACTICES:\n';
+        practices.rows.forEach(practice => {
+          const status = practice.completed ? '✓' : '○';
+          memory += `${status} ${practice.practice_type}`;
+          if (practice.helpful_rating) {
+            memory += ` (${practice.helpful_rating}/5)`;
+          }
+          memory += '\n';
+        });
+        memory += '\n';
+      }
+
+      memory += 'USE THIS MEMORY TO:\n';
+      memory += '- Reference past conversations naturally\n';
+      memory += '- Notice patterns they might not see\n';
+      memory += '- Celebrate progress\n';
+      memory += '- Avoid suggesting practices they disliked\n';
+
+      return memory;
+
+    } catch (error) {
+      console.error('Memory context error:', error);
+      return '';
+    }
+  }
+
+  async getCurrentEmotionalState(userId) {
+    try {
+      const result = await db.query(
+        `SELECT emotional_state FROM emotional_checkins 
+         WHERE user_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [userId]
+      );
+
+      return result.rows[0]?.emotional_state || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async getRelationshipStage(userId) {
+    try {
+      const userCreated = await db.query(
+        'SELECT created_at FROM users WHERE id = $1',
+        [userId]
+      );
+
+      const daysSince = Math.floor(
+        (Date.now() - new Date(userCreated.rows[0].created_at)) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysSince <= 7) return 'new_acquaintance';
+      if (daysSince <= 30) return 'building_trust';
+      return 'established_companion';
+    } catch (error) {
+      return 'new_acquaintance';
+    }
+  }
+
+  formatStruggle(struggle) {
+    const map = {
+      distant_from_god: 'Feeling distant from God',
+      wrestling_doubts: 'Wrestling with doubts',
+      feel_alone: 'Feeling alone in faith',
+      guilt_shame: 'Carrying guilt and shame',
+      life_overwhelming: 'Life overwhelming, faith slipping',
+      new_to_faith: 'New to faith'
+    };
+    return map[struggle] || struggle;
+  }
+
+  getBasicPrompt(userPersona, messageCount) {
+    // Fallback if full prompt fails
+    return `You are a warm spiritual companion for ${userPersona.user_name}.
+Their primary struggle: ${userPersona.primary_struggle}
+Current phase: ${this.determinePhase(messageCount)}
+Be gentle, validating, and pastoral in your response.`;
+  }
+}
+
+module.exports = new SystemPromptBuilder();
+```
+
+---
+
+## 💬 ENHANCED CHAT CONTROLLER
+
+**File:** `/server/controllers/chatController.js` (COMPLETE REWRITE)
+
+```javascript
+const db = require('../services/databaseService');
+const anthropic = require('../services/anthropicService');
+const systemPromptBuilder = require('../services/systemPromptBuilder');
+const memoryExtractor = require('../services/memoryExtractor');
+const emotionalIntelligence = require('../services/emotionalIntelligence');
+const crisisDetection = require('../services/crisisDetection');
+const progressTracker = require('../services/progressTracker');
+const conversationBridge = require('../services/conversationBridge');
+
+/**
+ * Send message and get AI response (WORLD-CLASS VERSION)
+ */
+exports.sendMessage = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    // 1. VERIFY CONVERSATION
+    const conversationResult = await db.query(
+      `SELECT message_count, created_at FROM conversations 
+       WHERE id = $1 AND user_id = $2`,
+      [conversationId, userId]
+    );
+
+    if (conversationResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Conversation not found'
+      });
+    }
+
+    const messageCount = conversationResult.rows[0].message_count;
+    const isNewConversation = messageCount === 0;
+
+    // 2. GET USER PERSONA
+    const personaResult = await db.query(
+      `SELECT 
+        u.name as user_name,
+        up.primary_struggle,
+        up.depth_layer_responses,
+        up.daily_rhythm,
+        up.past_connection_moment,
+        up.connection_recency,
+        up.peak_energy_time,
+        up.obstacles,
+        up.transformation_goals,
+        up.primary_persona,
+        up.persona_modifiers
+      FROM user_personas up
+      JOIN users u ON up.user_id = u.id
+      WHERE up.user_id = $1`,
+      [userId]
+    );
+
+    if (personaResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'User persona not found. Please complete onboarding.'
+      });
+    }
+
+    const userPersona = personaResult.rows[0];
+
+    // 3. GET CONVERSATION HISTORY
+    const historyResult = await db.query(
+      `SELECT role, content 
+       FROM messages 
+       WHERE conversation_id = $1 
+       ORDER BY created_at ASC`,
+      [conversationId]
+    );
+
+    const messages = historyResult.rows.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // 4. DETECT CRISIS (PRIORITY CHECK)
+    const crisis = await crisisDetection.detectCrisis(
+      content,
+      messages.slice(-6).map(m => m.content)
+    );
+
+    if (crisis.crisis_level !== 'none') {
+      await crisisDetection.logCrisis(userId, crisis, content);
+    }
+
+    // 5. DETECT EMOTIONAL STATE
+    const emotion = await emotionalIntelligence.detectEmotion(
+      content,
+      messages.slice(-6).map(m => m.content)
+    );
+
+    await emotionalIntelligence.saveEmotionalCheckin(userId, emotion, content);
+
+    // 6. BUILD SYSTEM PROMPT
+    let systemPrompt = await systemPromptBuilder.buildCompletePrompt(
+      userId,
+      userPersona,
+      messageCount
+    );
+
+    // 7. ADD CRISIS PROTOCOL IF NEEDED
+    if (crisis.crisis_level !== 'none') {
+      const crisisProtocol = crisisDetection.getCrisisProtocol(crisis);
+      systemPrompt = crisisProtocol + '\n\n' + systemPrompt;
+    }
+
+    // 8. ADD EMOTIONAL MODIFIER
+    const emotionalModifier = emotionalIntelligence.buildEmotionalModifier(emotion);
+    systemPrompt += emotionalModifier;
+
+    // 9. ADD CONVERSATION BRIDGE (if new conversation)
+    if (isNewConversation) {
+      const bridgeContext = await conversationBridge.generateBridgeContext(
+        userId,
+        userPersona.user_name
+      );
+      if (bridgeContext) {
+        systemPrompt += bridgeContext;
+      }
+    }
+
+    // 10. CHECK FOR MILESTONES (every 5th message)
+    if (messageCount % 5 === 0 && messageCount > 0) {
+      const milestones = await progressTracker.detectMilestones(
+        userId,
+        userPersona.user_name
+      );
+
+      if (milestones.length > 0) {
+        const milestone = milestones[0];
+        systemPrompt += progressTracker.formatMilestoneForPrompt(milestone);
+      }
+    }
+
+    // 11. ADD USER MESSAGE
+    messages.push({
+      role: 'user',
+      content: content
+    });
+
+    // 12. CALL CLAUDE API
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      system: systemPrompt,
+      messages: messages,
+      max_tokens: 1000
+    });
+
+    const aiResponse = response.content[0].text;
+
+    // 13. SAVE MESSAGES
+    const userMessageResult = await db.query(
+      `INSERT INTO messages (conversation_id, role, content)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [conversationId, 'user', content]
+    );
+
+    const aiMessageResult = await db.query(
+      `INSERT INTO messages (conversation_id, role, content)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [conversationId, 'assistant', aiResponse]
+    );
+
+    // 14. UPDATE CONVERSATION
+    const newMessageCount = messageCount + 2;
+    const newPhase = systemPromptBuilder.determinePhase(newMessageCount);
+
+    await db.query(
+      `UPDATE conversations 
+       SET message_count = $1,
+           current_phase = $2,
+           updated_at = NOW()
+       WHERE id = $3`,
+      [newMessageCount, newPhase, conversationId]
+    );
+
+    // 15. UPDATE TITLE IF FIRST MESSAGE
+    if (messageCount === 0) {
+      const title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+      await db.query(
+        'UPDATE conversations SET title = $1 WHERE id = $2',
+        [title, conversationId]
+      );
+    }
+
+    // 16. EXTRACT MEMORIES (ASYNC - DON'T BLOCK RESPONSE)
+    if (newMessageCount >= 6) {
+      memoryExtractor.extractMemories(conversationId, userId)
+        .catch(err => console.error('Memory extraction failed:', err));
+    }
+
+    // 17. SEND RESPONSE
+    res.json({
+      success: true,
+      data: {
+        userMessage: userMessageResult.rows[0],
+        aiMessage: aiMessageResult.rows[0],
+        emotionalState: emotion.primary_emotion,
+        crisisLevel: crisis.crisis_level
+      }
+    });
+
+  } catch (error) {
+    console.error('Send message error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send message'
+    });
+  }
+};
+
+// ... (other controller methods remain the same: createConversation, getConversation, getUserConversations)
+```
+
+---
+
+## 🎯 WHAT THIS INTEGRATION DOES
+
+### BEFORE (Basic AI):
+```
+User message → Basic prompt → Claude → Response
+```
+
+### AFTER (World-Class AI):
+```
+User message
+    ↓
+1. Crisis detection (immediate safety check)
+2. Emotional state detection (how are they feeling?)
+3. Build system prompt with:
+   - Pastoral voice guidelines
+   - User persona
+   - Conversation phase
+   - All memory (topics, moments, practices)
+   - Patterns identified
+   - Relationship stage
+   - Crisis protocol (if needed)
+   - Emotional modifiers
+   - Conversation bridge (if new chat)
+   - Milestone celebration (if applicable)
+    ↓
+Claude API with complete context
+    ↓
+Response saved
+    ↓
+Memory extraction (async, learns from conversation)
+```
+
+---
+
+## 📊 RESPONSE COMPARISON
+
+### OLD WAY:
+```
+User: "I haven't prayed in weeks. I feel guilty."
+AI: "Prayer is important. Here are some tips to get back into prayer..."
+```
+
+### NEW WAY:
+```
+User: "I haven't prayed in weeks. I feel guilty."
+
+[System detects: guilt emotion, intensity 7/10]
+[Checks memory: User has struggled with this before]
+[Applies: Guilt-ridden striver strategy]
+[Phase: Acknowledgment (response #1)]
+[Voice: Grace-saturated, no "shoulds"]
+
+AI: "That guilt sounds heavy, Sarah. Can I share something? A lot of us go through dry spells with prayer. It doesn't mean God's disappointed—sometimes life just gets overwhelming. What's been making it hard for you?"
+
+[After response, extracts memory: Topic="prayer guilt", Emotion="guilty"]
+```
+
+---
+
+(Continuing to Part 5 - Final Replit Prompt...)
