@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearch, useLocation } from "wouter";
 import { useBible } from "@/context/BibleContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,19 +37,17 @@ export default function Bible() {
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [targetVerse, setTargetVerse] = useState<string | null>(null);
+  const urlProcessedRef = useRef(false);
+  
+  // Parse URL parameters for deep linking from chat
+  const searchString = useSearch();
+  const [, navigate] = useLocation();
 
   // Fetch versions
   const { data: versions = [], isLoading: versionsLoading } = useQuery<BibleVersion[]>({
     queryKey: ["/api/bible/versions"],
   });
-
-  // Set default version
-  useEffect(() => {
-    if (versions.length > 0 && !currentVersion) {
-      const kjv = versions.find((v) => v.abbreviation.toUpperCase().includes("KJV"));
-      setCurrentVersion(kjv || versions[0]);
-    }
-  }, [versions, currentVersion, setCurrentVersion]);
 
   // Fetch books when version changes
   const { data: books = [], isLoading: booksLoading } = useQuery<Book[]>({
@@ -68,12 +67,96 @@ export default function Bible() {
     enabled: !!currentVersion?.id && !!currentChapter?.id,
   });
 
+  // Set default version
+  useEffect(() => {
+    if (versions.length > 0 && !currentVersion) {
+      const kjv = versions.find((v) => v.abbreviation.toUpperCase().includes("KJV"));
+      setCurrentVersion(kjv || versions[0]);
+    }
+  }, [versions, currentVersion, setCurrentVersion]);
+
   // Update chapter when content loads
   useEffect(() => {
     if (chapterContent && chapterContent.id !== currentChapter?.id) {
       setCurrentChapter(chapterContent);
     }
   }, [chapterContent]);
+
+  // Reset urlProcessedRef when searchString changes (for subsequent link clicks)
+  useEffect(() => {
+    if (searchString) {
+      urlProcessedRef.current = false;
+    }
+  }, [searchString]);
+
+  // Handle deep linking from chat - navigate to specific book/chapter/verse
+  useEffect(() => {
+    if (urlProcessedRef.current || !searchString || !currentVersion || books.length === 0) return;
+    
+    const params = new URLSearchParams(searchString);
+    const bookParam = params.get("book");
+    const chapterParam = params.get("chapter");
+    const verseParam = params.get("verse");
+    
+    if (!bookParam || !chapterParam) return;
+    
+    urlProcessedRef.current = true;
+    
+    // Find the matching book
+    const targetBook = books.find(
+      (b) => b.name.toLowerCase() === bookParam.toLowerCase()
+    );
+    
+    if (!targetBook) {
+      console.log("Book not found:", bookParam);
+      // Clear URL params
+      navigate("/bible", { replace: true });
+      return;
+    }
+    
+    // Set book and fetch chapters
+    setCurrentBook(targetBook);
+    
+    // Store target verse for scrolling later
+    if (verseParam) {
+      setTargetVerse(verseParam.split("-")[0]); // Use first verse if range
+    }
+    
+    // Fetch chapters for this book and navigate to the specified chapter
+    fetch(`/api/bible/${currentVersion.id}/books/${targetBook.id}/chapters`)
+      .then((res) => res.json())
+      .then((chs: { id: string; number: string; reference: string }[]) => {
+        const targetChapterObj = chs.find((c) => c.number === chapterParam);
+        if (targetChapterObj) {
+          fetch(`/api/bible/${currentVersion.id}/chapters/${targetChapterObj.id}`)
+            .then((res) => res.json())
+            .then((ch) => {
+              setCurrentChapter(ch);
+              // Clear URL params after navigation
+              navigate("/bible", { replace: true });
+            });
+        }
+      });
+  }, [searchString, currentVersion, books, setCurrentBook, setCurrentChapter, navigate]);
+
+  // Scroll to target verse when chapter content loads
+  useEffect(() => {
+    if (targetVerse && chapterContent) {
+      // Give DOM time to render
+      setTimeout(() => {
+        const verseElement = document.querySelector(`[data-verse="${targetVerse}"]`);
+        if (verseElement) {
+          verseElement.scrollIntoView({ behavior: "smooth", block: "center" });
+          // Highlight the verse briefly
+          verseElement.classList.add("bg-primary/20", "transition-colors", "duration-500");
+          setTimeout(() => {
+            verseElement.classList.remove("bg-primary/20");
+          }, 2000);
+        }
+        setTargetVerse(null);
+      }, 300);
+    }
+  }, [targetVerse, chapterContent]);
 
   // Search results
   const { data: searchResults = [], isLoading: searchLoading, refetch: doSearch } = useQuery<any[]>({
@@ -133,25 +216,38 @@ export default function Bible() {
   const oldTestamentBooks = books.filter((b) => b.testament === "OT");
   const newTestamentBooks = books.filter((b) => b.testament === "NT");
 
-  // Parse chapter content for verse formatting
+  // Parse chapter content for verse formatting with data-verse attributes for deep linking
   const formatContent = (content: string) => {
     if (!content) return null;
     
     // Split by verse numbers and format
     const versePattern = /\[(\d+)\]/g;
     const parts = content.split(versePattern);
+    const result: React.ReactNode[] = [];
     
-    return parts.map((part, index) => {
+    for (let i = 0; i < parts.length; i++) {
       // Odd indices are verse numbers
-      if (index % 2 === 1) {
-        return (
-          <sup key={index} className="text-primary/70 font-medium mr-1 text-xs">
-            {part}
-          </sup>
+      if (i % 2 === 1) {
+        const verseNum = parts[i];
+        const verseText = parts[i + 1] || "";
+        
+        // Wrap the verse number and its text in a span with data-verse
+        result.push(
+          <span key={i} data-verse={verseNum} className="inline">
+            <sup className="text-primary/70 font-medium mr-1 text-xs">
+              {verseNum}
+            </sup>
+            <span>{verseText}</span>
+          </span>
         );
+        i++; // Skip the next text part since we already included it
+      } else if (i === 0 && parts[i]) {
+        // Text before any verse number (if any)
+        result.push(<span key={i}>{parts[i]}</span>);
       }
-      return <span key={index}>{part}</span>;
-    });
+    }
+    
+    return result;
   };
 
   if (versionsLoading) {

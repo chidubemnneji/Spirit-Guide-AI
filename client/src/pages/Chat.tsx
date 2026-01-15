@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,85 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message, Conversation } from "@shared/schema";
+
+// Bible verse pattern: Book Chapter:Verse or Book Chapter:Verse-Verse
+// Matches: "John 3:16", "1 Corinthians 13:4", "Song of Solomon 2:1", "Psalm 23:1-6"
+const BIBLE_VERSE_PATTERN = /\b((?:1|2|3|I|II|III)?\s*[A-Za-z]+(?:\s+(?:of\s+)?[A-Za-z]+)*)\s+(\d+):(\d+)(?:-(\d+))?\b/g;
+
+// Map of common book name variations to standardized names
+const BOOK_NAME_MAP: Record<string, string> = {
+  "gen": "Genesis", "genesis": "Genesis",
+  "exo": "Exodus", "exodus": "Exodus",
+  "lev": "Leviticus", "leviticus": "Leviticus",
+  "num": "Numbers", "numbers": "Numbers",
+  "deu": "Deuteronomy", "deut": "Deuteronomy", "deuteronomy": "Deuteronomy",
+  "jos": "Joshua", "josh": "Joshua", "joshua": "Joshua",
+  "jdg": "Judges", "judg": "Judges", "judges": "Judges",
+  "rut": "Ruth", "ruth": "Ruth",
+  "1sa": "1 Samuel", "1sam": "1 Samuel", "1 samuel": "1 Samuel", "1 sam": "1 Samuel",
+  "2sa": "2 Samuel", "2sam": "2 Samuel", "2 samuel": "2 Samuel", "2 sam": "2 Samuel",
+  "1ki": "1 Kings", "1 kings": "1 Kings", "1 kgs": "1 Kings",
+  "2ki": "2 Kings", "2 kings": "2 Kings", "2 kgs": "2 Kings",
+  "1ch": "1 Chronicles", "1 chronicles": "1 Chronicles", "1 chr": "1 Chronicles",
+  "2ch": "2 Chronicles", "2 chronicles": "2 Chronicles", "2 chr": "2 Chronicles",
+  "ezr": "Ezra", "ezra": "Ezra",
+  "neh": "Nehemiah", "nehemiah": "Nehemiah",
+  "est": "Esther", "esther": "Esther",
+  "job": "Job",
+  "psa": "Psalms", "psalm": "Psalms", "psalms": "Psalms", "ps": "Psalms",
+  "pro": "Proverbs", "prov": "Proverbs", "proverbs": "Proverbs",
+  "ecc": "Ecclesiastes", "eccl": "Ecclesiastes", "ecclesiastes": "Ecclesiastes",
+  "sol": "Song of Solomon", "song": "Song of Solomon", "song of solomon": "Song of Solomon", "songs": "Song of Solomon",
+  "isa": "Isaiah", "isaiah": "Isaiah",
+  "jer": "Jeremiah", "jeremiah": "Jeremiah",
+  "lam": "Lamentations", "lamentations": "Lamentations",
+  "eze": "Ezekiel", "ezek": "Ezekiel", "ezekiel": "Ezekiel",
+  "dan": "Daniel", "daniel": "Daniel",
+  "hos": "Hosea", "hosea": "Hosea",
+  "joe": "Joel", "joel": "Joel",
+  "amo": "Amos", "amos": "Amos",
+  "oba": "Obadiah", "obadiah": "Obadiah",
+  "jon": "Jonah", "jonah": "Jonah",
+  "mic": "Micah", "micah": "Micah",
+  "nah": "Nahum", "nahum": "Nahum",
+  "hab": "Habakkuk", "habakkuk": "Habakkuk",
+  "zep": "Zephaniah", "zephaniah": "Zephaniah",
+  "hag": "Haggai", "haggai": "Haggai",
+  "zec": "Zechariah", "zechariah": "Zechariah",
+  "mal": "Malachi", "malachi": "Malachi",
+  "mat": "Matthew", "matt": "Matthew", "matthew": "Matthew",
+  "mar": "Mark", "mark": "Mark",
+  "luk": "Luke", "luke": "Luke",
+  "joh": "John", "john": "John",
+  "act": "Acts", "acts": "Acts",
+  "rom": "Romans", "romans": "Romans",
+  "1co": "1 Corinthians", "1 corinthians": "1 Corinthians", "1 cor": "1 Corinthians",
+  "2co": "2 Corinthians", "2 corinthians": "2 Corinthians", "2 cor": "2 Corinthians",
+  "gal": "Galatians", "galatians": "Galatians",
+  "eph": "Ephesians", "ephesians": "Ephesians",
+  "phi": "Philippians", "phil": "Philippians", "philippians": "Philippians",
+  "col": "Colossians", "colossians": "Colossians",
+  "1th": "1 Thessalonians", "1 thessalonians": "1 Thessalonians", "1 thess": "1 Thessalonians",
+  "2th": "2 Thessalonians", "2 thessalonians": "2 Thessalonians", "2 thess": "2 Thessalonians",
+  "1ti": "1 Timothy", "1 timothy": "1 Timothy", "1 tim": "1 Timothy",
+  "2ti": "2 Timothy", "2 timothy": "2 Timothy", "2 tim": "2 Timothy",
+  "tit": "Titus", "titus": "Titus",
+  "phm": "Philemon", "philemon": "Philemon",
+  "heb": "Hebrews", "hebrews": "Hebrews",
+  "jam": "James", "james": "James",
+  "1pe": "1 Peter", "1 peter": "1 Peter", "1 pet": "1 Peter",
+  "2pe": "2 Peter", "2 peter": "2 Peter", "2 pet": "2 Peter",
+  "1jo": "1 John", "1 john": "1 John",
+  "2jo": "2 John", "2 john": "2 John",
+  "3jo": "3 John", "3 john": "3 John",
+  "jud": "Jude", "jude": "Jude",
+  "rev": "Revelation", "revelation": "Revelation",
+};
+
+function normalizeBookName(rawBook: string): string {
+  const normalized = rawBook.toLowerCase().trim();
+  return BOOK_NAME_MAP[normalized] || rawBook.trim();
+}
 
 interface ChatMessage {
   id: number;
@@ -342,6 +422,60 @@ export default function Chat() {
   );
 }
 
+function parseContentWithVerseLinks(
+  content: string,
+  navigate: (path: string) => void,
+  isUser: boolean
+): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  
+  // Reset the regex
+  const pattern = new RegExp(BIBLE_VERSE_PATTERN.source, 'g');
+  let match;
+  
+  while ((match = pattern.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    
+    const fullMatch = match[0];
+    const rawBook = match[1];
+    const chapter = match[2];
+    const verseStart = match[3];
+    const verseEnd = match[4];
+    
+    const book = normalizeBookName(rawBook);
+    const verseDisplay = verseEnd ? `${verseStart}-${verseEnd}` : verseStart;
+    const verseParam = verseEnd ? `${verseStart}-${verseEnd}` : verseStart;
+    
+    // Create clickable link
+    parts.push(
+      <button
+        key={`${match.index}-${fullMatch}`}
+        onClick={() => navigate(`/bible?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verseParam}`)}
+        className={cn(
+          "underline underline-offset-2 font-medium hover:opacity-80 transition-opacity",
+          isUser ? "text-primary-foreground" : "text-primary"
+        )}
+        data-testid={`link-verse-${book}-${chapter}-${verseStart}`}
+      >
+        {fullMatch}
+      </button>
+    );
+    
+    lastIndex = match.index + fullMatch.length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : [content];
+}
+
 function MessageBubble({
   message,
   isStreaming = false,
@@ -349,6 +483,7 @@ function MessageBubble({
   message: ChatMessage;
   isStreaming?: boolean;
 }) {
+  const [, navigate] = useLocation();
   const isUser = message.role === "user";
 
   return (
@@ -373,7 +508,7 @@ function MessageBubble({
         )}
       >
         <p className="text-base leading-relaxed whitespace-pre-wrap">
-          {message.content}
+          {parseContentWithVerseLinks(message.content, navigate, isUser)}
           {isStreaming && (
             <span className="inline-block w-2 h-4 bg-current opacity-50 animate-pulse ml-1" />
           )}
