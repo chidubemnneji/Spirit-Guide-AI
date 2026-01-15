@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import Welcome from "@/pages/Welcome";
 import Onboarding from "@/pages/Onboarding";
+import TransitionPage from "@/pages/TransitionPage";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/not-found";
 
@@ -15,6 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Welcome} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/transition" component={TransitionPage} />
       <Route path="/chat" component={Chat} />
       <Route component={NotFound} />
     </Switch>

@@ -38,7 +38,7 @@ export default function Onboarding() {
       return response;
     },
     onSuccess: () => {
-      setLocation("/chat");
+      setLocation("/transition");
     },
     onError: (error: Error) => {
       toast({
