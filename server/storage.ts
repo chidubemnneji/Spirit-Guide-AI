@@ -11,6 +11,8 @@ import {
   type EmotionalCheckin,
   type CrisisAlert,
   type MemorableMoment,
+  type RecommendationCard,
+  type InsertRecommendationCard,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -49,6 +51,14 @@ export interface IStorage {
   // Memorable Moments
   saveMoment(userId: number, conversationId: number, momentType: string, summary: string, emotionalState: string): Promise<void>;
   getRecentMoments(userId: number, limit?: number): Promise<Array<{ summary: string | null; createdAt: Date }>>;
+
+  // Recommendation Cards
+  createRecommendationCard(card: InsertRecommendationCard): Promise<RecommendationCard>;
+  getRecommendationCardsForMessage(messageId: number): Promise<RecommendationCard[]>;
+  getRecommendationCard(id: number): Promise<RecommendationCard | undefined>;
+  clickRecommendationCard(id: number): Promise<void>;
+  completeRecommendationCard(id: number): Promise<void>;
+  rateRecommendationCard(id: number, rating: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -60,6 +70,7 @@ export class MemStorage implements IStorage {
   private emotionalCheckins: EmotionalCheckin[];
   private crisisAlerts: CrisisAlert[];
   private memorableMoments: MemorableMoment[];
+  private recommendationCards: Map<number, RecommendationCard>;
   private nextUserId: number;
   private nextPersonaId: number;
   private nextConversationId: number;
@@ -68,6 +79,7 @@ export class MemStorage implements IStorage {
   private nextCheckinId: number;
   private nextAlertId: number;
   private nextMomentId: number;
+  private nextCardId: number;
 
   constructor() {
     this.users = new Map();
@@ -78,6 +90,7 @@ export class MemStorage implements IStorage {
     this.emotionalCheckins = [];
     this.crisisAlerts = [];
     this.memorableMoments = [];
+    this.recommendationCards = new Map();
     this.nextUserId = 1;
     this.nextPersonaId = 1;
     this.nextConversationId = 1;
@@ -86,6 +99,7 @@ export class MemStorage implements IStorage {
     this.nextCheckinId = 1;
     this.nextAlertId = 1;
     this.nextMomentId = 1;
+    this.nextCardId = 1;
   }
 
   // Users
@@ -294,6 +308,61 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit)
       .map((m) => ({ summary: m.summary, createdAt: m.createdAt }));
+  }
+
+  // Recommendation Cards
+  async createRecommendationCard(card: InsertRecommendationCard): Promise<RecommendationCard> {
+    const id = this.nextCardId++;
+    const newCard: RecommendationCard = {
+      id,
+      conversationId: card.conversationId || null,
+      messageId: card.messageId || null,
+      practiceType: card.practiceType || null,
+      title: card.title,
+      description: card.description || null,
+      duration: card.duration || null,
+      instructions: card.instructions || null,
+      iconEmoji: card.iconEmoji || null,
+      clicked: 0,
+      clickedAt: null,
+      completed: 0,
+      helpfulRating: null,
+      createdAt: new Date(),
+    };
+    this.recommendationCards.set(id, newCard);
+    return newCard;
+  }
+
+  async getRecommendationCardsForMessage(messageId: number): Promise<RecommendationCard[]> {
+    return Array.from(this.recommendationCards.values())
+      .filter((c) => c.messageId === messageId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  async getRecommendationCard(id: number): Promise<RecommendationCard | undefined> {
+    return this.recommendationCards.get(id);
+  }
+
+  async clickRecommendationCard(id: number): Promise<void> {
+    const card = this.recommendationCards.get(id);
+    if (card) {
+      card.clicked = 1;
+      card.clickedAt = new Date();
+    }
+  }
+
+  async completeRecommendationCard(id: number): Promise<void> {
+    const card = this.recommendationCards.get(id);
+    if (card) {
+      card.completed = 1;
+    }
+  }
+
+  async rateRecommendationCard(id: number, rating: number): Promise<void> {
+    const card = this.recommendationCards.get(id);
+    if (card) {
+      card.helpfulRating = rating;
+    }
   }
 }
 

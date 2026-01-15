@@ -103,6 +103,24 @@ export const memorableMoments = pgTable("memorable_moments", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+// Recommendation Cards - Interactive practice suggestions
+export const recommendationCards = pgTable("recommendation_cards", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
+  messageId: integer("message_id").references(() => messages.id),
+  practiceType: varchar("practice_type", { length: 100 }),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  duration: varchar("duration", { length: 50 }),
+  instructions: text("instructions"),
+  iconEmoji: varchar("icon_emoji", { length: 10 }),
+  clicked: integer("clicked").default(0),
+  clickedAt: timestamp("clicked_at"),
+  completed: integer("completed").default(0),
+  helpfulRating: integer("helpful_rating"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -142,6 +160,15 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
+export const insertRecommendationCardSchema = createInsertSchema(recommendationCards).omit({
+  id: true,
+  createdAt: true,
+  clicked: true,
+  clickedAt: true,
+  completed: true,
+  helpfulRating: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -154,6 +181,9 @@ export type Conversation = typeof conversations.$inferSelect;
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+export type InsertRecommendationCard = z.infer<typeof insertRecommendationCardSchema>;
+export type RecommendationCard = typeof recommendationCards.$inferSelect;
 
 // New types for AI intelligence features
 export type ConversationTopic = typeof conversationTopics.$inferSelect;
