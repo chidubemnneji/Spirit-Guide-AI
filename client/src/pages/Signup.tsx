@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/context/AuthContext";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PasswordStrengthIndicator, isPasswordStrong } from "@/components/PasswordStrengthIndicator";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -36,8 +37,8 @@ export default function Signup() {
     
     if (!password) {
       newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (!isPasswordStrong(password)) {
+      newErrors.password = "Please meet all password requirements";
     }
     
     if (password !== confirmPassword) {
@@ -47,6 +48,8 @@ export default function Signup() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const canSubmit = name.trim() && email.trim() && isPasswordStrong(password) && password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +133,7 @@ export default function Signup() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="At least 6 characters"
+                    placeholder="Create a strong password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     data-testid="input-password"
@@ -151,9 +154,7 @@ export default function Signup() {
                     )}
                   </Button>
                 </div>
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
+                <PasswordStrengthIndicator password={password} />
               </div>
 
               <div className="space-y-2">
@@ -165,10 +166,17 @@ export default function Signup() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   data-testid="input-confirm-password"
-                  className={errors.confirm ? "border-destructive" : ""}
+                  className={confirmPassword && password !== confirmPassword ? "border-destructive" : ""}
                 />
-                {errors.confirm && (
-                  <p className="text-sm text-destructive">{errors.confirm}</p>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-sm text-destructive" data-testid="text-password-mismatch">
+                    Passwords don't match
+                  </p>
+                )}
+                {confirmPassword && password === confirmPassword && password && (
+                  <p className="text-sm text-green-600 dark:text-green-400" data-testid="text-password-match">
+                    Passwords match
+                  </p>
                 )}
               </div>
 
@@ -176,7 +184,7 @@ export default function Signup() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={isLoading}
+                disabled={isLoading || !canSubmit}
                 data-testid="button-signup"
               >
                 {isLoading ? (

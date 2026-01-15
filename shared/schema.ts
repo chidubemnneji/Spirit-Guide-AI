@@ -129,11 +129,23 @@ export const insertUserSchema = createInsertSchema(users).omit({
   hasCompletedOnboarding: true,
 });
 
+// Password validation rules - exported for frontend use
+export const passwordRules = {
+  minLength: 8,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireNumber: true,
+};
+
 // Auth schemas
 export const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain an uppercase letter")
+    .regex(/[a-z]/, "Password must contain a lowercase letter")
+    .regex(/[0-9]/, "Password must contain a number"),
 });
 
 export const loginSchema = z.object({
