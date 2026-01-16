@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -112,6 +112,9 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initRef = useRef(false);
+  const reflectProcessedRef = useRef(false);
+  const [, navigate] = useLocation();
+  const searchString = useSearch();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -191,6 +194,96 @@ export default function Chat() {
     
     initChat();
   }, [createConversation, loadExistingConversation]);
+
+  // Function to send a message programmatically (for reflection from Bible page)
+  const sendMessageDirect = useCallback(async (messageContent: string, convId: number) => {
+    if (!messageContent.trim() || isStreaming) return;
+    
+    setSendError(null);
+
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      role: "user",
+      content: messageContent.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsStreaming(true);
+    setStreamingContent("");
+
+    try {
+      const response = await fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: messageContent }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send message");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.content) {
+                  fullContent += data.content;
+                  setStreamingContent(fullContent);
+                }
+                if (data.done) {
+                  const assistantMessage: ChatMessage = {
+                    id: data.messageId || Date.now() + 1,
+                    role: "assistant",
+                    content: fullContent,
+                    createdAt: new Date().toISOString(),
+                    hasRecommendations: data.hasRecommendations,
+                  };
+                  setMessages((prev) => [...prev, assistantMessage]);
+                  setStreamingContent("");
+                }
+              } catch (e) {
+                // Ignore JSON parse errors for incomplete chunks
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Send message error:", error);
+      setSendError("Could not send message. Please try again.");
+    } finally {
+      setIsStreaming(false);
+    }
+  }, [isStreaming]);
+
+  // Handle reflection from Bible page via URL parameters
+  useEffect(() => {
+    if (reflectProcessedRef.current || isInitializing || !conversationId) return;
+    
+    const params = new URLSearchParams(searchString);
+    const verse = params.get("verse");
+    const text = params.get("text");
+    
+    if (verse && text) {
+      reflectProcessedRef.current = true;
+      // Clear the URL parameters without navigating
+      navigate("/chat", { replace: true });
+      // Send the reflection message
+      const reflectionMessage = `I want to reflect on ${verse}: "${text}"`;
+      sendMessageDirect(reflectionMessage, conversationId);
+    }
+  }, [searchString, isInitializing, conversationId, navigate, sendMessageDirect]);
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || isStreaming) return;
