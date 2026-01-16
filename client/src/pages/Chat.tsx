@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Heart, HelpCircle, Sunrise, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
 import type { Message, Conversation, RecommendationCard } from "@shared/schema";
 
@@ -109,12 +110,14 @@ export default function Chat() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initRef = useRef(false);
   const reflectProcessedRef = useRef(false);
   const [, navigate] = useLocation();
   const searchString = useSearch();
+  const { setHideNav } = useScroll();
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -123,6 +126,11 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
+
+  // Hide bottom nav when input is focused or has content
+  useEffect(() => {
+    setHideNav(isInputFocused || input.length > 0);
+  }, [isInputFocused, input, setHideNav]);
 
   const { data: persona, isLoading: personaLoading } = useQuery<{ primaryPersona?: string }>({
     queryKey: ["/api/persona"],
@@ -507,6 +515,8 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
                 placeholder="Share what's on your heart..."
                 className="min-h-[44px] max-h-[160px] resize-none border-0 bg-transparent focus-visible:ring-0 text-sm tracking-refined"
                 rows={1}
