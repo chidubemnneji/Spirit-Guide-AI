@@ -301,7 +301,7 @@ export default function Bible() {
       {/* iOS-style Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
         {/* Chapter Title & Version */}
-        <div className="relative py-4">
+        <div className="relative py-4 px-14">
           <div className="text-center">
             <motion.h1 
               className="font-serif text-2xl font-semibold text-foreground"
@@ -317,13 +317,13 @@ export default function Bible() {
               </p>
             )}
           </div>
-          {/* Bookmarks Icon */}
+          {/* Bookmarks Icon - Top Right */}
           <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
                 data-testid="button-open-bookmarks"
               >
                 <Bookmark className={cn("w-5 h-5", bookmarkedVerses.size > 0 && "fill-current")} />
