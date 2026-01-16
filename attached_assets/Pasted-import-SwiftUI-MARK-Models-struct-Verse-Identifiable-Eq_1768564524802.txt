@@ -1,0 +1,217 @@
+import SwiftUI
+
+// MARK: - Models
+struct Verse: Identifiable, Equatable {
+    let id = UUID()
+    let number: Int
+    let text: String
+    let book: String
+}
+
+struct Bookmark: Identifiable {
+    let id = UUID()
+    let verses: [Verse]
+    let dateSaved: Date = Date()
+}
+
+// MARK: - Chat Manager
+class ChatManager: ObservableObject {
+    static let shared = ChatManager()
+    @Published var messages: [String] = []
+    
+    func sendToChat(_ message: String) {
+        messages.append(message)
+        // Hook your AI backend here if needed
+    }
+}
+
+// MARK: - Main Bible View
+struct BibleView: View {
+    @State private var verses: [Verse] = [
+        Verse(number: 1, text: "Now it came to pass after the death of Moses...", book: "Joshua 1"),
+        Verse(number: 2, text: "Moses my servant is dead; now therefore arise...", book: "Joshua 1"),
+        Verse(number: 3, text: "Every place that the sole of your foot shall tread upon...", book: "Joshua 1"),
+        Verse(number: 5, text: "I will not fail thee, nor forsake thee.", book: "Joshua 1"),
+        Verse(number: 9, text: "Be strong and of a good courage; be not afraid...", book: "Joshua 1")
+    ]
+    
+    @State private var bookmarks: [Bookmark] = []
+    @State private var highlightedVerses: [Verse] = []
+    @State private var showBookmarksPage = false
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                
+                // Header + Bookmarks Icon
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Joshua 1")
+                            .font(.system(size: 28, weight: .semibold, design: .serif))
+                        Text("ASV")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        showBookmarksPage = true
+                    } label: {
+                        Image(systemName: "bookmark.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                    }
+                }
+                .padding()
+                
+                ScrollView {
+                    VStack(spacing: 12) {
+                        let groupedVerses = groupShortVerses(verses)
+                        ForEach(groupedVerses.indices, id: \.self) { index in
+                            let verseTile = groupedVerses[index]
+                            VerseCardHighlight(
+                                verses: verseTile,
+                                highlightedVerses: $highlightedVerses,
+                                onBookmark: { saveHighlightedVerses() },
+                                onReflect: { reflectHighlightedVerses() }
+                            )
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .sheet(isPresented: $showBookmarksPage) {
+                BookmarksPage(bookmarks: $bookmarks)
+            }
+        }
+    }
+    
+    // MARK: - Functions
+    func groupShortVerses(_ verses: [Verse]) -> [[Verse]] {
+        var result: [[Verse]] = []
+        var buffer: [Verse] = []
+        
+        for verse in verses {
+            buffer.append(verse)
+            let textLength = buffer.map { $0.text.count }.reduce(0, +)
+            let estimatedLines = Int(ceil(Double(textLength) / 50.0))
+            
+            if estimatedLines >= 4 || buffer.count == 2 {
+                result.append(buffer)
+                buffer = []
+            }
+        }
+        if !buffer.isEmpty {
+            result.append(buffer)
+        }
+        return result
+    }
+    
+    func saveHighlightedVerses() {
+        guard !highlightedVerses.isEmpty else { return }
+        bookmarks.append(Bookmark(verses: highlightedVerses))
+        highlightedVerses.removeAll()
+    }
+    
+    func reflectHighlightedVerses() {
+        guard !highlightedVerses.isEmpty else { return }
+        let combinedText = highlightedVerses.map { $0.text }.joined(separator: " ")
+        ChatManager.shared.sendToChat("I want to reflect on this passage: \(combinedText)")
+        highlightedVerses.removeAll()
+    }
+}
+
+// MARK: - Verse Card with Highlighting
+struct VerseCardHighlight: View {
+    let verses: [Verse]
+    @Binding var highlightedVerses: [Verse]
+    let onBookmark: () -> Void
+    let onReflect: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(verses) { verse in
+                HStack(alignment: .top) {
+                    Text("\(verse.number)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(verse.text)
+                        .font(.system(size: 17, weight: .regular, design: .serif))
+                        .lineSpacing(6)
+                    Spacer()
+                }
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(highlightedVerses.contains(verse) ? Color.green.opacity(0.12) : Color.clear)
+                )
+                .onTapGesture {
+                    if highlightedVerses.contains(verse) {
+                        highlightedVerses.removeAll(where: { $0 == verse })
+                    } else {
+                        highlightedVerses.append(verse)
+                    }
+                }
+            }
+            
+            // Only show buttons if any verse in this tile is highlighted
+            if verses.contains(where: { highlightedVerses.contains($0) }) {
+                HStack {
+                    Button { onBookmark() } label: {
+                        Image(systemName: "bookmark")
+                            .foregroundStyle(.green)
+                    }
+                    Spacer()
+                    Button { onReflect() } label: {
+                        Image(systemName: "bubble.left")
+                            .foregroundStyle(.blue)
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+        )
+    }
+}
+
+// MARK: - Bookmarks Page
+struct BookmarksPage: View {
+    @Binding var bookmarks: [Bookmark]
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(bookmarks) { bookmark in
+                    VStack(alignment: .leading, spacing: 4) {
+                        let verseRange = "\(bookmark.verses.first?.number ?? 0)-\(bookmark.verses.last?.number ?? 0)"
+                        Text("\(bookmark.verses.first?.book ?? "") \(verseRange)")
+                            .font(.headline)
+                        ForEach(bookmark.verses) { verse in
+                            Text(verse.text)
+                                .font(.body)
+                        }
+                        Button {
+                            let combinedText = bookmark.verses.map { $0.text }.joined(separator: " ")
+                            ChatManager.shared.sendToChat("I want to reflect on this passage: \(combinedText)")
+                        } label: {
+                            Text("Reflect")
+                                .foregroundStyle(.blue)
+                        }
+                        .padding(.top, 2)
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+            .navigationTitle("Bookmarks")
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    BibleView()
+}

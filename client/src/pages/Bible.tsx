@@ -31,6 +31,13 @@ interface BookmarkedVerse {
   reference: string;
 }
 
+interface BookmarkGroup {
+  id: string;
+  verses: { number: string; text: string }[];
+  reference: string;
+  dateSaved: Date;
+}
+
 export default function Bible() {
   const {
     currentVersion,
@@ -46,11 +53,9 @@ export default function Bible() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
-  const [highlightedVerse, setHighlightedVerse] = useState<string | null>(null);
+  const [highlightedVerses, setHighlightedVerses] = useState<Set<string>>(new Set());
   const [animateContent, setAnimateContent] = useState(false);
-  const [bookmarkedVerses, setBookmarkedVerses] = useState<Map<string, BookmarkedVerse>>(new Map());
-  const [selectedVerse, setSelectedVerse] = useState<BookmarkedVerse | null>(null);
-  const [showReflectionCTA, setShowReflectionCTA] = useState(false);
+  const [bookmarkGroups, setBookmarkGroups] = useState<BookmarkGroup[]>([]);
   const [bookmarksSheetOpen, setBookmarksSheetOpen] = useState(false);
   const urlProcessedRef = useRef(false);
   const [, navigate] = useLocation();
@@ -226,42 +231,59 @@ export default function Bible() {
     }
   };
 
+  // Toggle verse highlight on tap
   const handleVerseClick = (verseNum: string) => {
-    setHighlightedVerse(highlightedVerse === verseNum ? null : verseNum);
-  };
-
-  const handleBookmark = (verse: { number: string; text: string }) => {
-    const verseKey = `${currentChapter?.reference}:${verse.number}`;
-    const newBookmarks = new Map(bookmarkedVerses);
-    
-    if (newBookmarks.has(verseKey)) {
-      newBookmarks.delete(verseKey);
-      setShowReflectionCTA(false);
+    const newHighlighted = new Set(highlightedVerses);
+    if (newHighlighted.has(verseNum)) {
+      newHighlighted.delete(verseNum);
     } else {
-      const bookmarkData = {
-        number: verse.number,
-        text: verse.text,
-        reference: `${currentChapter?.reference}:${verse.number}`,
-      };
-      newBookmarks.set(verseKey, bookmarkData);
-      setSelectedVerse(bookmarkData);
-      setShowReflectionCTA(true);
+      newHighlighted.add(verseNum);
     }
+    setHighlightedVerses(newHighlighted);
+  };
+
+  // Save highlighted verses as a bookmark group
+  const handleSaveHighlighted = (verses: { number: string; text: string }[]) => {
+    if (highlightedVerses.size === 0 || !currentChapter) return;
     
-    setBookmarkedVerses(newBookmarks);
+    const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
+    if (selectedVerses.length === 0) return;
+    
+    const sortedVerses = selectedVerses.sort((a, b) => parseInt(a.number) - parseInt(b.number));
+    const firstVerse = sortedVerses[0].number;
+    const lastVerse = sortedVerses[sortedVerses.length - 1].number;
+    const reference = firstVerse === lastVerse 
+      ? `${currentChapter.reference}:${firstVerse}`
+      : `${currentChapter.reference}:${firstVerse}-${lastVerse}`;
+    
+    const newBookmark: BookmarkGroup = {
+      id: `${reference}-${Date.now()}`,
+      verses: sortedVerses,
+      reference,
+      dateSaved: new Date(),
+    };
+    
+    setBookmarkGroups([...bookmarkGroups, newBookmark]);
+    setHighlightedVerses(new Set());
   };
 
-  const handleReflectVerse = (verse: { number: string; text: string }) => {
-    const reference = `${currentChapter?.reference}:${verse.number}`;
-    navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(verse.text)}`);
-  };
-
-  const handleReflect = () => {
-    if (selectedVerse) {
-      // Navigate to chat with the selected verse as context
-      navigate(`/chat?verse=${encodeURIComponent(selectedVerse.reference)}&text=${encodeURIComponent(selectedVerse.text)}`);
-    }
-    setShowReflectionCTA(false);
+  // Reflect on highlighted verses
+  const handleReflectHighlighted = (verses: { number: string; text: string }[]) => {
+    if (highlightedVerses.size === 0 || !currentChapter) return;
+    
+    const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
+    if (selectedVerses.length === 0) return;
+    
+    const sortedVerses = selectedVerses.sort((a, b) => parseInt(a.number) - parseInt(b.number));
+    const firstVerse = sortedVerses[0].number;
+    const lastVerse = sortedVerses[sortedVerses.length - 1].number;
+    const reference = firstVerse === lastVerse 
+      ? `${currentChapter.reference}:${firstVerse}`
+      : `${currentChapter.reference}:${firstVerse}-${lastVerse}`;
+    const combinedText = sortedVerses.map(v => `${v.number}. ${v.text}`).join(" ");
+    
+    navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(combinedText)}`);
+    setHighlightedVerses(new Set());
   };
 
   const oldTestamentBooks = books.filter((b) => b.testament === "OT");
@@ -353,7 +375,7 @@ export default function Bible() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
                 data-testid="button-open-bookmarks"
               >
-                <Bookmark className={cn("w-5 h-5", bookmarkedVerses.size > 0 && "fill-current")} />
+                <Bookmark className={cn("w-5 h-5", bookmarkGroups.length > 0 && "fill-current")} />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
@@ -361,24 +383,30 @@ export default function Bible() {
                 <SheetTitle className="font-serif">Bookmarks</SheetTitle>
               </SheetHeader>
               <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-                {bookmarkedVerses.size === 0 ? (
+                {bookmarkGroups.length === 0 ? (
                   <div className="text-center py-12">
                     <Bookmark className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground">No bookmarks yet</p>
                     <p className="text-xs text-muted-foreground/70 mt-1">
-                      Tap the bookmark icon on any verse to save it
+                      Tap verses to highlight, then save
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3 pr-2">
-                    {Array.from(bookmarkedVerses.values()).map((bookmark) => (
-                      <Card key={bookmark.reference} className="p-3 shadow-sm">
-                        <p className="font-serif text-sm leading-relaxed text-foreground/90 line-clamp-3">
-                          {bookmark.text}
+                    {bookmarkGroups.map((bookmark) => (
+                      <Card key={bookmark.id} className="p-3 shadow-sm">
+                        <p className="text-xs font-medium text-primary mb-2">
+                          {bookmark.reference}
                         </p>
-                        <div className="flex items-center justify-between mt-2">
+                        {bookmark.verses.map((v) => (
+                          <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90 mb-1">
+                            <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
+                            {v.text}
+                          </p>
+                        ))}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
                           <p className="text-xs text-muted-foreground">
-                            {bookmark.reference}
+                            {new Date(bookmark.dateSaved).toLocaleDateString()}
                           </p>
                           <div className="flex gap-1">
                             <Button
@@ -386,7 +414,6 @@ export default function Bible() {
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-foreground"
                               onClick={() => {
-                                // Parse reference like "Psalms 23:4" to navigate
                                 const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
                                 if (match) {
                                   const [, bookName, chapter, verse] = match;
@@ -394,7 +421,7 @@ export default function Bible() {
                                 }
                                 setBookmarksSheetOpen(false);
                               }}
-                              data-testid={`button-view-bookmark-${bookmark.reference}`}
+                              data-testid={`button-view-bookmark-${bookmark.id}`}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -403,10 +430,11 @@ export default function Bible() {
                               size="icon"
                               className="h-7 w-7 text-primary"
                               onClick={() => {
-                                navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(bookmark.text)}`);
+                                const combinedText = bookmark.verses.map(v => `${v.number}. ${v.text}`).join(" ");
+                                navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(combinedText)}`);
                                 setBookmarksSheetOpen(false);
                               }}
-                              data-testid={`button-reflect-bookmark-${bookmark.reference}`}
+                              data-testid={`button-reflect-bookmark-${bookmark.id}`}
                             >
                               <MessageCircle className="w-4 h-4" />
                             </Button>
@@ -415,11 +443,9 @@ export default function Bible() {
                               size="icon"
                               className="h-7 w-7 text-destructive"
                               onClick={() => {
-                                const newBookmarks = new Map(bookmarkedVerses);
-                                newBookmarks.delete(bookmark.reference);
-                                setBookmarkedVerses(newBookmarks);
+                                setBookmarkGroups(bookmarkGroups.filter(b => b.id !== bookmark.id));
                               }}
-                              data-testid={`button-remove-bookmark-${bookmark.reference}`}
+                              data-testid={`button-remove-bookmark-${bookmark.id}`}
                             >
                               <X className="w-4 h-4" />
                             </Button>
@@ -689,71 +715,79 @@ export default function Bible() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="space-y-4"
           >
-            {/* Grouped Scripture Cards - iOS style */}
-            {groupShortVerses(verses).map((verseGroup, groupIndex) => (
-              <Card 
-                key={groupIndex}
-                className="p-5 shadow-lg border-0 bg-card"
-                data-testid={`card-scripture-${groupIndex}`}
-              >
-                <div className="space-y-3">
-                  {verseGroup.map((verse) => (
-                    <div 
-                      key={verse.number}
-                      className={cn(
-                        "flex gap-3 cursor-pointer",
-                        highlightedVerse === verse.number && "bg-[hsl(var(--sage)/0.15)] -mx-2 px-2 py-1 rounded-lg"
-                      )}
-                      onClick={() => handleVerseClick(verse.number)}
-                      data-verse={verse.number}
-                    >
-                      <span className="text-xs text-muted-foreground font-medium pt-0.5 w-5 text-right shrink-0">
-                        {verse.number}
-                      </span>
-                      <span className="font-serif text-base leading-relaxed text-foreground/90">
-                        {verse.text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {/* Action buttons for the group */}
-                <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-border/30">
-                  {verseGroup.map((verse) => (
-                    <div key={verse.number} className="flex gap-1">
-                      <motion.button
-                        className={cn(
-                          "p-1.5 rounded-md transition-colors text-xs flex items-center gap-1",
-                          bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`) 
-                            ? "text-primary" 
-                            : "text-muted-foreground/50 hover:text-primary/70"
-                        )}
-                        onClick={() => handleBookmark(verse)}
-                        whileTap={{ scale: 0.9 }}
-                        data-testid={`button-bookmark-verse-${verse.number}`}
+            {/* Grouped Scripture Cards - iOS style with tap-to-highlight */}
+            {groupShortVerses(verses).map((verseGroup, groupIndex) => {
+              const hasHighlightedInGroup = verseGroup.some(v => highlightedVerses.has(v.number));
+              
+              return (
+                <Card 
+                  key={groupIndex}
+                  className="p-5 shadow-lg border-0 bg-card"
+                  data-testid={`card-scripture-${groupIndex}`}
+                >
+                  <div className="space-y-1">
+                    {verseGroup.map((verse) => {
+                      const isHighlighted = highlightedVerses.has(verse.number);
+                      return (
+                        <motion.div 
+                          key={verse.number}
+                          className={cn(
+                            "flex gap-3 cursor-pointer p-2 rounded-xl transition-colors",
+                            isHighlighted 
+                              ? "bg-primary/10" 
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => handleVerseClick(verse.number)}
+                          data-verse={verse.number}
+                          whileTap={{ scale: 0.99 }}
+                        >
+                          <span className="text-xs text-muted-foreground font-medium pt-0.5 w-5 text-right shrink-0">
+                            {verse.number}
+                          </span>
+                          <span className="font-serif text-base leading-relaxed text-foreground/90">
+                            {verse.text}
+                          </span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Action buttons - only show when verses in this group are highlighted */}
+                  <AnimatePresence>
+                    {hasHighlightedInGroup && (
+                      <motion.div 
+                        className="flex justify-end gap-2 mt-3 pt-3 border-t border-border/30"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <Bookmark className={cn(
-                          "w-3.5 h-3.5", 
-                          bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`) && "fill-current"
-                        )} />
-                        <span className="text-[10px]">v{verse.number}</span>
-                      </motion.button>
-                    </div>
-                  ))}
-                  <motion.button
-                    className="p-1.5 rounded-md text-muted-foreground/50 hover:text-blue-500 transition-colors ml-2"
-                    onClick={() => {
-                      const allText = verseGroup.map(v => `${v.number}. ${v.text}`).join(" ");
-                      const reference = `${currentChapter?.reference}:${verseGroup[0].number}-${verseGroup[verseGroup.length - 1].number}`;
-                      navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(allText)}`);
-                    }}
-                    whileTap={{ scale: 0.9 }}
-                    data-testid={`button-reflect-group-${groupIndex}`}
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </Card>
-            ))}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary gap-1.5"
+                          onClick={() => handleSaveHighlighted(verses)}
+                          data-testid={`button-bookmark-highlighted-${groupIndex}`}
+                        >
+                          <Bookmark className="w-4 h-4" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-500 gap-1.5"
+                          onClick={() => handleReflectHighlighted(verses)}
+                          data-testid={`button-reflect-highlighted-${groupIndex}`}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Reflect
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              );
+            })}
           </motion.div>
         )}
 
@@ -769,194 +803,63 @@ export default function Bible() {
               <p className="text-sm text-muted-foreground text-center">
                 {searchResults.length} verses found for "{searchQuery}"
               </p>
-              {searchResults.slice(0, 5).map((result: any, index: number) => {
-                const verseKey = result.reference;
-                const isBookmarked = bookmarkedVerses.has(verseKey);
-                
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.08, duration: 0.3 }}
-                  >
-                    <Card className="p-4 shadow-md border-0 bg-card">
-                      <p className="font-serif text-base leading-relaxed text-foreground/90 mb-2">
-                        {result.text}
+              {searchResults.slice(0, 5).map((result: any, index: number) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.08, duration: 0.3 }}
+                >
+                  <Card className="p-4 shadow-md border-0 bg-card">
+                    <p className="font-serif text-base leading-relaxed text-foreground/90 mb-2">
+                      {result.text}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {result.reference}
                       </p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-muted-foreground">
-                          {result.reference}
-                        </p>
-                        <div className="flex gap-2">
-                          <motion.button
-                            className={cn(
-                              "p-1 rounded-md transition-colors",
-                              isBookmarked ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
-                            )}
-                            onClick={() => {
-                              const newBookmarks = new Map(bookmarkedVerses);
-                              if (newBookmarks.has(verseKey)) {
-                                newBookmarks.delete(verseKey);
-                              } else {
-                                newBookmarks.set(verseKey, {
-                                  number: "1",
-                                  text: result.text,
-                                  reference: result.reference,
-                                });
-                              }
-                              setBookmarkedVerses(newBookmarks);
-                            }}
-                            whileTap={{ scale: 0.9 }}
-                            animate={{ scale: isBookmarked ? 1.2 : 1 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                            data-testid={`button-bookmark-search-${index}`}
-                          >
-                            <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
-                          </motion.button>
-                          <motion.button
-                            className="p-1 rounded-md text-muted-foreground/50 hover:text-blue-500 transition-colors"
-                            onClick={() => {
-                              navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
-                            }}
-                            whileTap={{ scale: 0.9 }}
-                            data-testid={`button-reflect-search-${index}`}
-                          >
-                            <MessageCircle className="w-5 h-5" />
-                          </motion.button>
-                        </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary gap-1.5"
+                          onClick={() => {
+                            const newBookmark: BookmarkGroup = {
+                              id: `${result.reference}-${Date.now()}`,
+                              verses: [{ number: "1", text: result.text }],
+                              reference: result.reference,
+                              dateSaved: new Date(),
+                            };
+                            setBookmarkGroups([...bookmarkGroups, newBookmark]);
+                          }}
+                          data-testid={`button-bookmark-search-${index}`}
+                        >
+                          <Bookmark className="w-4 h-4" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-500 gap-1.5"
+                          onClick={() => {
+                            navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
+                          }}
+                          data-testid={`button-reflect-search-${index}`}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Reflect
+                        </Button>
                       </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Reflection CTA Overlay */}
-      <AnimatePresence>
-        {showReflectionCTA && selectedVerse && (
-          <motion.div
-            className="fixed bottom-24 left-4 right-4 z-50"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          >
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">Reflect on this verse?</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {selectedVerse.reference}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowReflectionCTA(false)}
-                      data-testid="button-dismiss-reflect"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleReflect}
-                      className="bg-primary text-primary-foreground"
-                      data-testid="button-reflect"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Reflect
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
-// Verse Row Component - iOS style with bookmark and reflect
-function VerseRow({ 
-  number, 
-  text, 
-  isHighlighted, 
-  isBookmarked,
-  onClick,
-  onBookmark,
-  onReflect,
-  delay = 0
-}: { 
-  number: string; 
-  text: string; 
-  isHighlighted: boolean; 
-  isBookmarked: boolean;
-  onClick: () => void;
-  onBookmark: () => void;
-  onReflect: () => void;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      className={cn(
-        "flex gap-3 p-3 -mx-3 rounded-xl cursor-pointer transition-colors duration-200",
-        isHighlighted 
-          ? "bg-[hsl(var(--sage)/0.15)]" 
-          : "hover:bg-muted/50"
-      )}
-      onClick={onClick}
-      data-verse={number}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay, duration: 0.3 }}
-      whileTap={{ scale: 0.99 }}
-    >
-      <span className="text-xs text-muted-foreground font-medium pt-1 w-5 text-right shrink-0">
-        {number}
-      </span>
-      <div className="flex-1">
-        <span className="font-serif text-base leading-relaxed text-foreground/90 block">
-          {text}
-        </span>
-        <div className="flex justify-end gap-2 mt-2">
-          <motion.button
-            className={cn(
-              "p-1 rounded-md transition-colors",
-              isBookmarked ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              onBookmark();
-            }}
-            whileTap={{ scale: 0.9 }}
-            animate={{ scale: isBookmarked ? 1.2 : 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            data-testid={`button-bookmark-verse-${number}`}
-          >
-            <Bookmark 
-              className={cn("w-4 h-4", isBookmarked && "fill-current")} 
-            />
-          </motion.button>
-          <motion.button
-            className="p-1 rounded-md text-muted-foreground/50 hover:text-blue-500 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              onReflect();
-            }}
-            whileTap={{ scale: 0.9 }}
-            data-testid={`button-reflect-verse-${number}`}
-          >
-            <MessageCircle className="w-4 h-4" />
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
