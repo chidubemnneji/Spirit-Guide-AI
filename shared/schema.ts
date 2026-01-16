@@ -244,3 +244,118 @@ export type PersonaType =
   | 'hungry_beginner'
   | 'momentum_breaker'
   | 'comparison_captive';
+
+// Devotionals table
+export const devotionals = pgTable("devotionals", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  subtitle: varchar("subtitle", { length: 300 }),
+  scriptureReference: varchar("scripture_reference", { length: 100 }).notNull(),
+  scriptureText: text("scripture_text").notNull(),
+  openingHook: text("opening_hook").notNull(),
+  reflectionContent: text("reflection_content").notNull(),
+  todaysPractice: text("todays_practice").notNull(),
+  closingPrayer: text("closing_prayer").notNull(),
+  themes: text("themes").array(),
+  estimatedReadTime: integer("estimated_read_time").default(5),
+  generatedForUserId: integer("generated_for_user_id").references(() => users.id),
+  isActive: integer("is_active").default(1),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// User devotional progress
+export const userDevotionalProgress = pgTable("user_devotional_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  devotionalId: integer("devotional_id").references(() => devotionals.id, { onDelete: "cascade" }).notNull(),
+  startedAt: timestamp("started_at").default(sql`CURRENT_TIMESTAMP`),
+  completedAt: timestamp("completed_at"),
+  timeSpentSeconds: integer("time_spent_seconds"),
+  listenedToAudio: integer("listened_to_audio").default(0),
+  reflectedWithAi: integer("reflected_with_ai").default(0),
+  rating: integer("rating"),
+  isBookmarked: integer("is_bookmarked").default(0),
+});
+
+// Daily devotional assignments
+export const dailyDevotionalAssignments = pgTable("daily_devotional_assignments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  devotionalId: integer("devotional_id").references(() => devotionals.id),
+  assignedDate: varchar("assigned_date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  isCompleted: integer("is_completed").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Devotional streaks
+export const devotionalStreaks = pgTable("devotional_streaks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  lastCompletedDate: varchar("last_completed_date", { length: 10 }), // YYYY-MM-DD format
+  totalDevotionalsCompleted: integer("total_devotionals_completed").default(0),
+  streakMilestonesAchieved: text("streak_milestones_achieved").array(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Conversation memories (for AI context)
+export const conversationMemories = pgTable("conversation_memories", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  conversationId: integer("conversation_id").references(() => conversations.id),
+  keyTopics: text("key_topics").array(),
+  emotionalPatterns: text("emotional_patterns").array(),
+  struggles: text("struggles").array(),
+  growthMoments: text("growth_moments").array(),
+  recurringQuestions: text("recurring_questions").array(),
+  faithStageIndicators: varchar("faith_stage_indicators", { length: 50 }),
+  summary: text("summary"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Insert schemas for devotional system
+export const insertDevotionalSchema = createInsertSchema(devotionals).omit({
+  id: true,
+  createdAt: true,
+  isActive: true,
+});
+
+export const insertDevotionalProgressSchema = createInsertSchema(userDevotionalProgress).omit({
+  id: true,
+  startedAt: true,
+  listenedToAudio: true,
+  reflectedWithAi: true,
+  isBookmarked: true,
+});
+
+export const insertDevotionalStreakSchema = createInsertSchema(devotionalStreaks).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const insertConversationMemorySchema = createInsertSchema(conversationMemories).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Devotional types
+export type Devotional = typeof devotionals.$inferSelect;
+export type InsertDevotional = z.infer<typeof insertDevotionalSchema>;
+
+export type UserDevotionalProgress = typeof userDevotionalProgress.$inferSelect;
+export type InsertDevotionalProgress = z.infer<typeof insertDevotionalProgressSchema>;
+
+export type DevotionalStreak = typeof devotionalStreaks.$inferSelect;
+export type InsertDevotionalStreak = z.infer<typeof insertDevotionalStreakSchema>;
+
+export type ConversationMemory = typeof conversationMemories.$inferSelect;
+export type InsertConversationMemory = z.infer<typeof insertConversationMemorySchema>;
+
+// Devotional greeting interface
+export interface DevotionalGreeting {
+  greeting: string;
+  subtext: string;
+  currentStreak: number;
+  streakTarget: number;
+}

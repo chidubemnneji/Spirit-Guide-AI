@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import type { InsertUserPersona } from "@shared/schema";
 import { signupSchema, loginSchema } from "@shared/schema";
 import { hybridAIClient } from "./services/hybridAIClient";
+import { devotionalService } from "./services/devotionalService";
 
 interface SessionWithUser extends Session {
   userId?: number;
@@ -866,6 +867,133 @@ I'm here to listen whenever you're ready to talk.`;
     } catch (error) {
       console.error("Error searching Bible:", error);
       res.status(500).json({ error: "Failed to search Bible" });
+    }
+  });
+
+  // Devotional Routes
+  app.get("/api/devotional/greeting", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const greeting = await devotionalService.getPersonalizedGreeting(session.userId);
+      res.json({ success: true, data: greeting });
+    } catch (error) {
+      console.error("Error fetching greeting:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch greeting" });
+    }
+  });
+
+  app.get("/api/devotional/today", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const devotional = await devotionalService.getTodaysDevotional(session.userId);
+      res.json({ success: true, data: devotional });
+    } catch (error) {
+      console.error("Error fetching today's devotional:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch devotional" });
+    }
+  });
+
+  app.post("/api/devotional/:devotionalId/start", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const devotionalId = parseInt(req.params.devotionalId);
+      await devotionalService.startDevotional(session.userId, devotionalId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error starting devotional:", error);
+      res.status(500).json({ success: false, error: "Failed to start devotional" });
+    }
+  });
+
+  app.post("/api/devotional/:devotionalId/complete", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const devotionalId = parseInt(req.params.devotionalId);
+      const { timeSpentSeconds } = req.body;
+      const streakData = await devotionalService.completeDevotional(
+        session.userId,
+        devotionalId,
+        timeSpentSeconds
+      );
+      res.json({ success: true, data: streakData });
+    } catch (error) {
+      console.error("Error completing devotional:", error);
+      res.status(500).json({ success: false, error: "Failed to complete devotional" });
+    }
+  });
+
+  app.get("/api/devotional/streak", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const streak = await devotionalService.getStreak(session.userId);
+      res.json({ success: true, data: streak });
+    } catch (error) {
+      console.error("Error fetching streak:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch streak" });
+    }
+  });
+
+  app.get("/api/devotional/journey", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const limit = parseInt(req.query.limit as string) || 10;
+      const journey = await devotionalService.getJourney(session.userId, limit);
+      res.json({ success: true, data: journey });
+    } catch (error) {
+      console.error("Error fetching journey:", error);
+      res.status(500).json({ success: false, error: "Failed to fetch journey" });
+    }
+  });
+
+  app.post("/api/devotional/:devotionalId/bookmark", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const devotionalId = parseInt(req.params.devotionalId);
+      const isBookmarked = await devotionalService.toggleBookmark(session.userId, devotionalId);
+      res.json({ success: true, data: { isBookmarked } });
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      res.status(500).json({ success: false, error: "Failed to toggle bookmark" });
+    }
+  });
+
+  app.post("/api/devotional/:devotionalId/rate", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+      const devotionalId = parseInt(req.params.devotionalId);
+      const { rating } = req.body;
+      if (typeof rating !== "number" || rating < 1 || rating > 5) {
+        return res.status(400).json({ success: false, error: "Rating must be between 1 and 5" });
+      }
+      await devotionalService.rateDevotional(session.userId, devotionalId, rating);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error rating devotional:", error);
+      res.status(500).json({ success: false, error: "Failed to rate devotional" });
     }
   });
 

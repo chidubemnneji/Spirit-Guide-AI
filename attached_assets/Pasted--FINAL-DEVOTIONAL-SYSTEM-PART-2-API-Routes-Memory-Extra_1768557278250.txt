@@ -1,0 +1,511 @@
+# FINAL DEVOTIONAL SYSTEM - PART 2
+## API Routes, Memory Extraction, Frontend Components
+
+---
+
+## 🔌 API ROUTES
+
+### **File:** `/server/routes/devotional.js`
+
+```javascript
+const express = require('express');
+const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
+const devotionalService = require('../services/devotionalService');
+const aiGenerator = require('../services/aiDevotionalGenerator');
+
+/**
+ * GET /api/devotional/today
+ * Get today's devotional (generates if doesn't exist)
+ */
+router.get('/today', authenticateToken, async (req, res) => {
+  try {
+    const devotional = await devotionalService.getTodaysDevotional(req.user.id);
+    
+    res.json({
+      success: true,
+      data: devotional
+    });
+  } catch (error) {
+    console.error('Get today devotional error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get devotional' });
+  }
+});
+
+/**
+ * GET /api/devotional/greeting
+ * Get personalized greeting
+ */
+router.get('/greeting', authenticateToken, async (req, res) => {
+  try {
+    const greeting = await devotionalService.getPersonalizedGreeting(req.user.id);
+    
+    res.json({
+      success: true,
+      data: greeting
+    });
+  } catch (error) {
+    console.error('Get greeting error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get greeting' });
+  }
+});
+
+/**
+ * POST /api/devotional/:devotionalId/start
+ * Track that user opened devotional
+ */
+router.post('/:devotionalId/start', authenticateToken, async (req, res) => {
+  try {
+    await devotionalService.startDevotional(req.user.id, req.params.devotionalId);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Start devotional error:', error);
+    res.status(500).json({ success: false, error: 'Failed to start devotional' });
+  }
+});
+
+/**
+ * POST /api/devotional/:devotionalId/complete
+ * Complete devotional and update streak
+ */
+router.post('/:devotionalId/complete', authenticateToken, async (req, res) => {
+  try {
+    const { timeSpentSeconds, listenedToAudio } = req.body;
+    
+    const streakData = await devotionalService.completeDevotional(
+      req.user.id,
+      req.params.devotionalId,
+      timeSpentSeconds,
+      listenedToAudio
+    );
+    
+    res.json({
+      success: true,
+      data: streakData
+    });
+  } catch (error) {
+    console.error('Complete devotional error:', error);
+    res.status(500).json({ success: false, error: 'Failed to complete devotional' });
+  }
+});
+
+/**
+ * GET /api/devotional/streak
+ * Get user's streak data
+ */
+router.get('/streak', authenticateToken, async (req, res) => {
+  try {
+    const streak = await devotionalService.getStreak(req.user.id);
+    
+    res.json({
+      success: true,
+      data: streak
+    });
+  } catch (error) {
+    console.error('Get streak error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get streak' });
+  }
+});
+
+/**
+ * GET /api/devotional/journey
+ * Get devotional history
+ */
+router.get('/journey', authenticateToken, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const journey = await devotionalService.getJourney(req.user.id, limit);
+    
+    res.json({
+      success: true,
+      data: journey
+    });
+  } catch (error) {
+    console.error('Get journey error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get journey' });
+  }
+});
+
+/**
+ * POST /api/devotional/:devotionalId/reflect
+ * Save reflection after AI chat
+ */
+router.post('/:devotionalId/reflect', authenticateToken, async (req, res) => {
+  try {
+    const { conversationId, reflectionText, emotionalResponse } = req.body;
+    
+    const reflection = await devotionalService.saveReflection(
+      req.user.id,
+      req.params.devotionalId,
+      conversationId,
+      reflectionText,
+      emotionalResponse
+    );
+    
+    res.json({
+      success: true,
+      data: reflection
+    });
+  } catch (error) {
+    console.error('Save reflection error:', error);
+    res.status(500).json({ success: false, error: 'Failed to save reflection' });
+  }
+});
+
+/**
+ * GET /api/devotional/:devotionalId/audio
+ * Generate audio for devotional
+ */
+router.get('/:devotionalId/audio', authenticateToken, async (req, res) => {
+  try {
+    const audio = await aiGenerator.generateAudio(req.params.devotionalId);
+    
+    res.json({
+      success: true,
+      data: audio
+    });
+  } catch (error) {
+    console.error('Generate audio error:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate audio' });
+  }
+});
+
+/**
+ * POST /api/devotional/:devotionalId/bookmark
+ * Toggle bookmark
+ */
+router.post('/:devotionalId/bookmark', authenticateToken, async (req, res) => {
+  try {
+    const isBookmarked = await devotionalService.toggleBookmark(
+      req.user.id,
+      req.params.devotionalId
+    );
+    
+    res.json({
+      success: true,
+      data: { isBookmarked }
+    });
+  } catch (error) {
+    console.error('Toggle bookmark error:', error);
+    res.status(500).json({ success: false, error: 'Failed to toggle bookmark' });
+  }
+});
+
+/**
+ * POST /api/devotional/:devotionalId/rate
+ * Rate devotional
+ */
+router.post('/:devotionalId/rate', authenticateToken, async (req, res) => {
+  try {
+    const { rating } = req.body;
+    
+    await devotionalService.rateDevotional(
+      req.user.id,
+      req.params.devotionalId,
+      rating
+    );
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Rate devotional error:', error);
+    res.status(500).json({ success: false, error: 'Failed to rate devotional' });
+  }
+});
+
+module.exports = router;
+```
+
+### **Register Routes in** `/server/server.js`
+
+```javascript
+// Add to server.js
+const devotionalRoutes = require('./routes/devotional');
+app.use('/api/devotional', devotionalRoutes);
+```
+
+---
+
+## 🧠 MEMORY EXTRACTION (REAL-TIME)
+
+### **File:** `/server/services/memoryExtractor.js`
+
+```javascript
+const OpenAI = require('openai');
+const db = require('../config/database');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+class MemoryExtractor {
+  /**
+   * Extract memories from conversation
+   * Called ASYNCHRONOUSLY when conversation ends
+   * User doesn't wait - happens in background
+   */
+  async extractMemories(conversationId, userId) {
+    try {
+      console.log('🧠 Extracting memories for conversation:', conversationId);
+
+      // Check if already extracted
+      const existing = await db.query(
+        'SELECT id FROM conversation_memories WHERE conversation_id = $1',
+        [conversationId]
+      );
+
+      if (existing.rows.length > 0) {
+        console.log('✅ Memories already extracted');
+        return;
+      }
+
+      // Get conversation messages
+      const messages = await db.query(
+        `SELECT role, content, created_at
+         FROM messages
+         WHERE conversation_id = $1
+         ORDER BY created_at ASC`,
+        [conversationId]
+      );
+
+      if (messages.rows.length < 3) {
+        console.log('⏭️ Conversation too short, skipping extraction');
+        return;
+      }
+
+      // Build conversation text
+      const conversationText = messages.rows
+        .map(m => `${m.role}: ${m.content}`)
+        .join('\n\n');
+
+      // Extract with GPT-4o-mini (cheap and fast)
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are analyzing a spiritual conversation to extract key insights.
+
+Extract and return JSON with these fields:
+{
+  "key_topics": ["topic1", "topic2"],           // Max 5, be SPECIFIC ("work stress" not "stress")
+  "emotional_patterns": ["emotion1", "emotion2"], // Max 5
+  "struggles": ["struggle1", "struggle2"],       // Max 5, be DETAILED
+  "growth_moments": ["moment1", "moment2"],      // Max 3, actual breakthroughs
+  "recurring_questions": ["question1"],          // Max 3, deep questions they're wrestling with
+  "faith_stage_indicators": "beginner/growing/mature", // Based on conversation depth
+  "summary": "2-sentence summary of what this conversation was about"
+}
+
+BE SPECIFIC. Examples:
+Good: "Struggling to set boundaries with coworkers"
+Bad: "Work problems"
+
+Good: "Wondering if God still hears prayers after past failures"
+Bad: "Doubting"
+
+Extract meaningful, actionable insights.`
+          },
+          {
+            role: 'user',
+            content: `Extract insights from this conversation:\n\n${conversationText}`
+          }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.3, // Low temp for consistent extraction
+      });
+
+      const insights = JSON.parse(response.choices[0].message.content);
+
+      // Save to database
+      await db.query(
+        `INSERT INTO conversation_memories (
+          user_id,
+          conversation_id,
+          key_topics,
+          emotional_patterns,
+          struggles,
+          growth_moments,
+          recurring_questions,
+          faith_stage_indicators,
+          summary
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          userId,
+          conversationId,
+          insights.key_topics || [],
+          insights.emotional_patterns || [],
+          insights.struggles || [],
+          insights.growth_moments || [],
+          insights.recurring_questions || [],
+          insights.faith_stage_indicators || 'beginner',
+          insights.summary || ''
+        ]
+      );
+
+      console.log('✅ Memories extracted and saved:', {
+        topics: insights.key_topics?.length || 0,
+        struggles: insights.struggles?.length || 0,
+        growth: insights.growth_moments?.length || 0
+      });
+
+    } catch (error) {
+      console.error('❌ Memory extraction error:', error);
+      // Don't throw - this is async, don't break user flow
+    }
+  }
+
+  /**
+   * Re-extract memories (for fixing bad extractions)
+   */
+  async reExtractMemories(conversationId, userId) {
+    try {
+      // Delete existing
+      await db.query(
+        'DELETE FROM conversation_memories WHERE conversation_id = $1',
+        [conversationId]
+      );
+
+      // Extract fresh
+      await this.extractMemories(conversationId, userId);
+      
+      console.log('✅ Memories re-extracted for:', conversationId);
+    } catch (error) {
+      console.error('Re-extract error:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = new MemoryExtractor();
+```
+
+### **Update Chat Controller to Extract Memories**
+
+**File:** `/server/controllers/chatController.js`
+
+```javascript
+const memoryExtractor = require('../services/memoryExtractor');
+
+/**
+ * End conversation and extract memories
+ * USER DOESN'T WAIT - memories extracted in background
+ */
+router.post('/conversations/:id/end', authenticateToken, async (req, res) => {
+  try {
+    const conversationId = req.params.id;
+    const userId = req.user.id;
+
+    // Mark conversation as ended
+    await db.query(
+      `UPDATE conversations 
+       SET ended_at = NOW() 
+       WHERE id = $1 AND user_id = $2`,
+      [conversationId, userId]
+    );
+
+    // ✅ CRITICAL: Extract memories ASYNCHRONOUSLY
+    // No "await" here - user doesn't wait
+    // Happens in background (2-3 seconds)
+    memoryExtractor.extractMemories(conversationId, userId)
+      .catch(err => console.error('Background memory extraction failed:', err));
+
+    // ✅ User gets instant response (0.1 seconds)
+    res.json({ 
+      success: true, 
+      message: 'Conversation ended' 
+    });
+
+  } catch (error) {
+    console.error('End conversation error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to end conversation' 
+    });
+  }
+});
+```
+
+---
+
+## 🤖 AI INTEGRATION - DEVOTIONAL CONTEXT
+
+### **Update System Prompt Builder**
+
+**File:** `/server/services/systemPromptBuilder.js`
+
+```javascript
+// ADD THIS METHOD to SystemPromptBuilder class
+
+/**
+ * Get devotional context for AI conversation
+ */
+async getDevotionalContext(userId) {
+  try {
+    // Get today's devotional if user has one
+    const todayDevotional = await db.query(
+      `SELECT d.*, dda.is_completed
+       FROM daily_devotional_assignments dda
+       JOIN devotionals d ON dda.devotional_id = d.id
+       WHERE dda.user_id = $1 
+       AND dda.assigned_date = CURRENT_DATE`,
+      [userId]
+    );
+
+    if (todayDevotional.rows.length === 0) {
+      return null;
+    }
+
+    const devotional = todayDevotional.rows[0];
+
+    return `
+═══════════════════════════════════════════════════════════
+TODAY'S DEVOTIONAL CONTEXT
+═══════════════════════════════════════════════════════════
+
+The user has been reading today's devotional:
+
+Title: ${devotional.title}
+Subtitle: ${devotional.subtitle}
+Scripture: ${devotional.scripture_reference} - "${devotional.scripture_text}"
+
+Key themes: ${devotional.themes?.join(', ')}
+
+Today's practice: ${devotional.todays_practice}
+
+Status: ${devotional.is_completed ? 'Completed' : 'In progress'}
+
+IMPORTANT INSTRUCTIONS:
+- If the user mentions "today's devotional" or "Begin Reflection" button led here, you have this context
+- Reference the scripture and themes naturally in your responses
+- Don't assume they completed it unless they say so
+- Help them explore what spoke to them about this specific devotional
+- Ask questions that help them apply it to their life
+    `;
+
+  } catch (error) {
+    console.error('Get devotional context error:', error);
+    return null;
+  }
+}
+
+// UPDATE buildSystemPrompt method to include devotional context
+
+async buildSystemPrompt(userId, conversationId) {
+  // ... existing code ...
+
+  // Add devotional context if available
+  const devotionalContext = await this.getDevotionalContext(userId);
+  if (devotionalContext) {
+    systemPrompt += devotionalContext;
+  }
+
+  // ... rest of existing code ...
+  
+  return systemPrompt;
+}
+```
+
+---
+
+(File is getting long, continuing in PART 3...)

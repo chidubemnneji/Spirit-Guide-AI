@@ -1,0 +1,944 @@
+# 🎯 FINAL DEVOTIONAL SYSTEM - COMPLETE IMPLEMENTATION
+## AI-Generated Personalized Devotionals with Memory-Based Insights
+
+---
+
+## 📋 TABLE OF CONTENTS
+
+1. [System Overview](#system-overview)
+2. [Database Schema](#database-schema)
+3. [Backend Services](#backend-services)
+4. [API Routes](#api-routes)
+5. [Frontend Components](#frontend-components)
+6. [Memory Extraction](#memory-extraction)
+7. [Push Notifications](#push-notifications)
+8. [Testing Guide](#testing-guide)
+9. [Deployment Checklist](#deployment-checklist)
+
+---
+
+## 🎯 SYSTEM OVERVIEW
+
+### **What We're Building:**
+
+A world-class devotional system that:
+- ✅ Generates personalized devotionals daily using AI (GPT-4o-mini)
+- ✅ Uses conversation memory extracts (not raw chat history)
+- ✅ Tracks streaks with celebration animations
+- ✅ Audio devotionals via text-to-speech
+- ✅ Beautiful timeline showing spiritual journey
+- ✅ Push notifications (8 AM daily, 8 PM reminders)
+- ✅ AI chat integration ("Begin Reflection" button)
+
+### **Cost:**
+```
+AI Generation (GPT-4o-mini): $25/month for 1,000 users daily
+Memory Extraction: $7/month for 1,000 users (real-time)
+Storage (PostgreSQL): $0.60/month for 10,000 users
+Push Notifications: Free (Expo)
+
+Total: ~$33/month for 1,000 active users
+```
+
+### **Architecture:**
+```
+User opens app
+    ↓
+Frontend: GET /api/devotional/today
+    ↓
+Backend checks: Devotional for today exists?
+    ↓ No
+Backend: Generate with AI
+    ↓
+1. Pull user data from database
+2. Pull memory extracts (last 7 days)
+3. Call GPT-4o-mini with personalized prompt
+4. Generate devotional (3-5 min read)
+5. Save to database
+6. Return to frontend
+    ↓
+User reads devotional
+    ↓
+User taps "Begin Reflection"
+    ↓
+Opens chat with devotional context
+AI knows what they just read
+    ↓
+User completes devotional
+    ↓
+Streak updates
+7-day milestone? → Confetti celebration! 🎊
+```
+
+---
+
+## 📊 DATABASE SCHEMA
+
+### **File:** `/server/migrations/007_devotional_system.sql`
+
+```sql
+-- =====================================================
+-- DEVOTIONAL SYSTEM - COMPLETE SCHEMA
+-- =====================================================
+
+-- AI-Generated devotionals
+CREATE TABLE devotionals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(200) NOT NULL,
+  subtitle VARCHAR(300),
+  scripture_reference VARCHAR(100) NOT NULL,
+  scripture_text TEXT NOT NULL,
+  opening_hook TEXT NOT NULL,
+  reflection_content TEXT NOT NULL,
+  todays_practice TEXT NOT NULL,
+  closing_prayer TEXT NOT NULL,
+  themes VARCHAR(100)[], -- ['anxiety', 'trust', 'surrender']
+  estimated_read_time INTEGER DEFAULT 5, -- minutes
+  audio_url TEXT, -- Base64 audio or URL to MP3
+  generated_for_user UUID REFERENCES users(id), -- NULL if generic
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_devotionals_user ON devotionals(generated_for_user, created_at DESC);
+CREATE INDEX idx_devotionals_themes ON devotionals USING GIN(themes);
+
+-- User devotional progress
+CREATE TABLE user_devotional_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  devotional_id UUID REFERENCES devotionals(id) ON DELETE CASCADE,
+  started_at TIMESTAMP DEFAULT NOW(),
+  completed_at TIMESTAMP,
+  time_spent_seconds INTEGER,
+  listened_to_audio BOOLEAN DEFAULT false,
+  reflected_with_ai BOOLEAN DEFAULT false,
+  rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+  is_bookmarked BOOLEAN DEFAULT false,
+  UNIQUE(user_id, devotional_id)
+);
+
+CREATE INDEX idx_user_devotional_user ON user_devotional_progress(user_id, completed_at DESC);
+
+-- Daily devotional assignments
+CREATE TABLE daily_devotional_assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  devotional_id UUID REFERENCES devotionals(id),
+  assigned_date DATE DEFAULT CURRENT_DATE,
+  is_completed BOOLEAN DEFAULT false,
+  notification_sent BOOLEAN DEFAULT false,
+  notification_sent_at TIMESTAMP,
+  UNIQUE(user_id, assigned_date)
+);
+
+CREATE INDEX idx_daily_assignments ON daily_devotional_assignments(user_id, assigned_date DESC);
+
+-- Devotional reflections (AI conversation about devotional)
+CREATE TABLE devotional_reflections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  devotional_id UUID REFERENCES devotionals(id) ON DELETE CASCADE,
+  conversation_id UUID REFERENCES conversations(id),
+  reflection_text TEXT,
+  key_insights TEXT[],
+  emotional_response VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_devotional_reflections ON devotional_reflections(user_id, created_at DESC);
+
+-- Streak tracking
+CREATE TABLE devotional_streaks (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  current_streak INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
+  last_completed_date DATE,
+  total_devotionals_completed INTEGER DEFAULT 0,
+  streak_milestones_achieved INTEGER[] DEFAULT '{}', -- [7, 14, 30, 100]
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Initialize streaks for existing users
+INSERT INTO devotional_streaks (user_id)
+SELECT id FROM users
+ON CONFLICT DO NOTHING;
+
+-- Add push_token to users table if not exists
+ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token TEXT;
+```
+
+---
+
+## 🤖 AI DEVOTIONAL GENERATOR
+
+### **File:** `/server/services/aiDevotionalGenerator.js`
+
+```javascript
+const OpenAI = require('openai');
+const db = require('../config/database');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+class AIDevotionalGenerator {
+  /**
+   * Generate personalized devotional for user
+   */
+  async generateDevotional(userId) {
+    try {
+      console.log('🎨 Generating AI devotional for user:', userId);
+
+      // Get user context with memory extracts
+      const userData = await this.getUserContext(userId);
+
+      // Generate devotional with AI
+      const devotional = await this.callAI(userData);
+
+      // Save to database
+      const saved = await this.saveDevotional(devotional, userId);
+
+      console.log('✅ Devotional generated:', saved.id);
+      return saved;
+
+    } catch (error) {
+      console.error('❌ Generate devotional error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user context including memory extracts (NOT raw chat)
+   */
+  async getUserContext(userId) {
+    const result = await db.query(
+      `SELECT 
+        u.id,
+        u.name,
+        u.persona_type,
+        u.persona_description,
+        
+        -- Recent emotional state
+        (SELECT primary_emotion 
+         FROM emotional_checkins 
+         WHERE user_id = u.id 
+         ORDER BY created_at DESC 
+         LIMIT 1) as recent_emotion,
+        
+        -- Memory extracts from recent conversations (NOT raw chat)
+        (SELECT json_agg(
+           json_build_object(
+             'key_topics', cm.key_topics,
+             'emotional_patterns', cm.emotional_patterns,
+             'struggles', cm.struggles,
+             'growth_moments', cm.growth_moments,
+             'recurring_questions', cm.recurring_questions,
+             'created_at', cm.created_at
+           )
+         )
+         FROM conversation_memories cm
+         WHERE cm.user_id = u.id
+         AND cm.created_at > NOW() - INTERVAL '7 days'
+         ORDER BY cm.created_at DESC
+         LIMIT 5
+        ) as recent_conversation_insights,
+        
+        -- Recurring themes (what they talk about most)
+        (SELECT array_agg(DISTINCT topic)
+         FROM (
+           SELECT unnest(key_topics) as topic
+           FROM conversation_memories
+           WHERE user_id = u.id
+           AND created_at > NOW() - INTERVAL '30 days'
+         ) t
+         LIMIT 8) as recurring_themes,
+        
+        -- Recent struggles (aggregated)
+        (SELECT array_agg(DISTINCT struggle)
+         FROM (
+           SELECT unnest(struggles) as struggle
+           FROM conversation_memories
+           WHERE user_id = u.id
+           AND created_at > NOW() - INTERVAL '14 days'
+         ) s
+         LIMIT 10) as recent_struggles,
+        
+        -- Recent breakthroughs
+        (SELECT array_agg(moment)
+         FROM (
+           SELECT unnest(growth_moments) as moment
+           FROM conversation_memories
+           WHERE user_id = u.id
+           AND created_at > NOW() - INTERVAL '14 days'
+         ) g
+         LIMIT 5) as recent_breakthroughs,
+        
+        -- Devotionals already read (don't repeat themes)
+        (SELECT array_agg(json_build_object('title', d.title, 'themes', d.themes))
+         FROM (
+           SELECT d.title, d.themes
+           FROM user_devotional_progress udp
+           JOIN devotionals d ON udp.devotional_id = d.id
+           WHERE udp.user_id = u.id
+           AND udp.completed_at IS NOT NULL
+           ORDER BY udp.completed_at DESC
+           LIMIT 30
+         ) d) as recent_devotionals
+
+       FROM users u
+       WHERE u.id = $1`,
+      [userId]
+    );
+
+    return result.rows[0];
+  }
+
+  /**
+   * Call GPT-4o-mini to generate devotional
+   */
+  async callAI(userData) {
+    const prompt = this.buildPrompt(userData);
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a compassionate pastoral counselor writing personalized daily devotionals.
+
+Your devotionals should be:
+- 3-5 minutes to read (500-700 words total)
+- Deeply personal and relevant to the person's current spiritual state
+- Biblically grounded with ONE key scripture passage
+- Honest, warm, and non-judgmental (never preachy or cliché)
+- Structured: opening hook, reflection, practice, prayer
+
+Format as JSON:
+{
+  "title": "Engaging, specific title (not generic)",
+  "subtitle": "One sentence about what this addresses",
+  "scripture_reference": "Book Chapter:Verse",
+  "scripture_text": "Full verse text",
+  "opening_hook": "2-3 sentences that grab attention with story/question",
+  "reflection_content": "Main body, 3-4 paragraphs, 400-500 words",
+  "todays_practice": "Specific, actionable practice (not 'pray more')",
+  "closing_prayer": "Personal, honest prayer, 2-3 sentences",
+  "themes": ["theme1", "theme2", "theme3"]
+}
+
+Key rules:
+- Meet them where they are (if struggling, acknowledge it)
+- Reference their recent experiences naturally (but don't say "I read your chat")
+- Choose scripture that speaks directly to their situation
+- Make practice ultra-specific and doable TODAY
+- Don't repeat themes from their recent devotionals`
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.8, // Creative but consistent
+    });
+
+    const content = JSON.parse(response.choices[0].message.content);
+    return content;
+  }
+
+  /**
+   * Build personalized prompt
+   */
+  buildPrompt(userData) {
+    // Format conversation insights
+    let conversationContext = 'No recent conversations';
+    if (userData.recent_conversation_insights) {
+      conversationContext = userData.recent_conversation_insights
+        .map((insight, i) => {
+          const daysAgo = Math.floor(
+            (Date.now() - new Date(insight.created_at)) / (1000 * 60 * 60 * 24)
+          );
+          
+          return `
+Conversation ${i + 1} (${daysAgo} days ago):
+- Topics: ${insight.key_topics?.join(', ') || 'None'}
+- Emotions: ${insight.emotional_patterns?.join(', ') || 'None'}
+- Struggles: ${insight.struggles?.join(', ') || 'None'}
+- Growth: ${insight.growth_moments?.join(', ') || 'None'}
+- Questions: ${insight.recurring_questions?.join(', ') || 'None'}`;
+        })
+        .join('\n');
+    }
+
+    // Format recent devotional themes to avoid
+    let recentThemes = 'None yet';
+    if (userData.recent_devotionals) {
+      const themes = userData.recent_devotionals
+        .flatMap(d => d.themes || [])
+        .filter((t, i, arr) => arr.indexOf(t) === i) // Unique
+        .slice(0, 15);
+      recentThemes = themes.join(', ') || 'None yet';
+    }
+
+    return `Create a personalized devotional for ${userData.name}.
+
+═══════════════════════════════════════════════════════════
+ABOUT ${userData.name?.toUpperCase() || 'USER'}
+═══════════════════════════════════════════════════════════
+
+CORE IDENTITY:
+Persona: ${userData.persona_type || 'Not set'}
+${userData.persona_description || ''}
+
+CURRENT STATE:
+Recent emotion: ${userData.recent_emotion || 'Peaceful'}
+
+═══════════════════════════════════════════════════════════
+RECENT CONVERSATION INSIGHTS (Last 7 days)
+═══════════════════════════════════════════════════════════
+
+${conversationContext}
+
+═══════════════════════════════════════════════════════════
+PATTERNS OVER TIME
+═══════════════════════════════════════════════════════════
+
+Recurring themes they discuss:
+${userData.recurring_themes?.join(', ') || 'None yet'}
+
+Ongoing struggles:
+${userData.recent_struggles?.join(', ') || 'None identified'}
+
+Recent breakthroughs:
+${userData.recent_breakthroughs?.join(', ') || 'None yet'}
+
+═══════════════════════════════════════════════════════════
+THEMES TO AVOID (Recently covered)
+═══════════════════════════════════════════════════════════
+
+${recentThemes}
+
+═══════════════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════════════
+
+Create a devotional that:
+
+1. MEETS THEM WHERE THEY ARE
+   - If struggling, acknowledge it (don't be falsely cheerful)
+   - If they had a breakthrough, build on it
+   - If they keep asking the same question, address it
+
+2. CONNECTS TO RECENT INSIGHTS
+   - Reference themes from their recent conversations naturally
+   - Address their ongoing struggles
+   - Celebrate growth moments they've had
+
+3. MOVES THEM FORWARD
+   - Don't just comfort, challenge growth
+   - Give ultra-specific practice (not generic "pray" or "read Bible")
+   - Choose scripture that speaks directly to their situation
+
+4. FEELS PERSONAL (But not creepy)
+   - Write as if you know them, but don't say "I read your conversations"
+   - Be specific to their journey
+   - Warm, honest, never preachy
+
+CRITICAL:
+- Don't repeat themes from their recent devotionals
+- If they're doubting, honor that (don't dismiss questions)
+- If they're hurting, sit with them there (don't rush to solutions)
+- Make today's practice something they can do in 5-10 minutes TODAY
+
+Create their devotional now in JSON format.`;
+  }
+
+  /**
+   * Save generated devotional to database
+   */
+  async saveDevotional(content, userId) {
+    // Save devotional
+    const result = await db.query(
+      `INSERT INTO devotionals (
+        title,
+        subtitle,
+        scripture_reference,
+        scripture_text,
+        opening_hook,
+        reflection_content,
+        todays_practice,
+        closing_prayer,
+        themes,
+        estimated_read_time,
+        generated_for_user
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 5, $10)
+      RETURNING *`,
+      [
+        content.title,
+        content.subtitle,
+        content.scripture_reference,
+        content.scripture_text,
+        content.opening_hook,
+        content.reflection_content,
+        content.todays_practice,
+        content.closing_prayer,
+        content.themes || [],
+        userId
+      ]
+    );
+
+    const devotional = result.rows[0];
+
+    // Assign to user for today
+    await db.query(
+      `INSERT INTO daily_devotional_assignments 
+       (user_id, devotional_id, assigned_date)
+       VALUES ($1, $2, CURRENT_DATE)
+       ON CONFLICT (user_id, assigned_date) 
+       DO UPDATE SET devotional_id = $2`,
+      [userId, devotional.id]
+    );
+
+    return devotional;
+  }
+
+  /**
+   * Generate audio for devotional (text-to-speech)
+   */
+  async generateAudio(devotionalId) {
+    try {
+      const devotional = await db.query(
+        'SELECT * FROM devotionals WHERE id = $1',
+        [devotionalId]
+      );
+
+      if (devotional.rows.length === 0) {
+        throw new Error('Devotional not found');
+      }
+
+      const d = devotional.rows[0];
+
+      // Build full audio script
+      const script = `
+${d.title}. ${d.subtitle}.
+
+Today's scripture reading is ${d.scripture_reference}.
+
+${d.scripture_text}
+
+${d.opening_hook}
+
+${d.reflection_content}
+
+Today's practice: ${d.todays_practice}
+
+Let's pray together: ${d.closing_prayer}
+      `.trim();
+
+      // Generate audio with OpenAI TTS
+      const mp3 = await openai.audio.speech.create({
+        model: 'tts-1',
+        voice: 'nova', // Warm female voice
+        input: script,
+        speed: 0.9, // Slightly slower for meditation
+      });
+
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      const base64Audio = buffer.toString('base64');
+
+      // Optionally save to database
+      await db.query(
+        'UPDATE devotionals SET audio_url = $1 WHERE id = $2',
+        [`data:audio/mp3;base64,${base64Audio}`, devotionalId]
+      );
+
+      return {
+        audioData: base64Audio,
+        format: 'mp3',
+        duration: Math.ceil(script.split(' ').length / 150 * 60)
+      };
+
+    } catch (error) {
+      console.error('Generate audio error:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = new AIDevotionalGenerator();
+```
+
+---
+
+## 📝 DEVOTIONAL SERVICE
+
+### **File:** `/server/services/devotionalService.js`
+
+```javascript
+const db = require('../config/database');
+const aiGenerator = require('./aiDevotionalGenerator');
+
+class DevotionalService {
+  /**
+   * Get today's devotional (generate if doesn't exist)
+   */
+  async getTodaysDevotional(userId) {
+    try {
+      // Check if user has devotional for today
+      const existing = await db.query(
+        `SELECT da.*, d.*
+         FROM daily_devotional_assignments da
+         JOIN devotionals d ON da.devotional_id = d.id
+         WHERE da.user_id = $1 
+         AND da.assigned_date = CURRENT_DATE`,
+        [userId]
+      );
+
+      if (existing.rows.length > 0) {
+        console.log('📖 Returning existing devotional for user:', userId);
+        return existing.rows[0];
+      }
+
+      // Generate new AI devotional
+      console.log('🎨 No devotional found, generating new one...');
+      const devotional = await aiGenerator.generateDevotional(userId);
+
+      return devotional;
+
+    } catch (error) {
+      console.error('Get today devotional error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get personalized greeting
+   */
+  async getPersonalizedGreeting(userId) {
+    try {
+      const userData = await db.query(
+        `SELECT 
+           u.name,
+           u.persona_type,
+           ds.current_streak,
+           ec.primary_emotion as recent_emotion
+         FROM users u
+         LEFT JOIN devotional_streaks ds ON ds.user_id = u.id
+         LEFT JOIN LATERAL (
+           SELECT primary_emotion
+           FROM emotional_checkins
+           WHERE user_id = u.id
+           ORDER BY created_at DESC
+           LIMIT 1
+         ) ec ON true
+         WHERE u.id = $1`,
+        [userId]
+      );
+
+      const user = userData.rows[0];
+      const hour = new Date().getHours();
+
+      let timeGreeting = 'Good Morning';
+      let emoji = '🌅';
+      
+      if (hour >= 12 && hour < 17) {
+        timeGreeting = 'Good Afternoon';
+        emoji = '☀️';
+      } else if (hour >= 17) {
+        timeGreeting = 'Good Evening';
+        emoji = '🌙';
+      }
+
+      const streak = user.current_streak || 0;
+      let subtitle = '';
+
+      if (streak === 0) {
+        subtitle = "Let's start your spiritual journey together";
+      } else if (streak < 7) {
+        subtitle = `Day ${streak} of seeking God`;
+      } else if (streak < 30) {
+        subtitle = `${streak} days of faithful showing up`;
+      } else {
+        subtitle = `${streak} days strong — you're building something beautiful`;
+      }
+
+      return {
+        greeting: `${timeGreeting}, ${user.name} ${emoji}`,
+        subtitle,
+        streak,
+        personaType: user.persona_type,
+        recentEmotion: user.recent_emotion
+      };
+
+    } catch (error) {
+      console.error('Get greeting error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start devotional (track opening)
+   */
+  async startDevotional(userId, devotionalId) {
+    try {
+      await db.query(
+        `INSERT INTO user_devotional_progress 
+         (user_id, devotional_id, started_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id, devotional_id) 
+         DO UPDATE SET started_at = NOW()`,
+        [userId, devotionalId]
+      );
+    } catch (error) {
+      console.error('Start devotional error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete devotional and update streak
+   */
+  async completeDevotional(userId, devotionalId, timeSpentSeconds, listenedToAudio = false) {
+    const client = await db.getClient();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Mark complete
+      await client.query(
+        `UPDATE user_devotional_progress
+         SET completed_at = NOW(),
+             time_spent_seconds = $3,
+             listened_to_audio = $4
+         WHERE user_id = $1 AND devotional_id = $2`,
+        [userId, devotionalId, timeSpentSeconds, listenedToAudio]
+      );
+
+      // Mark assignment complete
+      await client.query(
+        `UPDATE daily_devotional_assignments
+         SET is_completed = true
+         WHERE user_id = $1 AND devotional_id = $2`,
+        [userId, devotionalId]
+      );
+
+      // Update streak
+      const streakUpdate = await this.updateStreak(client, userId);
+
+      await client.query('COMMIT');
+
+      return streakUpdate;
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Complete devotional error:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update streak logic
+   */
+  async updateStreak(client, userId) {
+    const streakData = await client.query(
+      'SELECT * FROM devotional_streaks WHERE user_id = $1',
+      [userId]
+    );
+
+    let streak = streakData.rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    let currentStreak = streak.current_streak;
+    let longestStreak = streak.longest_streak;
+    let newMilestones = [];
+
+    // Check if continuing streak
+    if (streak.last_completed_date === yesterday) {
+      currentStreak += 1;
+    } else if (streak.last_completed_date !== today) {
+      // Streak broken, reset
+      currentStreak = 1;
+    } else {
+      // Already completed today
+      return {
+        currentStreak: streak.current_streak,
+        longestStreak: streak.longest_streak,
+        newMilestones: [],
+        totalCompleted: streak.total_devotionals_completed
+      };
+    }
+
+    // Update longest
+    if (currentStreak > longestStreak) {
+      longestStreak = currentStreak;
+    }
+
+    // Check milestones
+    const milestones = [7, 14, 30, 50, 100, 365];
+    const achieved = streak.streak_milestones_achieved || [];
+    
+    for (const milestone of milestones) {
+      if (currentStreak >= milestone && !achieved.includes(milestone)) {
+        newMilestones.push(milestone);
+        achieved.push(milestone);
+      }
+    }
+
+    // Update database
+    await client.query(
+      `UPDATE devotional_streaks
+       SET current_streak = $1,
+           longest_streak = $2,
+           last_completed_date = CURRENT_DATE,
+           total_devotionals_completed = total_devotionals_completed + 1,
+           streak_milestones_achieved = $3,
+           updated_at = NOW()
+       WHERE user_id = $4`,
+      [currentStreak, longestStreak, achieved, userId]
+    );
+
+    return {
+      currentStreak,
+      longestStreak,
+      newMilestones,
+      totalCompleted: streak.total_devotionals_completed + 1
+    };
+  }
+
+  /**
+   * Get streak data
+   */
+  async getStreak(userId) {
+    try {
+      const result = await db.query(
+        'SELECT * FROM devotional_streaks WHERE user_id = $1',
+        [userId]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Get streak error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get journey (devotional history)
+   */
+  async getJourney(userId, limit = 10) {
+    try {
+      const result = await db.query(
+        `SELECT 
+           d.id,
+           d.title,
+           d.subtitle,
+           d.scripture_reference,
+           udp.completed_at,
+           udp.time_spent_seconds,
+           udp.listened_to_audio,
+           udp.rating,
+           dr.reflection_text,
+           dr.emotional_response,
+           ec.primary_emotion as emotion_that_day
+         FROM user_devotional_progress udp
+         JOIN devotionals d ON udp.devotional_id = d.id
+         LEFT JOIN devotional_reflections dr 
+           ON dr.devotional_id = d.id AND dr.user_id = udp.user_id
+         LEFT JOIN LATERAL (
+           SELECT primary_emotion
+           FROM emotional_checkins
+           WHERE user_id = udp.user_id
+           AND DATE(created_at) = DATE(udp.completed_at)
+           ORDER BY created_at DESC
+           LIMIT 1
+         ) ec ON true
+         WHERE udp.user_id = $1
+         AND udp.completed_at IS NOT NULL
+         ORDER BY udp.completed_at DESC
+         LIMIT $2`,
+        [userId, limit]
+      );
+
+      return result.rows;
+    } catch (error) {
+      console.error('Get journey error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save reflection from AI chat
+   */
+  async saveReflection(userId, devotionalId, conversationId, reflectionText, emotionalResponse) {
+    try {
+      // Mark reflected with AI
+      await db.query(
+        `UPDATE user_devotional_progress
+         SET reflected_with_ai = true
+         WHERE user_id = $1 AND devotional_id = $2`,
+        [userId, devotionalId]
+      );
+
+      // Save reflection
+      const result = await db.query(
+        `INSERT INTO devotional_reflections
+         (user_id, devotional_id, conversation_id, reflection_text, emotional_response)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [userId, devotionalId, conversationId, reflectionText, emotionalResponse]
+      );
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Save reflection error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle bookmark
+   */
+  async toggleBookmark(userId, devotionalId) {
+    try {
+      const result = await db.query(
+        `UPDATE user_devotional_progress
+         SET is_bookmarked = NOT is_bookmarked
+         WHERE user_id = $1 AND devotional_id = $2
+         RETURNING is_bookmarked`,
+        [userId, devotionalId]
+      );
+
+      return result.rows[0]?.is_bookmarked || false;
+    } catch (error) {
+      console.error('Toggle bookmark error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rate devotional
+   */
+  async rateDevotional(userId, devotionalId, rating) {
+    try {
+      await db.query(
+        `UPDATE user_devotional_progress
+         SET rating = $3
+         WHERE user_id = $1 AND devotional_id = $2`,
+        [userId, devotionalId, rating]
+      );
+    } catch (error) {
+      console.error('Rate devotional error:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = new DevotionalService();
+```
+
+---
+
+(CONTINUING IN NEXT SECTION...)
