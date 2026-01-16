@@ -483,17 +483,43 @@ export default function Bible() {
               transition={{ duration: 0.2 }}
             >
               <div className="flex gap-2">
-                <Input
-                  placeholder="Search the Bible..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="flex-1"
-                  data-testid="input-search"
-                />
-                <Button onClick={handleSearch} disabled={searchLoading} data-testid="button-do-search">
-                  {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
+                <div className="flex-1 relative">
+                  <Input
+                    placeholder="Search by feeling or keyword..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="pr-10"
+                    data-testid="input-search"
+                  />
+                </div>
+                <Button 
+                  onClick={handleSearch} 
+                  disabled={searchLoading}
+                  size="icon"
+                  variant="ghost"
+                  className="text-primary"
+                  data-testid="button-do-search"
+                >
+                  {searchLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
                 </Button>
+              </div>
+              {/* Feeling suggestions */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {["anxious", "fear", "hope", "peace", "strength", "comfort"].map((feeling) => (
+                  <Button
+                    key={feeling}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs capitalize"
+                    onClick={() => {
+                      setSearchQuery(feeling);
+                    }}
+                    data-testid={`button-feeling-${feeling}`}
+                  >
+                    {feeling}
+                  </Button>
+                ))}
               </div>
             </motion.div>
           )}
@@ -561,31 +587,72 @@ export default function Bible() {
           </motion.div>
         )}
 
-        {/* Search Results */}
+        {/* Search Results - Verse Cards */}
         <AnimatePresence>
           {searchOpen && searchResults.length > 0 && (
             <motion.div 
-              className="mt-6 space-y-3"
+              className="space-y-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Search Results
-              </h3>
-              {searchResults.map((result: any, index: number) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="p-4 hover-elevate cursor-pointer">
-                    <p className="text-sm font-medium text-primary mb-1">{result.reference}</p>
-                    <p className="text-sm text-foreground/80 font-serif leading-relaxed">{result.text}</p>
-                  </Card>
-                </motion.div>
-              ))}
+              <p className="text-sm text-muted-foreground text-center">
+                {searchResults.length} verses found for "{searchQuery}"
+              </p>
+              {searchResults.slice(0, 5).map((result: any, index: number) => {
+                const verseKey = result.reference;
+                const isBookmarked = bookmarkedVerses.has(verseKey);
+                
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.08, duration: 0.3 }}
+                  >
+                    <Card className="p-4 shadow-md border-0 bg-card">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <p className="font-serif text-base leading-relaxed text-foreground/90 mb-2">
+                            {result.text}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {result.reference}
+                          </p>
+                        </div>
+                        <motion.button
+                          className={cn(
+                            "p-1 h-fit rounded-md transition-colors shrink-0",
+                            isBookmarked ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
+                          )}
+                          onClick={() => {
+                            const newBookmarks = new Set(bookmarkedVerses);
+                            if (newBookmarks.has(verseKey)) {
+                              newBookmarks.delete(verseKey);
+                              setShowReflectionCTA(false);
+                            } else {
+                              newBookmarks.add(verseKey);
+                              setSelectedVerse({
+                                number: "1",
+                                text: result.text,
+                                reference: result.reference,
+                              });
+                              setShowReflectionCTA(true);
+                            }
+                            setBookmarkedVerses(newBookmarks);
+                          }}
+                          whileTap={{ scale: 0.9 }}
+                          animate={{ scale: isBookmarked ? 1.2 : 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                          data-testid={`button-bookmark-search-${index}`}
+                        >
+                          <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
+                        </motion.button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           )}
         </AnimatePresence>
