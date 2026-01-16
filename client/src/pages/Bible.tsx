@@ -167,9 +167,9 @@ export default function Bible() {
         const verseElement = document.querySelector(`[data-verse="${targetVerse}"]`);
         if (verseElement) {
           verseElement.scrollIntoView({ behavior: "smooth", block: "center" });
-          setHighlightedVerse(targetVerse);
+          setHighlightedVerses(new Set([targetVerse]));
           setTimeout(() => {
-            setHighlightedVerse(null);
+            setHighlightedVerses(new Set());
           }, 3000);
         }
         setTargetVerse(null);
@@ -349,9 +349,10 @@ export default function Bible() {
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* iOS-style Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
-        {/* Chapter Title & Version */}
-        <div className="relative py-4 px-14">
-          <div className="text-center">
+        {/* Chapter Title & Version with Bookmark on Right */}
+        <div className="flex items-center justify-between py-4 px-4">
+          <div className="w-10" /> {/* Spacer for balance */}
+          <div className="text-center flex-1">
             <motion.h1 
               className="font-serif text-2xl font-semibold text-foreground"
               initial={{ opacity: 0, y: -10 }}
@@ -366,13 +367,13 @@ export default function Bible() {
               </p>
             )}
           </div>
-          {/* Bookmarks Icon - Top Right */}
+          {/* Bookmarks Icon - Right Side */}
           <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
+                className="text-primary"
                 data-testid="button-open-bookmarks"
               >
                 <Bookmark className={cn("w-7 h-7", bookmarkGroups.length > 0 && "fill-current")} />
