@@ -452,8 +452,8 @@ export default function Chat() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex flex-col max-w-4xl mx-auto w-full">
-        <div className="flex-1 overflow-y-auto px-4 py-6">
+      <main className="flex-1 overflow-hidden flex flex-col w-full">
+        <div className="flex-1 overflow-y-auto px-3 py-4">
           {initError ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-6">
@@ -479,7 +479,7 @@ export default function Chat() {
               }}
             />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {messages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
               ))}
@@ -499,8 +499,8 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="border-t border-border/50 glass p-4">
-          <div className="max-w-3xl mx-auto">
+        <div className="border-t border-border/50 glass p-3">
+          <div className="w-full">
             <Card className="flex items-end gap-2 p-2 glass-subtle glow-border shadow-subtle">
               <Textarea
                 ref={textareaRef}
@@ -508,7 +508,7 @@ export default function Chat() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Share what's on your heart..."
-                className="min-h-[48px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 text-base tracking-refined"
+                className="min-h-[44px] max-h-[160px] resize-none border-0 bg-transparent focus-visible:ring-0 text-sm tracking-refined"
                 rows={1}
                 data-testid="input-message"
               />
@@ -704,23 +704,22 @@ function MessageBubble({
       data-testid={`message-${message.role}-${message.id}`}
     >
       {!isUser && (
-        <div className="relative flex-shrink-0 mt-1">
-          <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-gentle" />
-          <div className="relative w-9 h-9 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary" />
+        <div className="relative flex-shrink-0 mt-0.5">
+          <div className="relative w-7 h-7 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
           </div>
         </div>
       )}
-      <div className="flex flex-col max-w-[80%] sm:max-w-md">
+      <div className="flex flex-col max-w-[85%]">
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 tracking-refined",
+            "rounded-2xl px-3 py-2.5 tracking-refined",
             isUser
               ? "gradient-primary text-white shadow-primary rounded-br-md"
               : "glass-subtle glow-border shadow-subtle rounded-bl-md"
           )}
         >
-          <p className="text-base leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
             {parseContentWithVerseLinks(message.content, navigate, isUser)}
             {isStreaming && (
               <span className="inline-flex items-center gap-1 ml-2">
