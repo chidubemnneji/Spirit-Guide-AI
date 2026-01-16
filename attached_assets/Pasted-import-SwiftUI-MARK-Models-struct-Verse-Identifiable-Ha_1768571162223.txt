@@ -1,0 +1,178 @@
+import SwiftUI
+
+// MARK: - Models
+struct Verse: Identifiable, Hashable {
+    let id = UUID()
+    let number: Int
+    let text: String
+}
+
+// MARK: - Chat Manager (Simulated)
+class ChatManager: ObservableObject {
+    static let shared = ChatManager()
+    @Published var messages: [String] = []
+    
+    func sendToChat(_ message: String) {
+        messages.append(message)
+        print("Sent to Chat: \(message)")
+    }
+}
+
+// MARK: - Main View
+struct BibleReaderView: View {
+    // MARK: - State
+    @State private var highlightedVerses: Set<Verse> = []
+    
+    @State private var searchText: String = ""
+    @State private var isSearching: Bool = false
+    @State private var searchResults: [Verse] = []
+    
+    // Sample verses
+    @State private var verses: [Verse] = [
+        Verse(number: 1, text: "Now it came to pass after the death of Moses the servant of the Lord..."),
+        Verse(number: 2, text: "Moses my servant is dead; now therefore arise..."),
+        Verse(number: 3, text: "Every place that the sole of your foot shall tread upon..."),
+        Verse(number: 4, text: "Be strong and of a good courage; be not afraid..."),
+        Verse(number: 5, text: "I will not fail thee, nor forsake thee.")
+    ]
+    
+    let currentBook = "Joshua"
+    let currentChapter = "1"
+    
+    // MARK: - Body
+    var body: some View {
+        NavigationStack {
+            VStack {
+                // Header
+                Text("\(currentBook) \(currentChapter)")
+                    .font(.title2.weight(.semibold))
+                    .padding(.top)
+                
+                // Search Bar
+                TextField("Search by verse, word, or feeling...", text: $searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+                    .onChange(of: searchText) { newText in
+                        performSearch(query: newText)
+                    }
+                
+                // Verses / Search Results
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        let displayVerses = (isSearching && !searchText.isEmpty) ? searchResults : verses
+                        ForEach(displayVerses) { verse in
+                            VerseTile(verse: verse, highlightedVerses: $highlightedVerses)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                }
+                
+                // Bookmark & Reflect Buttons
+                if !highlightedVerses.isEmpty {
+                    HStack(spacing: 20) {
+                        Button {
+                            bookmarkSelected()
+                        } label: {
+                            Text("Bookmark Selected")
+                                .bold()
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.green.opacity(0.2))
+                                .cornerRadius(12)
+                        }
+                        
+                        Button {
+                            reflectSelected()
+                        } label: {
+                            Text("Reflect")
+                                .bold()
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.blue.opacity(0.2))
+                                .cornerRadius(12)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                }
+            }
+            .navigationTitle("Bible")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+    
+    // MARK: - Methods
+    func performSearch(query: String) {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+        // Fake search: return 3-5 verses containing the keyword
+        searchResults = verses.filter { $0.text.localizedCaseInsensitiveContains(query) }
+        if searchResults.count > 5 { searchResults = Array(searchResults.prefix(5)) }
+    }
+    
+    func bookmarkSelected() {
+        // For demo, just print the bookmarked verses
+        print("Bookmarked verses:")
+        for verse in highlightedVerses.sorted(by: { $0.number < $1.number }) {
+            print("\(verse.number): \(verse.text)")
+        }
+        highlightedVerses.removeAll()
+    }
+    
+    func reflectSelected() {
+        guard !highlightedVerses.isEmpty else { return }
+        let combinedText = highlightedVerses.sorted(by: { $0.number < $1.number }).map { $0.text }.joined(separator: " ")
+        ChatManager.shared.sendToChat("I want to reflect on this passage: \(combinedText)")
+        highlightedVerses.removeAll()
+    }
+}
+
+// MARK: - Verse Tile
+struct VerseTile: View {
+    let verse: Verse
+    @Binding var highlightedVerses: Set<Verse>
+    
+    var isHighlighted: Bool { highlightedVerses.contains(verse) }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top) {
+                Text("\(verse.number)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Text(verse.text)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(8)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(style: StrokeStyle(lineWidth: 2, dash: isHighlighted ? [5] : []))
+                    .foregroundColor(isHighlighted ? .green : .clear)
+                    .animation(.easeInOut, value: isHighlighted)
+            )
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    toggleHighlight()
+                }
+            }
+        }
+    }
+    
+    private func toggleHighlight() {
+        if isHighlighted {
+            highlightedVerses.remove(verse)
+        } else {
+            highlightedVerses.insert(verse)
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    BibleReaderView()
+}

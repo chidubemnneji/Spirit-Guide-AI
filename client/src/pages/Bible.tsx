@@ -717,15 +717,12 @@ export default function Bible() {
             className="space-y-4"
           >
             {/* Grouped Scripture Cards - iOS style with tap-to-highlight */}
-            {groupShortVerses(verses).map((verseGroup, groupIndex) => {
-              const hasHighlightedInGroup = verseGroup.some(v => highlightedVerses.has(v.number));
-              
-              return (
-                <Card 
-                  key={groupIndex}
-                  className="p-5 shadow-lg border-0 bg-card"
-                  data-testid={`card-scripture-${groupIndex}`}
-                >
+            {groupShortVerses(verses).map((verseGroup, groupIndex) => (
+              <Card 
+                key={groupIndex}
+                className="p-5 shadow-lg border-0 bg-card"
+                data-testid={`card-scripture-${groupIndex}`}
+              >
                   <div className="space-y-1">
                     {verseGroup.map((verse) => {
                       const isHighlighted = highlightedVerses.has(verse.number);
@@ -733,16 +730,23 @@ export default function Bible() {
                         <motion.div 
                           key={verse.number}
                           className={cn(
-                            "flex gap-3 cursor-pointer p-2 rounded-xl transition-colors",
+                            "flex gap-3 cursor-pointer p-2 rounded-xl transition-all",
                             isHighlighted 
-                              ? "bg-primary/10" 
-                              : "hover:bg-muted/50"
+                              ? "border-2 border-dashed border-primary bg-primary/5" 
+                              : "border-2 border-transparent hover:bg-muted/50"
                           )}
                           onClick={() => handleVerseClick(verse.number)}
                           data-verse={verse.number}
-                          whileTap={{ scale: 0.99 }}
+                          whileTap={{ scale: 0.98 }}
+                          animate={{ 
+                            scale: isHighlighted ? 1.01 : 1,
+                          }}
+                          transition={{ duration: 0.2 }}
                         >
-                          <span className="text-xs text-muted-foreground font-medium pt-0.5 w-5 text-right shrink-0">
+                          <span className={cn(
+                            "text-xs font-medium pt-0.5 w-5 text-right shrink-0",
+                            isHighlighted ? "text-primary" : "text-muted-foreground"
+                          )}>
                             {verse.number}
                           </span>
                           <span className="font-serif text-base leading-relaxed text-foreground/90">
@@ -752,43 +756,8 @@ export default function Bible() {
                       );
                     })}
                   </div>
-                  
-                  {/* Action buttons - only show when verses in this group are highlighted */}
-                  <AnimatePresence>
-                    {hasHighlightedInGroup && (
-                      <motion.div 
-                        className="flex justify-end gap-2 mt-3 pt-3 border-t border-border/30"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary gap-1.5"
-                          onClick={() => handleSaveHighlighted(verses)}
-                          data-testid={`button-bookmark-highlighted-${groupIndex}`}
-                        >
-                          <Bookmark className="w-4 h-4" />
-                          Save
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-500 gap-1.5"
-                          onClick={() => handleReflectHighlighted(verses)}
-                          data-testid={`button-reflect-highlighted-${groupIndex}`}
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          Reflect
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </Card>
-              );
-            })}
+            ))}
           </motion.div>
         )}
 
