@@ -286,6 +286,33 @@ export default function Bible() {
     return verses;
   };
 
+  // Group short verses together for better reading experience
+  const groupShortVerses = (verses: { number: string; text: string }[]): { number: string; text: string }[][] => {
+    const result: { number: string; text: string }[][] = [];
+    let buffer: { number: string; text: string }[] = [];
+    const CHARS_PER_LINE = 45;
+    const MAX_LINES = 5;
+
+    for (const verse of verses) {
+      buffer.push(verse);
+      
+      // Estimate total lines in buffer
+      const totalChars = buffer.reduce((sum, v) => sum + v.text.length, 0);
+      const estimatedLines = Math.ceil(totalChars / CHARS_PER_LINE);
+      
+      if (estimatedLines >= MAX_LINES || buffer.length >= 3) {
+        result.push(buffer);
+        buffer = [];
+      }
+    }
+    
+    if (buffer.length > 0) {
+      result.push(buffer);
+    }
+    
+    return result;
+  };
+
   if (versionsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -660,28 +687,73 @@ export default function Bible() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: animateContent ? 1 : 0, y: animateContent ? 0 : 12 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
+            className="space-y-4"
           >
-            {/* Scripture Card - iOS style */}
-            <Card 
-              className="p-6 shadow-lg border-0 bg-card"
-              data-testid="card-scripture"
-            >
-              <div className="space-y-4">
-                {verses.map((verse, index) => (
-                  <VerseRow
-                    key={verse.number}
-                    number={verse.number}
-                    text={verse.text}
-                    isHighlighted={highlightedVerse === verse.number}
-                    isBookmarked={bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`)}
-                    onClick={() => handleVerseClick(verse.number)}
-                    onBookmark={() => handleBookmark(verse)}
-                    onReflect={() => handleReflectVerse(verse)}
-                    delay={index * 0.02}
-                  />
-                ))}
-              </div>
-            </Card>
+            {/* Grouped Scripture Cards - iOS style */}
+            {groupShortVerses(verses).map((verseGroup, groupIndex) => (
+              <Card 
+                key={groupIndex}
+                className="p-5 shadow-lg border-0 bg-card"
+                data-testid={`card-scripture-${groupIndex}`}
+              >
+                <div className="space-y-3">
+                  {verseGroup.map((verse) => (
+                    <div 
+                      key={verse.number}
+                      className={cn(
+                        "flex gap-3 cursor-pointer",
+                        highlightedVerse === verse.number && "bg-[hsl(var(--sage)/0.15)] -mx-2 px-2 py-1 rounded-lg"
+                      )}
+                      onClick={() => handleVerseClick(verse.number)}
+                      data-verse={verse.number}
+                    >
+                      <span className="text-xs text-muted-foreground font-medium pt-0.5 w-5 text-right shrink-0">
+                        {verse.number}
+                      </span>
+                      <span className="font-serif text-base leading-relaxed text-foreground/90">
+                        {verse.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {/* Action buttons for the group */}
+                <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-border/30">
+                  {verseGroup.map((verse) => (
+                    <div key={verse.number} className="flex gap-1">
+                      <motion.button
+                        className={cn(
+                          "p-1.5 rounded-md transition-colors text-xs flex items-center gap-1",
+                          bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`) 
+                            ? "text-primary" 
+                            : "text-muted-foreground/50 hover:text-primary/70"
+                        )}
+                        onClick={() => handleBookmark(verse)}
+                        whileTap={{ scale: 0.9 }}
+                        data-testid={`button-bookmark-verse-${verse.number}`}
+                      >
+                        <Bookmark className={cn(
+                          "w-3.5 h-3.5", 
+                          bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`) && "fill-current"
+                        )} />
+                        <span className="text-[10px]">v{verse.number}</span>
+                      </motion.button>
+                    </div>
+                  ))}
+                  <motion.button
+                    className="p-1.5 rounded-md text-muted-foreground/50 hover:text-blue-500 transition-colors ml-2"
+                    onClick={() => {
+                      const allText = verseGroup.map(v => `${v.number}. ${v.text}`).join(" ");
+                      const reference = `${currentChapter?.reference}:${verseGroup[0].number}-${verseGroup[verseGroup.length - 1].number}`;
+                      navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(allText)}`);
+                    }}
+                    whileTap={{ scale: 0.9 }}
+                    data-testid={`button-reflect-group-${groupIndex}`}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              </Card>
+            ))}
           </motion.div>
         )}
 
