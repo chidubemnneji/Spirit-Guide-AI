@@ -736,15 +736,11 @@ export default function Bible() {
                         )}>
                           {verse.number}
                         </span>
-                        <span className="font-serif text-base leading-relaxed text-foreground/90 relative">
+                        <span className={cn(
+                          "font-serif text-base leading-relaxed text-foreground/90 transition-all",
+                          isHighlighted && "underline decoration-dashed decoration-primary decoration-2 underline-offset-4"
+                        )}>
                           {verse.text}
-                          {/* Dashed underline when highlighted */}
-                          <motion.span 
-                            className="absolute left-0 right-0 bottom-0 h-0.5 border-b-2 border-dashed border-primary"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: isHighlighted ? 1 : 0 }}
-                            transition={{ duration: 0.2 }}
-                          />
                         </span>
                       </motion.div>
                     );
