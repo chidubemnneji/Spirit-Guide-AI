@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearch, useLocation } from "wouter";
 import { useBible } from "@/context/BibleContext";
+import { useScroll } from "@/context/ScrollContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,9 +59,27 @@ export default function Bible() {
   const [bookmarkGroups, setBookmarkGroups] = useState<BookmarkGroup[]>([]);
   const [bookmarksSheetOpen, setBookmarksSheetOpen] = useState(false);
   const urlProcessedRef = useRef(false);
+  const lastScrollY = useRef(0);
   const [, navigate] = useLocation();
+  const { setHideNav } = useScroll();
   
   const searchString = useSearch();
+
+  // Hide bottom nav when scrolling down
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const isScrollingDown = currentScrollY > lastScrollY.current && currentScrollY > 100;
+      setHideNav(isScrollingDown);
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      setHideNav(false);
+    };
+  }, [setHideNav]);
 
   // Fetch versions
   const { data: versions = [], isLoading: versionsLoading } = useQuery<BibleVersion[]>({
@@ -498,20 +517,28 @@ export default function Bible() {
           </Sheet>
         </div>
 
-        {/* Navigation Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-border/30">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevChapter}
-            disabled={!currentChapter?.previous}
-            className="text-primary disabled:text-muted-foreground/30"
-            data-testid="button-prev-chapter"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
+        {/* Navigation Bar - hidden when search is open */}
+        <AnimatePresence>
+          {!searchOpen && (
+            <motion.div 
+              className="flex items-center justify-between px-4 py-2 border-t border-border/30"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePrevChapter}
+                disabled={!currentChapter?.previous}
+                className="text-primary disabled:text-muted-foreground/30"
+                data-testid="button-prev-chapter"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </Button>
 
-          <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
             {/* Book Selector */}
             <Sheet open={bookSheetOpen} onOpenChange={setBookSheetOpen}>
               <SheetTrigger asChild>
@@ -634,17 +661,19 @@ export default function Bible() {
             </Select>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNextChapter}
-            disabled={!currentChapter?.next}
-            className="text-primary disabled:text-muted-foreground/30"
-            data-testid="button-next-chapter"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </Button>
-        </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNextChapter}
+                disabled={!currentChapter?.next}
+                className="text-primary disabled:text-muted-foreground/30"
+                data-testid="button-next-chapter"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Search Toggle */}
         <div className="flex justify-center pb-2">
@@ -794,13 +823,13 @@ export default function Bible() {
       <AnimatePresence>
         {searchOpen && searchResults.length > 0 && (
           <motion.div 
-            className="fixed inset-x-0 top-[200px] bottom-0 z-[100] pointer-events-none"
+            className="fixed inset-x-0 top-[180px] bottom-20 z-[100] pointer-events-none overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="max-w-lg mx-auto px-4 pointer-events-auto">
-              <div className="bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 max-h-[70vh] overflow-y-auto">
+            <div className="max-w-lg mx-auto px-4 pointer-events-auto h-full">
+              <div className="bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 max-h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm text-muted-foreground">
                     {showAllResults ? searchResults.length : Math.min(searchResults.length, 5)} of {searchResults.length} results

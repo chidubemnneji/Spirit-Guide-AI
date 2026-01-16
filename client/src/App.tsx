@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import { BibleProvider } from "@/context/BibleContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { ScrollProvider } from "@/context/ScrollContext";
 import { BottomNav } from "@/components/BottomNav";
 import Welcome from "@/pages/Welcome";
 import Signup from "@/pages/Signup";
@@ -59,10 +60,12 @@ function App() {
         <AuthProvider>
           <OnboardingProvider>
             <BibleProvider>
-              <TooltipProvider>
-                <Toaster />
-                <AppContent />
-              </TooltipProvider>
+              <ScrollProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <AppContent />
+                </TooltipProvider>
+              </ScrollProvider>
             </BibleProvider>
           </OnboardingProvider>
         </AuthProvider>
