@@ -168,23 +168,13 @@ export default function Devotion() {
                     />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h2 className="font-serif text-2xl font-bold tracking-display">
-                        Good Morning
-                      </h2>
-                      <p className="text-muted-foreground tracking-refined">
-                        Let's nurture your spirit today
-                      </p>
-                    </div>
-                    <CircularProgress
-                      value={0}
-                      maxValue={7}
-                      size={80}
-                      strokeWidth={8}
-                      label="this week"
-                      color="primary"
-                    />
+                  <div className="space-y-1">
+                    <h2 className="font-serif text-2xl font-bold tracking-display">
+                      Good Morning
+                    </h2>
+                    <p className="text-muted-foreground tracking-refined">
+                      Let's nurture your spirit today
+                    </p>
                   </div>
                 )}
               </CardContent>
