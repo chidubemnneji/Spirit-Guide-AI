@@ -22,7 +22,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Eye } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 
@@ -451,7 +451,19 @@ export default function Bible() {
                 ) : (
                   <div className="space-y-3 pr-2">
                     {bookmarkGroups.map((bookmark) => (
-                      <Card key={bookmark.id} className="p-3 shadow-sm">
+                      <Card 
+                        key={bookmark.id} 
+                        className="p-3 shadow-sm cursor-pointer hover-elevate active-elevate-2 transition-all"
+                        onClick={() => {
+                          const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
+                          if (match) {
+                            const [, bookName, chapter, verse] = match;
+                            navigate(`/bible?book=${encodeURIComponent(bookName)}&chapter=${chapter}&verse=${verse}`);
+                          }
+                          setBookmarksSheetOpen(false);
+                        }}
+                        data-testid={`card-bookmark-${bookmark.id}`}
+                      >
                         <p className="text-xs font-medium text-primary mb-2">
                           {bookmark.reference}
                         </p>
@@ -471,24 +483,9 @@ export default function Bible() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              onClick={() => {
-                                const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
-                                if (match) {
-                                  const [, bookName, chapter, verse] = match;
-                                  navigate(`/bible?book=${encodeURIComponent(bookName)}&chapter=${chapter}&verse=${verse}`);
-                                }
-                                setBookmarksSheetOpen(false);
-                              }}
-                              data-testid={`button-view-bookmark-${bookmark.id}`}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
                               className="h-7 w-7 text-primary"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const combinedText = bookmark.verses.map(v => `${v.number}. ${v.text}`).join(" ");
                                 navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(combinedText)}`);
                                 setBookmarksSheetOpen(false);
@@ -501,7 +498,8 @@ export default function Bible() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-destructive"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setBookmarkGroups(bookmarkGroups.filter(b => b.id !== bookmark.id));
                               }}
                               data-testid={`button-remove-bookmark-${bookmark.id}`}
