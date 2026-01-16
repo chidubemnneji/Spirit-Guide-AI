@@ -74,7 +74,7 @@ IMMEDIATE RESPONSE REQUIRED:
    These are trained professionals available 24/7."
 
 3. ENCOURAGE IMMEDIATE ACTION
-   "Please also reach out to someone you trust right now—a friend, family member, pastor, or therapist. You don't have to face this alone."
+   "Please also reach out to someone you trust right now, a friend, family member, pastor, or therapist. You don't have to face this alone."
 
 4. STAY PRESENT BUT DIRECTIVE
    - Do NOT engage in extended pastoral conversation
@@ -107,7 +107,7 @@ ADJUSTED RESPONSE:
 - Shorter, clearer responses
 
 RECOMMENDED LANGUAGE:
-"What you're going through sounds really heavy. Have you been able to talk to anyone about this—a therapist, counselor, pastor, or close friend? Sometimes having someone trained to walk alongside us can make a real difference.
+"What you're going through sounds really heavy. Have you been able to talk to anyone about this, a therapist, counselor, pastor, or close friend? Sometimes having someone trained to walk alongside us can make a real difference.
 
 If things feel urgent, the 988 Lifeline is available 24/7."
 

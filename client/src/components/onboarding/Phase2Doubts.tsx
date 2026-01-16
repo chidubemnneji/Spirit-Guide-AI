@@ -10,17 +10,17 @@ interface Phase2Props {
 }
 
 const question1Options = [
-  { id: "intellectual", text: "Intellectual — I have questions I can't answer" },
-  { id: "emotional", text: "Emotional — My heart doesn't feel what I think it should" },
-  { id: "experiential", text: "Experiential — I haven't seen God work in my life" },
+  { id: "intellectual", text: "Intellectual ,  I have questions I can't answer" },
+  { id: "emotional", text: "Emotional ,  My heart doesn't feel what I think it should" },
+  { id: "experiential", text: "Experiential ,  I haven't seen God work in my life" },
   { id: "triggered_by_life", text: "Triggered by life events that shook my faith" },
 ];
 
 const question2Options = [
-  { id: "scared_losing_faith", text: "Scared — I'm afraid of losing my faith completely" },
-  { id: "curious_exploring", text: "Curious — I want to explore and understand more" },
-  { id: "frustrated_no_answers", text: "Frustrated — I can't find satisfying answers" },
-  { id: "numb_disconnected", text: "Numb — I've stopped caring as much" },
+  { id: "scared_losing_faith", text: "Scared ,  I'm afraid of losing my faith completely" },
+  { id: "curious_exploring", text: "Curious ,  I want to explore and understand more" },
+  { id: "frustrated_no_answers", text: "Frustrated ,  I can't find satisfying answers" },
+  { id: "numb_disconnected", text: "Numb ,  I've stopped caring as much" },
 ];
 
 export function Phase2Doubts({ onNext, onBack }: Phase2Props) {

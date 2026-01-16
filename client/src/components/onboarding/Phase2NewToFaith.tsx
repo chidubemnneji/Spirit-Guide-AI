@@ -10,7 +10,7 @@ interface Phase2Props {
 }
 
 const question1Options = [
-  { id: "completely_new", text: "Completely new — I'm just starting to explore" },
+  { id: "completely_new", text: "Completely new ,  I'm just starting to explore" },
   { id: "grew_up_away", text: "I grew up around faith but stepped away" },
   { id: "returning_after_break", text: "Returning after a long break" },
   { id: "different_background", text: "Coming from a different spiritual background" },

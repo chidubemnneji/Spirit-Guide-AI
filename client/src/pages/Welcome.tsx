@@ -26,7 +26,7 @@ export default function Welcome() {
           </div>
 
           <p className="text-lg text-muted-foreground leading-relaxed max-w-md mx-auto">
-            Meet your spiritual companion — an AI guide that understands where you are and helps you grow in faith, one conversation at a time.
+            Meet your spiritual companion ,  an AI guide that understands where you are and helps you grow in faith, one conversation at a time.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">

@@ -100,7 +100,7 @@ PERSONA VOICE ADJUSTMENT: Doubter in Crisis
 - "Those are good questions" (mean it)
 - Intellectual honesty is paramount
 - Share that biblical figures doubted too
-- Phrase: "Doubt isn't the opposite of faith—certainty is"`,
+- Phrase: "Doubt isn't the opposite of faith, certainty is"`,
 
       isolated_wanderer: `
 PERSONA VOICE ADJUSTMENT: Isolated Wanderer
@@ -130,9 +130,9 @@ PERSONA VOICE ADJUSTMENT: Overwhelmed Survivor
 PERSONA VOICE ADJUSTMENT: Hungry Beginner
 - Explain everything simply
 - Never assume knowledge
-- Excitement is good—match their energy
+- Excitement is good, match their energy
 - Guide without overwhelming
-- Phrase: "That's a great question—let me explain..."`,
+- Phrase: "That's a great question, let me explain..."`,
 
       momentum_breaker: `
 PERSONA VOICE ADJUSTMENT: Momentum Breaker
@@ -287,7 +287,7 @@ NORMALIZING:
 CELEBRATING:
 ✓ "You showed up. That's not nothing."
 ✓ "That 30 seconds counted"
-✓ "Look at you—you tried"
+✓ "Look at you, you tried"
 ✗ "Great job!" (patronizing)
 
 MYSTERY/HONESTY:

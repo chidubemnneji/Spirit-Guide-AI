@@ -10,22 +10,22 @@ interface Phase3Props {
 }
 
 const dailyRhythmOptions = [
-  { id: "mornings_chaos", text: "Mornings are chaos — rushing from the moment I wake up" },
+  { id: "mornings_chaos", text: "Mornings are chaos ,  rushing from the moment I wake up" },
   { id: "quiet_time_unused", text: "I have pockets of quiet time but don't know how to use them" },
   { id: "mind_races_night", text: "My mind races at night when things finally slow down" },
-  { id: "constantly_interrupted", text: "I'm constantly interrupted — kids, work, notifications" },
+  { id: "constantly_interrupted", text: "I'm constantly interrupted ,  kids, work, notifications" },
   { id: "exhausted", text: "I have time but feel too exhausted to focus on anything deep" },
   { id: "unpredictable", text: "My schedule is completely unpredictable week to week" },
   { id: "guilty", text: "I feel guilty for not making time even when I have it" },
 ];
 
 const pastConnectionOptions = [
-  { id: "nature", text: "I was in nature — walking, hiking, or just outside" },
+  { id: "nature", text: "I was in nature ,  walking, hiking, or just outside" },
   { id: "music", text: "I was listening to worship music or singing" },
   { id: "reading", text: "I was reading the Bible or a devotional that spoke to me" },
-  { id: "group", text: "I was in a group — small group, church, or with friends" },
+  { id: "group", text: "I was in a group ,  small group, church, or with friends" },
   { id: "serving", text: "I was serving others or helping someone" },
-  { id: "quiet_alone", text: "I was in a quiet moment alone — journaling, praying, reflecting" },
+  { id: "quiet_alone", text: "I was in a quiet moment alone ,  journaling, praying, reflecting" },
   { id: "difficult_season", text: "It was during a difficult season when I had to lean on God" },
   { id: "church_event", text: "I was in church during a service or special event" },
   { id: "cant_remember", text: "I can't remember a time I felt that way" },

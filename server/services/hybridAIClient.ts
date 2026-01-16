@@ -31,7 +31,7 @@ function isAnthropicTransientError(error: unknown): boolean {
 }
 
 function sanitizeText(text: string): string {
-  return text.replace(/—/g, "-").replace(/–/g, "-");
+  return text.replace(/—/g, ", ").replace(/–/g, ", ");
 }
 
 async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<StreamChunk> {

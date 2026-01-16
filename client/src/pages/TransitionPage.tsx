@@ -12,7 +12,7 @@ const bibleVerses: Record<string, { verse: string; reference: string; supporting
   wrestling_doubts: {
     verse: "Lord, I believe; help my unbelief!",
     reference: "Mark 9:24",
-    supportingText: "Faith and doubt can coexist. Your questions don't disqualify you—they're part of the journey. Let's explore them together."
+    supportingText: "Faith and doubt can coexist. Your questions don't disqualify you, they're part of the journey. Let's explore them together."
   },
   feel_alone: {
     verse: "I will never leave you nor forsake you.",
@@ -22,12 +22,12 @@ const bibleVerses: Record<string, { verse: string; reference: string; supporting
   guilt_shame: {
     verse: "There is now no condemnation for those who are in Christ Jesus.",
     reference: "Romans 8:1",
-    supportingText: "The guilt you carry isn't yours to carry alone. Grace isn't something you earn—it's something you receive. Let's start there."
+    supportingText: "The guilt you carry isn't yours to carry alone. Grace isn't something you earn, it's something you receive. Let's start there."
   },
   life_overwhelming: {
     verse: "Come to me, all who are weary and burdened, and I will give you rest.",
     reference: "Matthew 11:28",
-    supportingText: "Your life is full and overwhelming right now. We're not here to add more pressure—just to walk with you in the moments you have. That's enough."
+    supportingText: "Your life is full and overwhelming right now. We're not here to add more pressure, just to walk with you in the moments you have. That's enough."
   },
   new_to_faith: {
     verse: "I am the way, the truth, and the life.",

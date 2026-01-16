@@ -15,7 +15,7 @@ const options = [
   {
     id: "distant_from_god",
     icon: <Cloud className="w-7 h-7 text-muted-foreground" />,
-    text: "I feel distant from God — prayer feels empty",
+    text: "I feel distant from God ,  prayer feels empty",
   },
   {
     id: "wrestling_doubts",
