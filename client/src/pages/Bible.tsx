@@ -178,16 +178,24 @@ export default function Bible() {
   }, [targetVerse, chapterContent]);
 
   // Search results
-  const { data: searchResults = [], isLoading: searchLoading, refetch: doSearch } = useQuery<any[]>({
-    queryKey: ["/api/bible", currentVersion?.id, "search", { query: searchQuery }],
-    enabled: false,
-  });
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const handleSearch = useCallback(() => {
+  const handleSearch = useCallback(async () => {
     if (searchQuery.trim() && currentVersion) {
-      doSearch();
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/bible/${currentVersion.id}/search?query=${encodeURIComponent(searchQuery)}`);
+        const data = await res.json();
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error("Search error:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
     }
-  }, [searchQuery, currentVersion, doSearch]);
+  }, [searchQuery, currentVersion]);
 
   const handleSelectBook = (book: Book) => {
     setCurrentBook(book);
