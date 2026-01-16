@@ -710,16 +710,19 @@ function MessageBubble({
           </div>
         </div>
       )}
-      <div className="flex flex-col max-w-[85%]">
+      <div className="flex flex-col max-w-[90%]">
         <div
           className={cn(
-            "rounded-2xl px-3 py-2.5 tracking-refined",
+            "tracking-refined",
             isUser
-              ? "gradient-primary text-white shadow-primary rounded-br-md"
-              : "glass-subtle glow-border shadow-subtle rounded-bl-md"
+              ? "rounded-2xl rounded-br-md px-3 py-2.5 gradient-primary text-white shadow-primary"
+              : "py-1"
           )}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+          <p className={cn(
+            "text-sm leading-relaxed whitespace-pre-wrap",
+            !isUser && "text-foreground"
+          )}>
             {parseContentWithVerseLinks(message.content, navigate, isUser)}
             {isStreaming && (
               <span className="inline-flex items-center gap-1 ml-2">
