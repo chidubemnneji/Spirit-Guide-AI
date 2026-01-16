@@ -21,7 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 
@@ -354,6 +354,23 @@ export default function Bible() {
                             {bookmark.reference}
                           </p>
                           <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                // Parse reference like "Psalms 23:4" to navigate
+                                const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
+                                if (match) {
+                                  const [, bookName, chapter, verse] = match;
+                                  navigate(`/bible?book=${encodeURIComponent(bookName)}&chapter=${chapter}&verse=${verse}`);
+                                }
+                                setBookmarksSheetOpen(false);
+                              }}
+                              data-testid={`button-view-bookmark-${bookmark.reference}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
