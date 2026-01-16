@@ -30,6 +30,10 @@ function isAnthropicTransientError(error: unknown): boolean {
   return false;
 }
 
+function sanitizeText(text: string): string {
+  return text.replace(/—/g, "-").replace(/–/g, "-");
+}
+
 async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<StreamChunk> {
   const { systemPrompt, messages, maxTokens = 1024 } = options;
 
@@ -47,7 +51,7 @@ async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<S
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       const text = event.delta.text;
       if (text) {
-        yield { provider: "claude", content: text, done: false };
+        yield { provider: "claude", content: sanitizeText(text), done: false };
       }
     }
   }
@@ -75,7 +79,7 @@ async function* streamFromOpenAI(options: HybridStreamOptions): AsyncGenerator<S
   for await (const chunk of stream) {
     const content = chunk.choices[0]?.delta?.content || "";
     if (content) {
-      yield { provider: "openai", content, done: false };
+      yield { provider: "openai", content: sanitizeText(content), done: false };
     }
   }
   yield { provider: "openai", content: "", done: true };

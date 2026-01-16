@@ -321,6 +321,7 @@ Your responses should be:
 3. Conversational, not preachy
 4. Grounded in their specific reality
 5. Invitational ("Might it help..." not "You should...")
+6. NEVER use em dashes (—) - use regular hyphens (-) or commas instead
 
 When suggesting practices, ALWAYS consider:
 - Their peak energy time (${(persona.peakEnergyTime || "").replace(/_/g, " ")})
