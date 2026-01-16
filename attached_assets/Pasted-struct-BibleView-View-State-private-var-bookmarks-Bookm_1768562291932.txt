@@ -1,0 +1,97 @@
+struct BibleView: View {
+    @State private var bookmarks: [Bookmark] = []
+    @State private var showBookmarks: Bool = false
+    @State private var selectedVerseForReflection: Bookmark? = nil
+    @State private var showReflectionCTA: Bool = false
+    
+    // Example verses
+    let verses: [(Int, String)] = [
+        (1, "Now it came to pass after the death of Moses the servant of the Lord..."),
+        (2, "Moses my servant is dead; now therefore arise..."),
+        (3, "Every place that the sole of your foot shall tread upon..."),
+        (5, "I will not fail thee, nor forsake thee."),
+        (9, "Be strong and of a good courage; be not afraid...")
+    ]
+    
+    var body: some View {
+        NavigationStack {
+            VStack {
+                // Toggle between Bible and Bookmarks
+                HStack {
+                    Button(action: { showBookmarks = false }) {
+                        Text("Bible")
+                            .fontWeight(showBookmarks ? .regular : .bold)
+                    }
+                    Spacer()
+                    Button(action: { showBookmarks = true }) {
+                        Text("Bookmarks")
+                            .fontWeight(showBookmarks ? .bold : .regular)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 10)
+                
+                Divider()
+                
+                if showBookmarks {
+                    // Bookmarks list
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            if bookmarks.isEmpty {
+                                Text("No bookmarks yet.")
+                                    .foregroundStyle(.secondary)
+                                    .padding()
+                            } else {
+                                ForEach(bookmarks) { bookmark in
+                                    VerseCard(
+                                        verse: Verse(number: bookmark.verseNumber, text: bookmark.text, book: bookmark.book),
+                                        isBookmarked: true,
+                                        onBookmark: {
+                                            selectedVerseForReflection = bookmark
+                                            showReflectionCTA = true
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        .padding()
+                    }
+                } else {
+                    // Bible reading
+                    ScrollView {
+                        VStack(spacing: 18) {
+                            ForEach(verses, id: \.0) { verse in
+                                VerseCard(
+                                    verse: Verse(number: verse.0, text: verse.1, book: "Joshua 1"),
+                                    isBookmarked: bookmarks.contains(where: { $0.verseNumber == verse.0 }),
+                                    onBookmark: {
+                                        let bookmark = Bookmark(verseNumber: verse.0, text: verse.1, book: "Joshua 1")
+                                        if let index = bookmarks.firstIndex(where: { $0.verseNumber == verse.0 }) {
+                                            bookmarks.remove(at: index)
+                                        } else {
+                                            bookmarks.append(bookmark)
+                                            selectedVerseForReflection = bookmark
+                                            showReflectionCTA = true
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .navigationTitle("Bible")
+        }
+        .overlay {
+            if showReflectionCTA, let verse = selectedVerseForReflection {
+                ReflectionCTA(verse: verse) {
+                    ChatManager.shared.sendToChat("I want to reflect on this passage: \(verse.text)")
+                    showReflectionCTA = false
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(), value: showReflectionCTA)
+            }
+        }
+    }
+}

@@ -1,12 +1,11 @@
 import { useLocation, Link } from "wouter";
-import { Users, Heart, MessageCircle, BookOpen, User } from "lucide-react";
+import { Search, MessageCircle, BookOpen, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: "/community", icon: Users, label: "Community" },
-  { path: "/devotion", icon: Heart, label: "Devotion" },
-  { path: "/chat", icon: MessageCircle, label: "Chat" },
   { path: "/bible", icon: BookOpen, label: "Bible" },
+  { path: "/search", icon: Search, label: "Search" },
+  { path: "/chat", icon: MessageCircle, label: "Reflect" },
   { path: "/account", icon: User, label: "Account" },
 ];
 

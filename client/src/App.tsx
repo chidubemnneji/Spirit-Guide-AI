@@ -15,7 +15,7 @@ import Onboarding from "@/pages/Onboarding";
 import TransitionPage from "@/pages/TransitionPage";
 import Chat from "@/pages/Chat";
 import Bible from "@/pages/Bible";
-import Community from "@/pages/Community";
+import Search from "@/pages/Search";
 import Devotion from "@/pages/Devotion";
 import Account from "@/pages/Account";
 import NotFound from "@/pages/not-found";
@@ -32,7 +32,7 @@ function Router() {
       <Route path="/transition" component={TransitionPage} />
       <Route path="/chat" component={Chat} />
       <Route path="/bible" component={Bible} />
-      <Route path="/community" component={Community} />
+      <Route path="/search" component={Search} />
       <Route path="/devotion" component={Devotion} />
       <Route path="/account" component={Account} />
       <Route component={NotFound} />
