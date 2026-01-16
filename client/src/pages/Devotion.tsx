@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Heart, Sun, BookOpen, Clock, ChevronRight, Star, Bookmark, RefreshCw } from "lucide-react";
+import { Heart, Sun, BookOpen, Clock, ChevronRight, Star, Bookmark, RefreshCw, Sunrise, Sunset, Moon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,17 @@ interface JourneyEntry {
   devotional: Devotional;
   completedAt: Date | string | null;
   rating: number | null;
+}
+
+function getTimeOfDayIcon() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) {
+    return <Sunrise className="w-6 h-6 text-amber-500" />;
+  } else if (hour >= 12 && hour < 18) {
+    return <Sun className="w-6 h-6 text-orange-500" />;
+  } else {
+    return <Moon className="w-6 h-6 text-indigo-400" />;
+  }
 }
 
 export default function Devotion() {
@@ -151,9 +162,12 @@ export default function Devotion() {
                 ) : greeting ? (
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <h2 className="font-serif text-2xl font-bold tracking-display" data-testid="text-greeting">
-                        {greeting.greeting}
-                      </h2>
+                      <div className="flex items-center gap-2">
+                        {getTimeOfDayIcon()}
+                        <h2 className="font-serif text-2xl font-bold tracking-display" data-testid="text-greeting">
+                          {greeting.greeting}
+                        </h2>
+                      </div>
                       <p className="text-muted-foreground tracking-refined" data-testid="text-greeting-subtext">
                         {greeting.subtext}
                       </p>
@@ -169,9 +183,12 @@ export default function Devotion() {
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <h2 className="font-serif text-2xl font-bold tracking-display">
-                      Good Morning
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      {getTimeOfDayIcon()}
+                      <h2 className="font-serif text-2xl font-bold tracking-display">
+                        Good Morning
+                      </h2>
+                    </div>
                     <p className="text-muted-foreground tracking-refined">
                       Let's nurture your spirit today
                     </p>
