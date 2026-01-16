@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSearch, useLocation } from "wouter";
 import { useBible } from "@/context/BibleContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 
 export default function Bible() {
@@ -38,9 +40,10 @@ export default function Bible() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
+  const [highlightedVerse, setHighlightedVerse] = useState<string | null>(null);
+  const [animateContent, setAnimateContent] = useState(false);
   const urlProcessedRef = useRef(false);
   
-  // Parse URL parameters for deep linking from chat
   const searchString = useSearch();
   const [, navigate] = useLocation();
 
@@ -67,6 +70,16 @@ export default function Bible() {
     enabled: !!currentVersion?.id && !!currentChapter?.id,
   });
 
+  // Animate content when chapter loads
+  useEffect(() => {
+    if (chapterContent) {
+      setAnimateContent(false);
+      requestAnimationFrame(() => {
+        setAnimateContent(true);
+      });
+    }
+  }, [chapterContent?.id]);
+
   // Set default version
   useEffect(() => {
     if (versions.length > 0 && !currentVersion) {
@@ -82,14 +95,14 @@ export default function Bible() {
     }
   }, [chapterContent]);
 
-  // Reset urlProcessedRef when searchString changes (for subsequent link clicks)
+  // Reset urlProcessedRef when searchString changes
   useEffect(() => {
     if (searchString) {
       urlProcessedRef.current = false;
     }
   }, [searchString]);
 
-  // Handle deep linking from chat - navigate to specific book/chapter/verse
+  // Handle deep linking from chat
   useEffect(() => {
     if (urlProcessedRef.current || !searchString || !currentVersion || books.length === 0) return;
     
@@ -102,27 +115,21 @@ export default function Bible() {
     
     urlProcessedRef.current = true;
     
-    // Find the matching book
     const targetBook = books.find(
       (b) => b.name.toLowerCase() === bookParam.toLowerCase()
     );
     
     if (!targetBook) {
-      console.log("Book not found:", bookParam);
-      // Clear URL params
       navigate("/bible", { replace: true });
       return;
     }
     
-    // Set book and fetch chapters
     setCurrentBook(targetBook);
     
-    // Store target verse for scrolling later
     if (verseParam) {
-      setTargetVerse(verseParam.split("-")[0]); // Use first verse if range
+      setTargetVerse(verseParam.split("-")[0]);
     }
     
-    // Fetch chapters for this book and navigate to the specified chapter
     fetch(`/api/bible/${currentVersion.id}/books/${targetBook.id}/chapters`)
       .then((res) => res.json())
       .then((chs: { id: string; number: string; reference: string }[]) => {
@@ -132,7 +139,6 @@ export default function Bible() {
             .then((res) => res.json())
             .then((ch) => {
               setCurrentChapter(ch);
-              // Clear URL params after navigation
               navigate("/bible", { replace: true });
             });
         }
@@ -142,16 +148,14 @@ export default function Bible() {
   // Scroll to target verse when chapter content loads
   useEffect(() => {
     if (targetVerse && chapterContent) {
-      // Give DOM time to render
       setTimeout(() => {
         const verseElement = document.querySelector(`[data-verse="${targetVerse}"]`);
         if (verseElement) {
           verseElement.scrollIntoView({ behavior: "smooth", block: "center" });
-          // Highlight the verse briefly
-          verseElement.classList.add("bg-primary/20", "transition-colors", "duration-500");
+          setHighlightedVerse(targetVerse);
           setTimeout(() => {
-            verseElement.classList.remove("bg-primary/20");
-          }, 2000);
+            setHighlightedVerse(null);
+          }, 3000);
         }
         setTargetVerse(null);
       }, 300);
@@ -173,7 +177,6 @@ export default function Bible() {
   const handleSelectBook = (book: Book) => {
     setCurrentBook(book);
     setBookSheetOpen(false);
-    // Auto-select first chapter
     if (currentVersion) {
       fetch(`/api/bible/${currentVersion.id}/books/${book.id}/chapters`)
         .then((res) => res.json())
@@ -213,41 +216,30 @@ export default function Bible() {
     }
   };
 
+  const handleVerseClick = (verseNum: string) => {
+    setHighlightedVerse(highlightedVerse === verseNum ? null : verseNum);
+  };
+
   const oldTestamentBooks = books.filter((b) => b.testament === "OT");
   const newTestamentBooks = books.filter((b) => b.testament === "NT");
 
-  // Parse chapter content for verse formatting with data-verse attributes for deep linking
-  const formatContent = (content: string) => {
-    if (!content) return null;
+  // Parse verses from content
+  const parseVerses = (content: string): { number: string; text: string }[] => {
+    if (!content) return [];
     
-    // Split by verse numbers and format
     const versePattern = /\[(\d+)\]/g;
     const parts = content.split(versePattern);
-    const result: React.ReactNode[] = [];
+    const verses: { number: string; text: string }[] = [];
     
-    for (let i = 0; i < parts.length; i++) {
-      // Odd indices are verse numbers
-      if (i % 2 === 1) {
-        const verseNum = parts[i];
-        const verseText = parts[i + 1] || "";
-        
-        // Wrap the verse number and its text in a span with data-verse
-        result.push(
-          <span key={i} data-verse={verseNum} className="inline">
-            <sup className="text-primary/70 font-medium mr-1 text-xs">
-              {verseNum}
-            </sup>
-            <span>{verseText}</span>
-          </span>
-        );
-        i++; // Skip the next text part since we already included it
-      } else if (i === 0 && parts[i]) {
-        // Text before any verse number (if any)
-        result.push(<span key={i}>{parts[i]}</span>);
+    for (let i = 1; i < parts.length; i += 2) {
+      const verseNum = parts[i];
+      const verseText = (parts[i + 1] || "").trim();
+      if (verseNum && verseText) {
+        verses.push({ number: verseNum, text: verseText });
       }
     }
     
-    return result;
+    return verses;
   };
 
   if (versionsLoading) {
@@ -258,87 +250,58 @@ export default function Bible() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 h-14 gap-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-primary" />
-            <span className="font-serif font-semibold">Bible</span>
-          </div>
-          
-          {/* Version Selector */}
-          <Select
-            value={currentVersion?.id}
-            onValueChange={(id) => {
-              const version = versions.find((v) => v.id === id);
-              if (version) setCurrentVersion(version);
-            }}
-          >
-            <SelectTrigger className="w-24" data-testid="select-version">
-              <SelectValue placeholder="Version" />
-            </SelectTrigger>
-            <SelectContent>
-              {versions.map((v) => (
-                <SelectItem key={v.id} value={v.id}>
-                  {v.abbreviation}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  const verses = currentChapter ? parseVerses(currentChapter.content) : [];
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSearchOpen(!searchOpen)}
-            data-testid="button-search"
+  return (
+    <div className="min-h-screen bg-muted/30 pb-20">
+      {/* iOS-style Header */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
+        {/* Chapter Title & Version */}
+        <div className="text-center py-4">
+          <motion.h1 
+            className="font-serif text-2xl font-semibold text-foreground"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={currentChapter?.reference || "title"}
           >
-            {searchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
-          </Button>
+            {currentChapter?.reference || "Bible"}
+          </motion.h1>
+          {currentVersion && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {currentVersion.name}
+            </p>
+          )}
         </div>
 
-        {/* Search Bar */}
-        {searchOpen && (
-          <div className="px-4 py-2 border-t border-border">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Search the Bible..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                data-testid="input-search"
-              />
-              <Button onClick={handleSearch} disabled={searchLoading} data-testid="button-do-search">
-                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Book/Chapter Navigation */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-border">
+        {/* Navigation Bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border/30">
           <Button
             variant="ghost"
             size="icon"
             onClick={handlePrevChapter}
             disabled={!currentChapter?.previous}
+            className="text-primary disabled:text-muted-foreground/30"
             data-testid="button-prev-chapter"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Book Selector */}
             <Sheet open={bookSheetOpen} onOpenChange={setBookSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="button-select-book">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="font-medium"
+                  data-testid="button-select-book"
+                >
                   {currentBook?.name || "Select Book"}
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-80">
                 <SheetHeader>
-                  <SheetTitle>Select Book</SheetTitle>
+                  <SheetTitle className="font-serif">Select Book</SheetTitle>
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] mt-4">
                   {booksLoading ? (
@@ -348,15 +311,15 @@ export default function Bible() {
                   ) : (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
                           Old Testament
                         </h3>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           {oldTestamentBooks.map((book) => (
                             <Button
                               key={book.id}
                               variant={currentBook?.id === book.id ? "secondary" : "ghost"}
-                              className="w-full justify-start"
+                              className="w-full justify-start font-normal"
                               onClick={() => handleSelectBook(book)}
                               data-testid={`book-${book.abbreviation}`}
                             >
@@ -366,15 +329,15 @@ export default function Bible() {
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
                           New Testament
                         </h3>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           {newTestamentBooks.map((book) => (
                             <Button
                               key={book.id}
                               variant={currentBook?.id === book.id ? "secondary" : "ghost"}
-                              className="w-full justify-start"
+                              className="w-full justify-start font-normal"
                               onClick={() => handleSelectBook(book)}
                               data-testid={`book-${book.abbreviation}`}
                             >
@@ -396,22 +359,24 @@ export default function Bible() {
                   variant="outline"
                   size="sm"
                   disabled={!currentBook}
+                  className="min-w-12 font-medium"
                   data-testid="button-select-chapter"
                 >
                   {currentChapter?.number || "Ch"}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-64">
+              <SheetContent side="bottom" className="h-72 rounded-t-3xl">
                 <SheetHeader>
-                  <SheetTitle>Select Chapter</SheetTitle>
+                  <SheetTitle className="font-serif">Select Chapter</SheetTitle>
                 </SheetHeader>
-                <ScrollArea className="h-48 mt-4">
-                  <div className="grid grid-cols-6 gap-2">
+                <ScrollArea className="h-52 mt-4">
+                  <div className="grid grid-cols-6 gap-2 px-2">
                     {chapters.map((ch) => (
                       <Button
                         key={ch.id}
-                        variant={currentChapter?.number === ch.number ? "secondary" : "outline"}
+                        variant={currentChapter?.number === ch.number ? "default" : "outline"}
                         size="sm"
+                        className="font-medium"
                         onClick={() => handleSelectChapter(ch.id)}
                         data-testid={`chapter-${ch.number}`}
                       >
@@ -422,6 +387,26 @@ export default function Bible() {
                 </ScrollArea>
               </SheetContent>
             </Sheet>
+
+            {/* Version Selector */}
+            <Select
+              value={currentVersion?.id}
+              onValueChange={(id) => {
+                const version = versions.find((v) => v.id === id);
+                if (version) setCurrentVersion(version);
+              }}
+            >
+              <SelectTrigger className="w-20 h-8 text-xs" data-testid="select-version">
+                <SelectValue placeholder="Ver" />
+              </SelectTrigger>
+              <SelectContent>
+                {versions.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.abbreviation}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button
@@ -429,61 +414,182 @@ export default function Bible() {
             size="icon"
             onClick={handleNextChapter}
             disabled={!currentChapter?.next}
+            className="text-primary disabled:text-muted-foreground/30"
             data-testid="button-next-chapter"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-6 h-6" />
           </Button>
         </div>
+
+        {/* Search Toggle */}
+        <div className="flex justify-center pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearchOpen(!searchOpen)}
+            className="text-muted-foreground"
+            data-testid="button-search"
+          >
+            {searchOpen ? <X className="w-4 h-4 mr-2" /> : <Search className="w-4 h-4 mr-2" />}
+            {searchOpen ? "Close" : "Search"}
+          </Button>
+        </div>
+
+        {/* Search Bar */}
+        <AnimatePresence>
+          {searchOpen && (
+            <motion.div 
+              className="px-4 py-3 border-t border-border/30"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search the Bible..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="flex-1"
+                  data-testid="input-search"
+                />
+                <Button onClick={handleSearch} disabled={searchLoading} data-testid="button-do-search">
+                  {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-6">
+      <main className="px-4 py-6 max-w-2xl mx-auto">
         {!currentChapter && !chapterLoading && (
-          <div className="text-center py-12">
-            <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="font-serif text-xl mb-2">Welcome to the Bible</h2>
-            <p className="text-muted-foreground mb-4">
-              Select a book to start reading
+          <motion.div 
+            className="text-center py-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <BookOpen className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="font-serif text-2xl font-semibold mb-3">Welcome to the Bible</h2>
+            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+              Begin your journey through Scripture by selecting a book
             </p>
-            <Button onClick={() => setBookSheetOpen(true)} data-testid="button-get-started">
+            <Button 
+              onClick={() => setBookSheetOpen(true)} 
+              className="px-8"
+              data-testid="button-get-started"
+            >
               Choose a Book
             </Button>
-          </div>
+          </motion.div>
         )}
 
         {chapterLoading && (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         )}
 
-        {currentChapter && !chapterLoading && (
-          <Card className="p-6">
-            <h2 className="font-serif text-2xl font-semibold mb-4" data-testid="text-chapter-reference">
-              {currentChapter.reference}
-            </h2>
-            <div
-              className="prose prose-sm dark:prose-invert max-w-none leading-relaxed text-foreground"
-              data-testid="text-chapter-content"
+        {currentChapter && !chapterLoading && verses.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: animateContent ? 1 : 0, y: animateContent ? 0 : 12 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            {/* Scripture Card - iOS style */}
+            <Card 
+              className="p-6 shadow-lg border-0 bg-card"
+              data-testid="card-scripture"
             >
-              {formatContent(currentChapter.content)}
-            </div>
-          </Card>
+              <div className="space-y-4">
+                {verses.map((verse, index) => (
+                  <VerseRow
+                    key={verse.number}
+                    number={verse.number}
+                    text={verse.text}
+                    isHighlighted={highlightedVerse === verse.number}
+                    onClick={() => handleVerseClick(verse.number)}
+                    delay={index * 0.02}
+                  />
+                ))}
+              </div>
+            </Card>
+          </motion.div>
         )}
 
         {/* Search Results */}
-        {searchOpen && searchResults.length > 0 && (
-          <div className="mt-6 space-y-4">
-            <h3 className="font-semibold">Search Results</h3>
-            {searchResults.map((result: any, index: number) => (
-              <Card key={index} className="p-4">
-                <p className="text-sm font-medium text-primary mb-1">{result.reference}</p>
-                <p className="text-sm text-muted-foreground">{result.text}</p>
-              </Card>
-            ))}
-          </div>
-        )}
+        <AnimatePresence>
+          {searchOpen && searchResults.length > 0 && (
+            <motion.div 
+              className="mt-6 space-y-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Search Results
+              </h3>
+              {searchResults.map((result: any, index: number) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className="p-4 hover-elevate cursor-pointer">
+                    <p className="text-sm font-medium text-primary mb-1">{result.reference}</p>
+                    <p className="text-sm text-foreground/80 font-serif leading-relaxed">{result.text}</p>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
+  );
+}
+
+// Verse Row Component - iOS style
+function VerseRow({ 
+  number, 
+  text, 
+  isHighlighted, 
+  onClick,
+  delay = 0
+}: { 
+  number: string; 
+  text: string; 
+  isHighlighted: boolean; 
+  onClick: () => void;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      className={cn(
+        "flex gap-3 p-3 -mx-3 rounded-xl cursor-pointer transition-colors duration-200",
+        isHighlighted 
+          ? "bg-[hsl(var(--sage)/0.15)]" 
+          : "hover:bg-muted/50"
+      )}
+      onClick={onClick}
+      data-verse={number}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay, duration: 0.3 }}
+      whileTap={{ scale: 0.99 }}
+    >
+      <span className="text-xs text-muted-foreground font-medium pt-1 w-5 text-right shrink-0">
+        {number}
+      </span>
+      <span className="font-serif text-base leading-relaxed text-foreground/90">
+        {text}
+      </span>
+    </motion.div>
   );
 }

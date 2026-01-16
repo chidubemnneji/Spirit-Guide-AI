@@ -1,0 +1,164 @@
+import SwiftUI
+
+// MARK: - Main Screen
+struct BibleReadingView: View {
+    @State private var selectedTab: Tab = .bible
+    @State private var animateContent = false
+    @State private var highlightedVerse: Int? = nil
+
+    var body: some View {
+        ZStack {
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+
+                HeaderView()
+
+                ScrollView {
+                    ScriptureCard(
+                        highlightedVerse: $highlightedVerse
+                    )
+                    .padding()
+                    .opacity(animateContent ? 1 : 0)
+                    .offset(y: animateContent ? 0 : 12)
+                }
+
+                Divider()
+
+                BottomTabBar(selectedTab: $selectedTab)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6)) {
+                animateContent = true
+            }
+        }
+    }
+}
+
+// MARK: - Header
+struct HeaderView: View {
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("Joshua 1")
+                .font(.system(size: 28, weight: .semibold, design: .serif))
+                .foregroundStyle(.primary)
+
+            Text("American Standard Version")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 16)
+    }
+}
+
+// MARK: - Scripture Card
+struct ScriptureCard: View {
+    @Binding var highlightedVerse: Int?
+
+    let verses: [(Int, String)] = [
+        (1, "Now it came to pass after the death of Moses the servant of the Lord..."),
+        (2, "Moses my servant is dead; now therefore arise..."),
+        (3, "Every place that the sole of your foot shall tread upon..."),
+        (5, "I will not fail thee, nor forsake thee."),
+        (9, "Be strong and of a good courage; be not afraid...")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            ForEach(verses, id: \.0) { verse in
+                VerseRow(
+                    number: verse.0,
+                    text: verse.1,
+                    isHighlighted: highlightedVerse == verse.0
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        highlightedVerse = verse.0
+                    }
+                }
+            }
+        }
+        .padding(22)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+        )
+    }
+}
+
+// MARK: - Verse Row
+struct VerseRow: View {
+    let number: Int
+    let text: String
+    let isHighlighted: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("\(number)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(text)
+                .font(.system(size: 17, weight: .regular, design: .serif))
+                .lineSpacing(6)
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isHighlighted ? Color.green.opacity(0.12) : Color.clear)
+        )
+    }
+}
+
+// MARK: - Bottom Tab Bar
+enum Tab {
+    case community, devotion, chat, bible, account
+}
+
+struct BottomTabBar: View {
+    @Binding var selectedTab: Tab
+
+    var body: some View {
+        HStack {
+            TabItem(icon: "person.3", tab: .community, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "heart", tab: .devotion, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "bubble.left", tab: .chat, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "book", tab: .bible, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "person.crop.circle", tab: .account, selectedTab: $selectedTab)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+    }
+}
+
+struct TabItem: View {
+    let icon: String
+    let tab: Tab
+    @Binding var selectedTab: Tab
+
+    var isActive: Bool { selectedTab == tab }
+
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(isActive ? .green : .secondary)
+            .scaleEffect(isActive ? 1.15 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isActive)
+            .onTapGesture {
+                selectedTab = tab
+            }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    BibleReadingView()
+}
