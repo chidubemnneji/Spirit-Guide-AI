@@ -860,6 +860,41 @@ export default function Bible() {
         </AnimatePresence>
       </main>
 
+      {/* Floating Action Bar - appears when verses are highlighted */}
+      <AnimatePresence>
+        {highlightedVerses.size > 0 && (
+          <motion.div
+            className="fixed bottom-24 left-4 right-4 z-50"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <div className="max-w-md mx-auto">
+              <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl p-3 flex items-center justify-center gap-3">
+                <Button
+                  variant="ghost"
+                  className="flex-1 gap-2 text-primary bg-primary/10 hover:bg-primary/20"
+                  onClick={() => handleSaveHighlighted(verses)}
+                  data-testid="button-bookmark-floating"
+                >
+                  <Bookmark className="w-5 h-5" />
+                  Bookmark Selected
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="flex-1 gap-2 text-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+                  onClick={() => handleReflectHighlighted(verses)}
+                  data-testid="button-reflect-floating"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Reflect
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

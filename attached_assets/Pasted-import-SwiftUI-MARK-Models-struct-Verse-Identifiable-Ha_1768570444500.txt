@@ -1,0 +1,247 @@
+import SwiftUI
+
+// MARK: - Models
+struct Verse: Identifiable, Hashable {
+    let id = UUID()
+    let book: String
+    let chapter: Int
+    let number: Int
+    let text: String
+    let version: String
+}
+
+struct Bookmark: Identifiable {
+    let id = UUID()
+    let verses: [Verse]
+    let version: String
+    let dateSaved: Date = Date()
+}
+
+// MARK: - Shared Chat Manager
+class ChatManager: ObservableObject {
+    static let shared = ChatManager()
+    @Published var messages: [String] = []
+
+    func sendToChat(_ text: String) {
+        messages.append(text)
+        // TODO: Connect to AI backend
+    }
+}
+
+// MARK: - Bible + Search + Bookmark + Reflect View
+struct BibleAppView: View {
+    // Bible state
+    @State private var selectedVersion: String = "ASV"
+    let availableVersions = ["ASV", "KJV", "NIV", "ESV"]
+
+    @State private var currentBook: String = "Joshua"
+    @State private var currentChapter: Int = 1
+
+    @State private var highlightedVerses: [Verse] = []
+    @State private var bookmarks: [Bookmark] = []
+
+    // Search state
+    @State private var searchQuery: String = ""
+    @State private var searchResults: [Verse] = []
+
+    // Tab
+    @State private var selectedTab: Tab = .bible
+
+    // Sample dataset (replace with full Bible content)
+    let allVerses: [Verse] = [
+        Verse(book: "Joshua", chapter: 1, number: 1, text: "Now it came to pass after the death of Moses...", version: "ASV"),
+        Verse(book: "Joshua", chapter: 1, number: 2, text: "Moses my servant is dead; now therefore arise...", version: "ASV"),
+        Verse(book: "Joshua", chapter: 1, number: 3, text: "Every place that the sole of your foot shall tread upon...", version: "ASV"),
+        Verse(book: "Joshua", chapter: 1, number: 5, text: "I will not fail thee, nor forsake thee.", version: "ASV"),
+        Verse(book: "Joshua", chapter: 1, number: 9, text: "Be strong and of a good courage; be not afraid...", version: "ASV")
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // MARK: - Header with Version Toggle
+            HStack {
+                Text("\(currentBook) \(currentChapter) | \(selectedVersion)")
+                    .font(.title2.bold())
+                Spacer()
+                Picker("Version", selection: $selectedVersion) {
+                    ForEach(availableVersions, id: \.self) { version in
+                        Text(version).tag(version)
+                    }
+                }
+                .pickerStyle(.menu)
+                .onChange(of: selectedVersion) { _ in
+                    // Update highlighted verses for selected version
+                    highlightedVerses.removeAll()
+                }
+            }
+            .padding()
+
+            // MARK: - Search Bar
+            TextField("Search by verse, word, or feeling…", text: $searchQuery)
+                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal)
+                .onSubmit {
+                    performSearch()
+                }
+
+            Divider()
+
+            // MARK: - Main Content (Bible or Search Results)
+            ScrollView {
+                VStack(spacing: 8) {
+                    if searchQuery.isEmpty {
+                        // Bible Reader
+                        ForEach(currentVerses(), id: \.id) { verse in
+                            VerseTile(verse: verse, highlightedVerses: $highlightedVerses)
+                        }
+                    } else {
+                        // Search Results
+                        ForEach(searchResults, id: \.id) { verse in
+                            VerseTile(verse: verse, highlightedVerses: $highlightedVerses)
+                        }
+                    }
+                }
+                .padding()
+            }
+
+            // MARK: - Bookmark & Reflect Buttons
+            if !highlightedVerses.isEmpty {
+                HStack(spacing: 12) {
+                    Button {
+                        addBookmark()
+                    } label: {
+                        Text("Bookmark Selected")
+                            .padding()
+                            .background(.blue.opacity(0.2))
+                            .cornerRadius(12)
+                    }
+
+                    Button {
+                        reflectVerses()
+                    } label: {
+                        Text("Reflect")
+                            .padding()
+                            .background(.green.opacity(0.2))
+                            .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal)
+                .animation(.easeInOut, value: highlightedVerses)
+            }
+
+            Divider()
+
+            // MARK: - Bottom Tab Bar
+            BottomTabBar(selectedTab: $selectedTab)
+        }
+    }
+
+    // MARK: - Helper Functions
+    func currentVerses() -> [Verse] {
+        let verses = allVerses.filter { $0.book == currentBook && $0.chapter == currentChapter && $0.version == selectedVersion }
+        // Optional: YouVersion-style grouping logic could be applied here
+        return verses
+    }
+
+    func performSearch() {
+        // Simple keyword-based search (replace with AI / semantic search later)
+        let results = allVerses.filter { verse in
+            verse.version == selectedVersion &&
+            verse.text.lowercased().contains(searchQuery.lowercased())
+        }
+        searchResults = Array(results.prefix(5))
+        highlightedVerses.removeAll()
+    }
+
+    func addBookmark() {
+        let bookmark = Bookmark(verses: highlightedVerses, version: selectedVersion)
+        bookmarks.append(bookmark)
+        highlightedVerses.removeAll()
+    }
+
+    func reflectVerses() {
+        guard !highlightedVerses.isEmpty else { return }
+        let combinedText = highlightedVerses.map { $0.text }.joined(separator: " ")
+        ChatManager.shared.sendToChat("I want to reflect on this passage: \(combinedText)")
+        highlightedVerses.removeAll()
+        selectedTab = .chat // optional: auto-switch to chat
+    }
+}
+
+// MARK: - Verse Tile
+struct VerseTile: View {
+    let verse: Verse
+    @Binding var highlightedVerses: [Verse]
+
+    var isHighlighted: Bool { highlightedVerses.contains(verse) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(verse.number) \(verse.text)")
+                .padding(12)
+                .background(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isHighlighted ? Color.blue : Color.clear, style: StrokeStyle(lineWidth: 2, dash: [5]))
+                )
+                .onTapGesture {
+                    toggleHighlight()
+                }
+        }
+        .animation(.easeInOut, value: isHighlighted)
+    }
+
+    func toggleHighlight() {
+        if isHighlighted {
+            highlightedVerses.removeAll { $0.id == verse.id }
+        } else {
+            highlightedVerses.append(verse)
+        }
+    }
+}
+
+// MARK: - Bottom Tab Bar
+enum Tab { case community, devotion, chat, bible, account }
+
+struct BottomTabBar: View {
+    @Binding var selectedTab: Tab
+
+    var body: some View {
+        HStack {
+            TabItem(icon: "person.3", tab: .community, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "heart", tab: .devotion, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "bubble.left", tab: .chat, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "book", tab: .bible, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "person.crop.circle", tab: .account, selectedTab: $selectedTab)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+    }
+}
+
+struct TabItem: View {
+    let icon: String
+    let tab: Tab
+    @Binding var selectedTab: Tab
+
+    var isActive: Bool { selectedTab == tab }
+
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(isActive ? .green : .secondary)
+            .scaleEffect(isActive ? 1.15 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isActive)
+            .onTapGesture { selectedTab = tab }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    BibleAppView()
+}
