@@ -759,73 +759,93 @@ export default function Bible() {
           </motion.div>
         )}
 
-        {/* Search Results - Verse Cards */}
-        <AnimatePresence>
-          {searchOpen && searchResults.length > 0 && (
-            <motion.div 
-              className="space-y-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <p className="text-sm text-muted-foreground text-center">
-                {searchResults.length} verses found for "{searchQuery}"
-              </p>
-              {searchResults.slice(0, 5).map((result: any, index: number) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.08, duration: 0.3 }}
-                >
-                  <Card className="p-4 shadow-md border-0 bg-card">
-                    <p className="font-serif text-base leading-relaxed text-foreground/90 mb-2">
-                      {result.text}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {result.reference}
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary gap-1.5"
-                          onClick={() => {
-                            const newBookmark: BookmarkGroup = {
-                              id: `${result.reference}-${Date.now()}`,
-                              verses: [{ number: "1", text: result.text }],
-                              reference: result.reference,
-                              dateSaved: new Date(),
-                            };
-                            setBookmarkGroups([...bookmarkGroups, newBookmark]);
-                          }}
-                          data-testid={`button-bookmark-search-${index}`}
-                        >
-                          <Bookmark className="w-4 h-4" />
-                          Save
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-500 gap-1.5"
-                          onClick={() => {
-                            navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
-                          }}
-                          data-testid={`button-reflect-search-${index}`}
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          Reflect
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
+
+      {/* Search Results Overlay - floats above Bible content */}
+      <AnimatePresence>
+        {searchOpen && searchResults.length > 0 && (
+          <motion.div 
+            className="fixed inset-x-0 top-[200px] bottom-0 z-[100] pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="max-w-lg mx-auto px-4 pointer-events-auto">
+              <div className="bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 max-h-[60vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-muted-foreground">
+                    {Math.min(searchResults.length, 5)} of {searchResults.length} results for "{searchQuery}"
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setSearchResults([])}
+                    data-testid="button-close-search-results"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {searchResults.slice(0, 5).map((result: any, index: number) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.2 }}
+                    >
+                      <Card className="p-3 shadow-sm border bg-card/80">
+                        <p className="font-serif text-sm leading-relaxed text-foreground/90 mb-2 line-clamp-3">
+                          {result.text}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-primary">
+                            {result.reference}
+                          </p>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-primary gap-1"
+                              onClick={() => {
+                                const newBookmark: BookmarkGroup = {
+                                  id: `${result.reference}-${Date.now()}`,
+                                  verses: [{ number: "1", text: result.text }],
+                                  reference: result.reference,
+                                  dateSaved: new Date(),
+                                };
+                                setBookmarkGroups([...bookmarkGroups, newBookmark]);
+                                setSearchResults([]);
+                              }}
+                              data-testid={`button-bookmark-search-${index}`}
+                            >
+                              <Bookmark className="w-3 h-3" />
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-blue-500 gap-1"
+                              onClick={() => {
+                                setSearchResults([]);
+                                navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
+                              }}
+                              data-testid={`button-reflect-search-${index}`}
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              Reflect
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Action Bar - appears when verses are highlighted */}
       <AnimatePresence>
