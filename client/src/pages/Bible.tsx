@@ -21,9 +21,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
+
+interface BookmarkedVerse {
+  number: string;
+  text: string;
+  reference: string;
+}
 
 export default function Bible() {
   const {
@@ -42,10 +48,13 @@ export default function Bible() {
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
   const [highlightedVerse, setHighlightedVerse] = useState<string | null>(null);
   const [animateContent, setAnimateContent] = useState(false);
+  const [bookmarkedVerses, setBookmarkedVerses] = useState<Set<string>>(new Set());
+  const [selectedVerse, setSelectedVerse] = useState<BookmarkedVerse | null>(null);
+  const [showReflectionCTA, setShowReflectionCTA] = useState(false);
   const urlProcessedRef = useRef(false);
+  const [, navigate] = useLocation();
   
   const searchString = useSearch();
-  const [, navigate] = useLocation();
 
   // Fetch versions
   const { data: versions = [], isLoading: versionsLoading } = useQuery<BibleVersion[]>({
@@ -218,6 +227,34 @@ export default function Bible() {
 
   const handleVerseClick = (verseNum: string) => {
     setHighlightedVerse(highlightedVerse === verseNum ? null : verseNum);
+  };
+
+  const handleBookmark = (verse: { number: string; text: string }) => {
+    const verseKey = `${currentChapter?.reference}:${verse.number}`;
+    const newBookmarks = new Set(bookmarkedVerses);
+    
+    if (newBookmarks.has(verseKey)) {
+      newBookmarks.delete(verseKey);
+      setShowReflectionCTA(false);
+    } else {
+      newBookmarks.add(verseKey);
+      setSelectedVerse({
+        number: verse.number,
+        text: verse.text,
+        reference: `${currentChapter?.reference}:${verse.number}`,
+      });
+      setShowReflectionCTA(true);
+    }
+    
+    setBookmarkedVerses(newBookmarks);
+  };
+
+  const handleReflect = () => {
+    if (selectedVerse) {
+      // Navigate to chat with the selected verse as context
+      navigate(`/chat?verse=${encodeURIComponent(selectedVerse.reference)}&text=${encodeURIComponent(selectedVerse.text)}`);
+    }
+    setShowReflectionCTA(false);
   };
 
   const oldTestamentBooks = books.filter((b) => b.testament === "OT");
@@ -513,7 +550,9 @@ export default function Bible() {
                     number={verse.number}
                     text={verse.text}
                     isHighlighted={highlightedVerse === verse.number}
+                    isBookmarked={bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`)}
                     onClick={() => handleVerseClick(verse.number)}
+                    onBookmark={() => handleBookmark(verse)}
                     delay={index * 0.02}
                   />
                 ))}
@@ -551,22 +590,71 @@ export default function Bible() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Reflection CTA Overlay */}
+      <AnimatePresence>
+        {showReflectionCTA && selectedVerse && (
+          <motion.div
+            className="fixed bottom-24 left-4 right-4 z-50"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Reflect on this verse?</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {selectedVerse.reference}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowReflectionCTA(false)}
+                      data-testid="button-dismiss-reflect"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleReflect}
+                      className="bg-primary text-primary-foreground"
+                      data-testid="button-reflect"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Reflect
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Verse Row Component - iOS style
+// Verse Row Component - iOS style with bookmark
 function VerseRow({ 
   number, 
   text, 
   isHighlighted, 
+  isBookmarked,
   onClick,
+  onBookmark,
   delay = 0
 }: { 
   number: string; 
   text: string; 
   isHighlighted: boolean; 
+  isBookmarked: boolean;
   onClick: () => void;
+  onBookmark: () => void;
   delay?: number;
 }) {
   return (
@@ -587,9 +675,31 @@ function VerseRow({
       <span className="text-xs text-muted-foreground font-medium pt-1 w-5 text-right shrink-0">
         {number}
       </span>
-      <span className="font-serif text-base leading-relaxed text-foreground/90">
-        {text}
-      </span>
+      <div className="flex-1">
+        <span className="font-serif text-base leading-relaxed text-foreground/90 block">
+          {text}
+        </span>
+        <div className="flex justify-end mt-2">
+          <motion.button
+            className={cn(
+              "p-1 rounded-md transition-colors",
+              isBookmarked ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onBookmark();
+            }}
+            whileTap={{ scale: 0.9 }}
+            animate={{ scale: isBookmarked ? 1.2 : 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            data-testid={`button-bookmark-verse-${number}`}
+          >
+            <Bookmark 
+              className={cn("w-4 h-4", isBookmarked && "fill-current")} 
+            />
+          </motion.button>
+        </div>
+      </div>
     </motion.div>
   );
 }

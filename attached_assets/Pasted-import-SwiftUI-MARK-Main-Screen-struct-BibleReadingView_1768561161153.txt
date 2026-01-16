@@ -1,0 +1,245 @@
+import SwiftUI
+
+// MARK: - Main Screen
+struct BibleReadingView: View {
+    @State private var highlightedVerse: Int? = nil
+    @State private var bookmarks: [Bookmark] = []
+    @State private var showReflectionCTA: Bool = false
+    @State private var selectedVerse: Bookmark? = nil
+    
+    var body: some View {
+        ZStack {
+            Color(.systemGroupedBackground).ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                
+                HeaderView()
+                
+                ScrollView {
+                    ScriptureCard(
+                        highlightedVerse: $highlightedVerse,
+                        bookmarks: $bookmarks,
+                        selectedVerse: $selectedVerse,
+                        showReflectionCTA: $showReflectionCTA
+                    )
+                    .padding()
+                }
+                
+                Divider()
+                
+                BottomTabBar()
+            }
+            
+            // Reflection CTA overlay
+            if showReflectionCTA, let verse = selectedVerse {
+                ReflectionCTA(verse: verse) {
+                    // User tapped "Reflect"
+                    print("Start reflection for: \(verse.text)")
+                    showReflectionCTA = false
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(), value: showReflectionCTA)
+            }
+        }
+    }
+}
+
+// MARK: - Header
+struct HeaderView: View {
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("Joshua 1")
+                .font(.system(size: 28, weight: .semibold, design: .serif))
+            Text("American Standard Version")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 16)
+    }
+}
+
+// MARK: - Scripture Card
+struct ScriptureCard: View {
+    @Binding var highlightedVerse: Int?
+    @Binding var bookmarks: [Bookmark]
+    @Binding var selectedVerse: Bookmark?
+    @Binding var showReflectionCTA: Bool
+    
+    let verses: [(Int, String)] = [
+        (1, "Now it came to pass after the death of Moses the servant of the Lord..."),
+        (2, "Moses my servant is dead; now therefore arise..."),
+        (3, "Every place that the sole of your foot shall tread upon..."),
+        (5, "I will not fail thee, nor forsake thee."),
+        (9, "Be strong and of a good courage; be not afraid...")
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            ForEach(verses, id: \.0) { verse in
+                VerseRow(
+                    number: verse.0,
+                    text: verse.1,
+                    isHighlighted: highlightedVerse == verse.0,
+                    isBookmarked: bookmarks.contains(where: { $0.verseNumber == verse.0 }),
+                    onBookmark: { bookmark in
+                        if let index = bookmarks.firstIndex(where: { $0.verseNumber == bookmark.verseNumber }) {
+                            bookmarks.remove(at: index)
+                        } else {
+                            bookmarks.append(bookmark)
+                        }
+                        selectedVerse = bookmark
+                        showReflectionCTA = true
+                    }
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        highlightedVerse = verse.0
+                    }
+                }
+            }
+        }
+        .padding(22)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+        )
+    }
+}
+
+// MARK: - Verse Row
+struct VerseRow: View {
+    let number: Int
+    let text: String
+    let isHighlighted: Bool
+    let isBookmarked: Bool
+    var onBookmark: (Bookmark) -> Void
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("\(number)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(text)
+                    .font(.system(size: 17, weight: .regular, design: .serif))
+                    .lineSpacing(6)
+                
+                HStack {
+                    Spacer()
+                    BookmarkButton(isBookmarked: isBookmarked) {
+                        onBookmark(Bookmark(verseNumber: number, text: text))
+                    }
+                }
+            }
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isHighlighted ? Color.green.opacity(0.12) : Color.clear)
+        )
+    }
+}
+
+// MARK: - Bookmark Button
+struct BookmarkButton: View {
+    var isBookmarked: Bool
+    var action: () -> Void
+    
+    var body: some View {
+        Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+            .foregroundColor(.green)
+            .scaleEffect(isBookmarked ? 1.2 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isBookmarked)
+            .onTapGesture {
+                action()
+            }
+    }
+}
+
+// MARK: - Reflection CTA
+struct ReflectionCTA: View {
+    var verse: Bookmark
+    var onReflect: () -> Void
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Text("Reflect on this verse?")
+                    .font(.subheadline.weight(.medium))
+                    .padding()
+                    .foregroundColor(.white)
+                Spacer()
+                Button(action: onReflect) {
+                    Text("Reflect")
+                        .bold()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding()
+            }
+            .background(.ultraThinMaterial)
+            .cornerRadius(20)
+            .padding()
+            .shadow(radius: 6)
+        }
+    }
+}
+
+// MARK: - Bottom Tab Bar
+struct BottomTabBar: View {
+    @State private var selectedTab: Tab = .bible
+    
+    var body: some View {
+        HStack {
+            TabItem(icon: "person.3", tab: .community, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "heart", tab: .devotion, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "bubble.left", tab: .chat, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "book", tab: .bible, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "person.crop.circle", tab: .account, selectedTab: $selectedTab)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+    }
+}
+
+enum Tab { case community, devotion, chat, bible, account }
+
+struct TabItem: View {
+    let icon: String
+    let tab: Tab
+    @Binding var selectedTab: Tab
+    
+    var isActive: Bool { selectedTab == tab }
+    
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(isActive ? .green : .secondary)
+            .scaleEffect(isActive ? 1.15 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isActive)
+            .onTapGesture { selectedTab = tab }
+    }
+}
+
+// MARK: - Bookmark Model
+struct Bookmark: Identifiable, Equatable {
+    var id = UUID()
+    let verseNumber: Int
+    let text: String
+}
+
+// MARK: - Preview
+#Preview {
+    BibleReadingView()
+}
