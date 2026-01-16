@@ -1,0 +1,160 @@
+struct BibleView: View {
+    @State private var verses: [Verse] = [
+        Verse(number: 1, text: "Now it came to pass after the death of Moses...", book: "Joshua 1"),
+        Verse(number: 2, text: "Moses my servant is dead; now therefore arise...", book: "Joshua 1"),
+        Verse(number: 3, text: "Every place that the sole of your foot shall tread upon...", book: "Joshua 1"),
+        Verse(number: 5, text: "I will not fail thee, nor forsake thee.", book: "Joshua 1"),
+        Verse(number: 9, text: "Be strong and of a good courage; be not afraid...", book: "Joshua 1")
+    ]
+    
+    @State private var bookmarks: [Bookmark] = []
+    @State private var showBookmarksPage = false
+    @State private var searchText: String = ""
+    @State private var searchResults: [Verse] = []
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header + Bookmarks Icon
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Joshua 1")
+                            .font(.system(size: 28, weight: .semibold, design: .serif))
+                        Text("ASV")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        showBookmarksPage = true
+                    } label: {
+                        Image(systemName: "bookmark.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                    }
+                }
+                .padding()
+                
+                // Search Bar
+                TextField("Search by verse, word, or feeling…", text: $searchText, onCommit: performSearch)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+                
+                ScrollView {
+                    VStack(spacing: 12) {
+                        // Decide source: search or normal verses
+                        let displayVerses = searchResults.isEmpty ? verses : searchResults
+                        let groupedVerses = groupShortVerses(displayVerses)
+                        
+                        ForEach(groupedVerses.indices, id: \.self) { index in
+                            let verseTile = groupedVerses[index]
+                            VerseCardCombined(verses: verseTile,
+                                              isBookmarked: verseTile.allSatisfy { bookmarks.contains(where: { $0.verse == $0 }) },
+                                              onBookmark: { verseTile.forEach { toggleBookmark($0) } },
+                                              onReflect: { verseTile.forEach { reflectVerse($0) } })
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .sheet(isPresented: $showBookmarksPage) {
+                BookmarksPage(bookmarks: $bookmarks)
+            }
+        }
+    }
+    
+    // MARK: - Functions
+    
+    // Combines short verses into tiles of max 4 lines
+    func groupShortVerses(_ verses: [Verse]) -> [[Verse]] {
+        var result: [[Verse]] = []
+        var buffer: [Verse] = []
+        
+        for verse in verses {
+            buffer.append(verse)
+            
+            // Estimate lines: roughly 50 chars per line
+            let textLength = buffer.map { $0.text.count }.reduce(0, +)
+            let estimatedLines = Int(ceil(Double(textLength) / 50.0))
+            
+            if estimatedLines >= 4 {
+                result.append(buffer)
+                buffer = []
+            } else if buffer.count == 2 {
+                // If first + second verse < 4 lines, combine
+                result.append(buffer)
+                buffer = []
+            }
+        }
+        
+        if !buffer.isEmpty {
+            result.append(buffer)
+        }
+        
+        return result
+    }
+    
+    func toggleBookmark(_ verse: Verse) {
+        if let index = bookmarks.firstIndex(where: { $0.verse == verse }) {
+            bookmarks.remove(at: index)
+        } else {
+            bookmarks.append(Bookmark(verse: verse))
+        }
+    }
+    
+    func reflectVerse(_ verse: Verse) {
+        ChatManager.shared.sendToChat("I want to reflect on this passage: \(verse.text)")
+    }
+    
+    func performSearch() {
+        if searchText.lowercased().contains("anxious") {
+            searchResults = Array(verses.prefix(3))
+        } else {
+            searchResults = Array(verses.prefix(5))
+        }
+    }
+}
+
+// MARK: - Verse Card for Combined Verses
+struct VerseCardCombined: View {
+    let verses: [Verse]
+    let isBookmarked: Bool
+    let onBookmark: () -> Void
+    let onReflect: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(verses, id: \.id) { verse in
+                HStack(alignment: .top) {
+                    Text("\(verse.number)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(verse.text)
+                        .font(.system(size: 17, weight: .regular, design: .serif))
+                        .lineSpacing(6)
+                    
+                    Spacer()
+                }
+            }
+            
+            HStack {
+                Button { onBookmark() } label: {
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(.green)
+                }
+                Spacer()
+                Button { onReflect() } label: {
+                    Image(systemName: "bubble.left")
+                        .foregroundStyle(.blue)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+        )
+    }
+}
