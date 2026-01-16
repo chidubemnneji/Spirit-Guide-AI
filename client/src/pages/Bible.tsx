@@ -729,28 +729,26 @@ export default function Bible() {
                       return (
                         <motion.div 
                           key={verse.number}
-                          className={cn(
-                            "flex gap-3 cursor-pointer p-2 rounded-xl transition-all",
-                            isHighlighted 
-                              ? "border-2 border-dashed border-primary bg-primary/5" 
-                              : "border-2 border-transparent hover:bg-muted/50"
-                          )}
+                          className="flex gap-3 cursor-pointer py-1 transition-all relative"
                           onClick={() => handleVerseClick(verse.number)}
                           data-verse={verse.number}
-                          whileTap={{ scale: 0.98 }}
-                          animate={{ 
-                            scale: isHighlighted ? 1.01 : 1,
-                          }}
-                          transition={{ duration: 0.2 }}
+                          whileTap={{ scale: 0.99 }}
                         >
                           <span className={cn(
-                            "text-xs font-medium pt-0.5 w-5 text-right shrink-0",
+                            "text-xs font-medium pt-0.5 w-5 text-right shrink-0 transition-colors",
                             isHighlighted ? "text-primary" : "text-muted-foreground"
                           )}>
                             {verse.number}
                           </span>
-                          <span className="font-serif text-base leading-relaxed text-foreground/90">
+                          <span className="font-serif text-base leading-relaxed text-foreground/90 relative">
                             {verse.text}
+                            {/* Dashed underline when highlighted */}
+                            <motion.span 
+                              className="absolute left-0 right-0 bottom-0 h-0.5 border-b-2 border-dashed border-primary"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: isHighlighted ? 1 : 0 }}
+                              transition={{ duration: 0.2 }}
+                            />
                           </span>
                         </motion.div>
                       );

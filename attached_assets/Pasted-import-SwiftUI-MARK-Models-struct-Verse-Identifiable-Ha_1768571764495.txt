@@ -1,0 +1,185 @@
+import SwiftUI
+
+// MARK: - Models
+struct Verse: Identifiable, Hashable {
+    let id = UUID()
+    let number: Int
+    let text: String
+}
+
+// MARK: - Chat Manager (Simulated)
+class ChatManager: ObservableObject {
+    static let shared = ChatManager()
+    @Published var messages: [String] = []
+
+    func sendToChat(_ message: String) {
+        messages.append(message)
+        print("Sent to Chat: \(message)")
+    }
+}
+
+// MARK: - Bible Reader View
+struct BibleReaderView: View {
+    let book: String
+    let chapter: String
+    let verses: [Verse]
+
+    @State private var highlightedVerses: Set<Int> = []
+    @State private var showBookmarkToast: Bool = false
+
+    var body: some View {
+        VStack {
+            // Header
+            HStack {
+                Text("\(book) \(chapter)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.top)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(mergedVerses(), id: \.self) { verseGroup in
+                        VerseLineView(
+                            verses: verseGroup,
+                            highlightedVerses: $highlightedVerses
+                        )
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 100)
+            }
+
+            if !highlightedVerses.isEmpty {
+                actionBar
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(.easeInOut, value: highlightedVerses)
+            }
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    }
+
+    // MARK: - Merge Short Verses (<4 lines)
+    private func mergedVerses() -> [[Verse]] {
+        var result: [[Verse]] = []
+        var buffer: [Verse] = []
+
+        for verse in verses {
+            buffer.append(verse)
+
+            let lineCount = buffer.reduce(0) { $0 + estimatedLines(for: $1.text) }
+            if lineCount >= 4 {
+                result.append(buffer)
+                buffer = []
+            }
+        }
+
+        if !buffer.isEmpty {
+            result.append(buffer)
+        }
+
+        return result
+    }
+
+    private func estimatedLines(for text: String) -> Int {
+        // Simple heuristic: 50 chars per line
+        return max(1, Int(ceil(Double(text.count) / 50.0)))
+    }
+
+    // MARK: - Action Bar
+    private var actionBar: some View {
+        HStack {
+            Button(action: {
+                showBookmarkToast = true
+                // Bookmark logic
+            }) {
+                Label("Bookmark", systemImage: "bookmark")
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(8)
+            }
+
+            Button(action: {
+                let selectedTexts = verses.filter { highlightedVerses.contains($0.number) }
+                    .map { "\($0.number) \($0.text)" }
+                    .joined(separator: "\n")
+                ChatManager.shared.sendToChat("I want to reflect on this passage:\n\(selectedTexts)")
+            }) {
+                Label("Reflect", systemImage: "message")
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(8)
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial)
+    }
+}
+
+// MARK: - Verse Line View
+struct VerseLineView: View {
+    let verses: [Verse]
+    @Binding var highlightedVerses: Set<Int>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(verses) { verse in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("\(verse.number)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text(verse.text)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
+                .overlay(
+                    DashedUnderline(show: highlightedVerses.contains(verse.number))
+                        .frame(height: 2)
+                        .offset(y: 10),
+                    alignment: .bottomLeading
+                )
+                .onTapGesture {
+                    if highlightedVerses.contains(verse.number) {
+                        highlightedVerses.remove(verse.number)
+                    } else {
+                        highlightedVerses.insert(verse.number)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Dashed Underline
+struct DashedUnderline: View {
+    let show: Bool
+
+    var body: some View {
+        Rectangle()
+            .stroke(style: StrokeStyle(lineWidth: 2, dash: [5]))
+            .foregroundColor(show ? .green : .clear)
+            .animation(.easeInOut, value: show)
+    }
+}
+
+// MARK: - Preview
+struct BibleReaderView_Previews: PreviewProvider {
+    static var sampleVerses: [Verse] = [
+        Verse(number: 1, text: "Now it came to pass after the death of Moses the servant of the Lord..."),
+        Verse(number: 2, text: "Moses my servant is dead; now therefore arise..."),
+        Verse(number: 3, text: "Every place that the sole of your foot shall tread upon..."),
+        Verse(number: 4, text: "Be strong and of a good courage; be not afraid..."),
+        Verse(number: 5, text: "I will not fail thee, nor forsake thee."),
+        Verse(number: 6, text: "The Lord shall fight for you...")
+    ]
+
+    static var previews: some View {
+        BibleReaderView(book: "Joshua", chapter: "1", verses: sampleVerses)
+    }
+}
