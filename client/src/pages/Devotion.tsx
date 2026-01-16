@@ -162,12 +162,9 @@ export default function Devotion() {
                 ) : greeting ? (
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        {getTimeOfDayIcon()}
-                        <h2 className="font-serif text-2xl font-bold tracking-display" data-testid="text-greeting">
-                          {greeting.greeting}
-                        </h2>
-                      </div>
+                      <h2 className="font-serif text-2xl font-bold tracking-display" data-testid="text-greeting">
+                        {greeting.greeting}
+                      </h2>
                       <p className="text-muted-foreground tracking-refined" data-testid="text-greeting-subtext">
                         {greeting.subtext}
                       </p>
@@ -182,16 +179,18 @@ export default function Devotion() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {getTimeOfDayIcon()}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
                       <h2 className="font-serif text-2xl font-bold tracking-display">
                         Good Morning
                       </h2>
+                      <p className="text-muted-foreground tracking-refined">
+                        Let's nurture your spirit today
+                      </p>
                     </div>
-                    <p className="text-muted-foreground tracking-refined">
-                      Let's nurture your spirit today
-                    </p>
+                    <div className="flex items-center justify-center w-20 h-20 rounded-full bg-background/50">
+                      {getTimeOfDayIcon()}
+                    </div>
                   </div>
                 )}
               </CardContent>
