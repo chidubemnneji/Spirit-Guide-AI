@@ -455,12 +455,14 @@ export default function Bible() {
                         <p className="text-xs font-medium text-primary mb-2">
                           {bookmark.reference}
                         </p>
-                        {bookmark.verses.map((v) => (
-                          <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90 mb-1">
-                            <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
-                            {v.text}
-                          </p>
-                        ))}
+                        <div className="line-clamp-4">
+                          {bookmark.verses.map((v) => (
+                            <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90">
+                              <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
+                              {v.text}
+                            </p>
+                          ))}
+                        </div>
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
                           <p className="text-xs text-muted-foreground">
                             {new Date(bookmark.dateSaved).toLocaleDateString()}
