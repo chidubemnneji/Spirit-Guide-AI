@@ -349,31 +349,28 @@ export default function Bible() {
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* iOS-style Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
-        {/* Chapter Title & Version with Bookmark on Right */}
-        <div className="flex items-center justify-between py-4 px-4">
-          <div className="w-10" /> {/* Spacer for balance */}
-          <div className="text-center flex-1">
+        {/* Chapter Title on Left, Version Picker & Bookmark on Right */}
+        <div className="flex items-center justify-between py-4 px-4 gap-3">
+          {/* Left: Chapter Title */}
+          <div className="flex-1 min-w-0">
             <motion.h1 
-              className="font-serif text-2xl font-semibold text-foreground"
+              className="font-serif text-2xl font-semibold text-foreground truncate"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               key={currentChapter?.reference || "title"}
             >
-              {currentChapter?.reference || "Bible"}
+              {currentChapter?.reference || "Bible"}{currentVersion ? ` | ${currentVersion.abbreviation}` : ""}
             </motion.h1>
-            {currentVersion && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {currentVersion.name}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground mt-0.5">Bible</p>
           </div>
-          {/* Bookmarks Icon - Right Side */}
+          
+          {/* Right: Bookmarks Icon */}
           <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-primary"
+                className="text-primary shrink-0"
                 data-testid="button-open-bookmarks"
               >
                 <Bookmark className={cn("w-7 h-7", bookmarkGroups.length > 0 && "fill-current")} />
