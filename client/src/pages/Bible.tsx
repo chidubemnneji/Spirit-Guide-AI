@@ -848,7 +848,7 @@ export default function Bible() {
                   data-testid="button-bookmark-floating"
                 >
                   <Bookmark className="w-5 h-5" />
-                  Bookmark Selected
+                  Bookmark
                 </Button>
                 <Button
                   variant="ghost"
