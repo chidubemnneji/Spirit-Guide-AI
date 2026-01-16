@@ -308,12 +308,12 @@ export default function Bible() {
     return verses;
   };
 
-  // Group short verses together for better reading experience
+  // Group short verses together (max 4 lines estimated)
   const groupShortVerses = (verses: { number: string; text: string }[]): { number: string; text: string }[][] => {
     const result: { number: string; text: string }[][] = [];
     let buffer: { number: string; text: string }[] = [];
-    const CHARS_PER_LINE = 45;
-    const MAX_LINES = 5;
+    const CHARS_PER_LINE = 50;
+    const MAX_LINES = 4;
 
     for (const verse of verses) {
       buffer.push(verse);
@@ -322,7 +322,7 @@ export default function Bible() {
       const totalChars = buffer.reduce((sum, v) => sum + v.text.length, 0);
       const estimatedLines = Math.ceil(totalChars / CHARS_PER_LINE);
       
-      if (estimatedLines >= MAX_LINES || buffer.length >= 3) {
+      if (estimatedLines >= MAX_LINES) {
         result.push(buffer);
         buffer = [];
       }
@@ -716,37 +716,41 @@ export default function Bible() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="space-y-4"
           >
-            {/* Plain verse list - tap to highlight */}
-            <div className="space-y-1">
-              {verses.map((verse) => {
-                const isHighlighted = highlightedVerses.has(verse.number);
-                return (
-                  <motion.div 
-                    key={verse.number}
-                    className="flex gap-3 cursor-pointer py-1.5 transition-all relative"
-                    onClick={() => handleVerseClick(verse.number)}
-                    data-verse={verse.number}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    <span className={cn(
-                      "text-xs font-medium pt-0.5 w-6 text-right shrink-0 transition-colors",
-                      isHighlighted ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {verse.number}
-                    </span>
-                    <span className="font-serif text-base leading-relaxed text-foreground/90 relative">
-                      {verse.text}
-                      {/* Dashed underline when highlighted */}
-                      <motion.span 
-                        className="absolute left-0 right-0 bottom-0 h-0.5 border-b-2 border-dashed border-primary"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: isHighlighted ? 1 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      />
-                    </span>
-                  </motion.div>
-                );
-              })}
+            {/* Grouped verses (max 4 lines) - plain view, no cards */}
+            <div className="space-y-4">
+              {groupShortVerses(verses).map((verseGroup, groupIndex) => (
+                <div key={groupIndex} className="space-y-1" data-testid={`verse-group-${groupIndex}`}>
+                  {verseGroup.map((verse) => {
+                    const isHighlighted = highlightedVerses.has(verse.number);
+                    return (
+                      <motion.div 
+                        key={verse.number}
+                        className="flex gap-3 cursor-pointer py-1.5 transition-all relative"
+                        onClick={() => handleVerseClick(verse.number)}
+                        data-verse={verse.number}
+                        whileTap={{ scale: 0.99 }}
+                      >
+                        <span className={cn(
+                          "text-xs font-medium pt-0.5 w-6 text-right shrink-0 transition-colors",
+                          isHighlighted ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {verse.number}
+                        </span>
+                        <span className="font-serif text-base leading-relaxed text-foreground/90 relative">
+                          {verse.text}
+                          {/* Dashed underline when highlighted */}
+                          <motion.span 
+                            className="absolute left-0 right-0 bottom-0 h-0.5 border-b-2 border-dashed border-primary"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: isHighlighted ? 1 : 0 }}
+                            transition={{ duration: 0.2 }}
+                          />
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
