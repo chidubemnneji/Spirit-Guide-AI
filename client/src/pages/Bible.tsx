@@ -372,10 +372,10 @@ export default function Bible() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
                 data-testid="button-open-bookmarks"
               >
-                <Bookmark className={cn("w-5 h-5", bookmarkGroups.length > 0 && "fill-current")} />
+                <Bookmark className={cn("w-7 h-7", bookmarkGroups.length > 0 && "fill-current")} />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
