@@ -23,11 +23,11 @@ interface JourneyEntry {
 function getTimeOfDayIcon() {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) {
-    return <Sunrise className="w-6 h-6 text-amber-500" />;
+    return <Sunrise className="w-11 h-11 text-amber-500" />;
   } else if (hour >= 12 && hour < 18) {
-    return <Sun className="w-6 h-6 text-orange-500" />;
+    return <Sun className="w-11 h-11 text-orange-500" />;
   } else {
-    return <Moon className="w-6 h-6 text-indigo-400" />;
+    return <Moon className="w-11 h-11 text-indigo-400" />;
   }
 }
 
