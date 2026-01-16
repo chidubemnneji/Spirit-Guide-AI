@@ -48,9 +48,10 @@ export default function Bible() {
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
   const [highlightedVerse, setHighlightedVerse] = useState<string | null>(null);
   const [animateContent, setAnimateContent] = useState(false);
-  const [bookmarkedVerses, setBookmarkedVerses] = useState<Set<string>>(new Set());
+  const [bookmarkedVerses, setBookmarkedVerses] = useState<Map<string, BookmarkedVerse>>(new Map());
   const [selectedVerse, setSelectedVerse] = useState<BookmarkedVerse | null>(null);
   const [showReflectionCTA, setShowReflectionCTA] = useState(false);
+  const [bookmarksSheetOpen, setBookmarksSheetOpen] = useState(false);
   const urlProcessedRef = useRef(false);
   const [, navigate] = useLocation();
   
@@ -231,22 +232,28 @@ export default function Bible() {
 
   const handleBookmark = (verse: { number: string; text: string }) => {
     const verseKey = `${currentChapter?.reference}:${verse.number}`;
-    const newBookmarks = new Set(bookmarkedVerses);
+    const newBookmarks = new Map(bookmarkedVerses);
     
     if (newBookmarks.has(verseKey)) {
       newBookmarks.delete(verseKey);
       setShowReflectionCTA(false);
     } else {
-      newBookmarks.add(verseKey);
-      setSelectedVerse({
+      const bookmarkData = {
         number: verse.number,
         text: verse.text,
         reference: `${currentChapter?.reference}:${verse.number}`,
-      });
+      };
+      newBookmarks.set(verseKey, bookmarkData);
+      setSelectedVerse(bookmarkData);
       setShowReflectionCTA(true);
     }
     
     setBookmarkedVerses(newBookmarks);
+  };
+
+  const handleReflectVerse = (verse: { number: string; text: string }) => {
+    const reference = `${currentChapter?.reference}:${verse.number}`;
+    navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(verse.text)}`);
   };
 
   const handleReflect = () => {
@@ -294,20 +301,93 @@ export default function Bible() {
       {/* iOS-style Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
         {/* Chapter Title & Version */}
-        <div className="text-center py-4">
-          <motion.h1 
-            className="font-serif text-2xl font-semibold text-foreground"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={currentChapter?.reference || "title"}
-          >
-            {currentChapter?.reference || "Bible"}
-          </motion.h1>
-          {currentVersion && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {currentVersion.name}
-            </p>
-          )}
+        <div className="relative py-4">
+          <div className="text-center">
+            <motion.h1 
+              className="font-serif text-2xl font-semibold text-foreground"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              key={currentChapter?.reference || "title"}
+            >
+              {currentChapter?.reference || "Bible"}
+            </motion.h1>
+            {currentVersion && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {currentVersion.name}
+              </p>
+            )}
+          </div>
+          {/* Bookmarks Icon */}
+          <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary"
+                data-testid="button-open-bookmarks"
+              >
+                <Bookmark className={cn("w-5 h-5", bookmarkedVerses.size > 0 && "fill-current")} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80">
+              <SheetHeader>
+                <SheetTitle className="font-serif">Bookmarks</SheetTitle>
+              </SheetHeader>
+              <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+                {bookmarkedVerses.size === 0 ? (
+                  <div className="text-center py-12">
+                    <Bookmark className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">No bookmarks yet</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      Tap the bookmark icon on any verse to save it
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pr-2">
+                    {Array.from(bookmarkedVerses.values()).map((bookmark) => (
+                      <Card key={bookmark.reference} className="p-3 shadow-sm">
+                        <p className="font-serif text-sm leading-relaxed text-foreground/90 line-clamp-3">
+                          {bookmark.text}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-xs text-muted-foreground">
+                            {bookmark.reference}
+                          </p>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-primary"
+                              onClick={() => {
+                                navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(bookmark.text)}`);
+                                setBookmarksSheetOpen(false);
+                              }}
+                              data-testid={`button-reflect-bookmark-${bookmark.reference}`}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => {
+                                const newBookmarks = new Map(bookmarkedVerses);
+                                newBookmarks.delete(bookmark.reference);
+                                setBookmarkedVerses(newBookmarks);
+                              }}
+                              data-testid={`button-remove-bookmark-${bookmark.reference}`}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Navigation Bar */}
@@ -579,6 +659,7 @@ export default function Bible() {
                     isBookmarked={bookmarkedVerses.has(`${currentChapter?.reference}:${verse.number}`)}
                     onClick={() => handleVerseClick(verse.number)}
                     onBookmark={() => handleBookmark(verse)}
+                    onReflect={() => handleReflectVerse(verse)}
                     delay={index * 0.02}
                   />
                 ))}
@@ -611,43 +692,50 @@ export default function Bible() {
                     transition={{ delay: index * 0.08, duration: 0.3 }}
                   >
                     <Card className="p-4 shadow-md border-0 bg-card">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <p className="font-serif text-base leading-relaxed text-foreground/90 mb-2">
-                            {result.text}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {result.reference}
-                          </p>
+                      <p className="font-serif text-base leading-relaxed text-foreground/90 mb-2">
+                        {result.text}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          {result.reference}
+                        </p>
+                        <div className="flex gap-2">
+                          <motion.button
+                            className={cn(
+                              "p-1 rounded-md transition-colors",
+                              isBookmarked ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
+                            )}
+                            onClick={() => {
+                              const newBookmarks = new Map(bookmarkedVerses);
+                              if (newBookmarks.has(verseKey)) {
+                                newBookmarks.delete(verseKey);
+                              } else {
+                                newBookmarks.set(verseKey, {
+                                  number: "1",
+                                  text: result.text,
+                                  reference: result.reference,
+                                });
+                              }
+                              setBookmarkedVerses(newBookmarks);
+                            }}
+                            whileTap={{ scale: 0.9 }}
+                            animate={{ scale: isBookmarked ? 1.2 : 1 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                            data-testid={`button-bookmark-search-${index}`}
+                          >
+                            <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
+                          </motion.button>
+                          <motion.button
+                            className="p-1 rounded-md text-muted-foreground/50 hover:text-blue-500 transition-colors"
+                            onClick={() => {
+                              navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
+                            }}
+                            whileTap={{ scale: 0.9 }}
+                            data-testid={`button-reflect-search-${index}`}
+                          >
+                            <MessageCircle className="w-5 h-5" />
+                          </motion.button>
                         </div>
-                        <motion.button
-                          className={cn(
-                            "p-1 h-fit rounded-md transition-colors shrink-0",
-                            isBookmarked ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
-                          )}
-                          onClick={() => {
-                            const newBookmarks = new Set(bookmarkedVerses);
-                            if (newBookmarks.has(verseKey)) {
-                              newBookmarks.delete(verseKey);
-                              setShowReflectionCTA(false);
-                            } else {
-                              newBookmarks.add(verseKey);
-                              setSelectedVerse({
-                                number: "1",
-                                text: result.text,
-                                reference: result.reference,
-                              });
-                              setShowReflectionCTA(true);
-                            }
-                            setBookmarkedVerses(newBookmarks);
-                          }}
-                          whileTap={{ scale: 0.9 }}
-                          animate={{ scale: isBookmarked ? 1.2 : 1 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                          data-testid={`button-bookmark-search-${index}`}
-                        >
-                          <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
-                        </motion.button>
                       </div>
                     </Card>
                   </motion.div>
@@ -706,7 +794,7 @@ export default function Bible() {
   );
 }
 
-// Verse Row Component - iOS style with bookmark
+// Verse Row Component - iOS style with bookmark and reflect
 function VerseRow({ 
   number, 
   text, 
@@ -714,6 +802,7 @@ function VerseRow({
   isBookmarked,
   onClick,
   onBookmark,
+  onReflect,
   delay = 0
 }: { 
   number: string; 
@@ -722,6 +811,7 @@ function VerseRow({
   isBookmarked: boolean;
   onClick: () => void;
   onBookmark: () => void;
+  onReflect: () => void;
   delay?: number;
 }) {
   return (
@@ -746,7 +836,7 @@ function VerseRow({
         <span className="font-serif text-base leading-relaxed text-foreground/90 block">
           {text}
         </span>
-        <div className="flex justify-end mt-2">
+        <div className="flex justify-end gap-2 mt-2">
           <motion.button
             className={cn(
               "p-1 rounded-md transition-colors",
@@ -764,6 +854,17 @@ function VerseRow({
             <Bookmark 
               className={cn("w-4 h-4", isBookmarked && "fill-current")} 
             />
+          </motion.button>
+          <motion.button
+            className="p-1 rounded-md text-muted-foreground/50 hover:text-blue-500 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onReflect();
+            }}
+            whileTap={{ scale: 0.9 }}
+            data-testid={`button-reflect-verse-${number}`}
+          >
+            <MessageCircle className="w-4 h-4" />
           </motion.button>
         </div>
       </div>

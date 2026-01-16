@@ -1,0 +1,272 @@
+import SwiftUI
+
+// MARK: - Models
+struct Verse: Identifiable, Hashable {
+    let id = UUID()
+    let number: Int
+    let text: String
+    let book: String
+}
+
+struct Bookmark: Identifiable, Hashable {
+    let id = UUID()
+    let verse: Verse
+}
+
+// MARK: - Chat Manager (Placeholder)
+class ChatManager {
+    static let shared = ChatManager()
+    func sendToChat(_ message: String) {
+        // Replace with actual Chat integration
+        print("Sent to Chat: \(message)")
+    }
+}
+
+// MARK: - Main App View
+struct SpiritualityAppView: View {
+    @State private var selectedTab: Tab = .bible
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            switch selectedTab {
+            case .bible:
+                BibleView()
+            case .devotion:
+                Text("Devotion Tab")
+            case .reflect:
+                Text("Chat / Reflection Tab")
+            case .community:
+                Text("Community Tab")
+            case .account:
+                Text("Account Tab")
+            }
+            
+            BottomTabBar(selectedTab: $selectedTab)
+        }
+    }
+}
+
+// MARK: - Tabs
+enum Tab {
+    case community, devotion, reflect, bible, account
+}
+
+struct BottomTabBar: View {
+    @Binding var selectedTab: Tab
+    
+    var body: some View {
+        HStack {
+            TabItem(icon: "person.3", tab: .community, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "heart", tab: .devotion, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "bubble.left", tab: .reflect, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "book", tab: .bible, selectedTab: $selectedTab)
+            Spacer()
+            TabItem(icon: "person.crop.circle", tab: .account, selectedTab: $selectedTab)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+    }
+}
+
+struct TabItem: View {
+    let icon: String
+    let tab: Tab
+    @Binding var selectedTab: Tab
+    
+    var isActive: Bool { selectedTab == tab }
+    
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(isActive ? .green : .secondary)
+            .scaleEffect(isActive ? 1.15 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isActive)
+            .onTapGesture { selectedTab = tab }
+    }
+}
+
+// MARK: - Bible View
+struct BibleView: View {
+    @State private var verses: [Verse] = [
+        Verse(number: 1, text: "Now it came to pass after the death of Moses...", book: "Joshua 1"),
+        Verse(number: 2, text: "Moses my servant is dead; now therefore arise...", book: "Joshua 1"),
+        Verse(number: 3, text: "Every place that the sole of your foot shall tread upon...", book: "Joshua 1"),
+        Verse(number: 5, text: "I will not fail thee, nor forsake thee.", book: "Joshua 1"),
+        Verse(number: 9, text: "Be strong and of a good courage; be not afraid...", book: "Joshua 1")
+    ]
+    
+    @State private var bookmarks: [Bookmark] = []
+    @State private var showBookmarksPage = false
+    @State private var searchText: String = ""
+    @State private var searchResults: [Verse] = []
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Joshua 1")
+                            .font(.system(size: 28, weight: .semibold, design: .serif))
+                        Text("ASV")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    // Bookmarks icon
+                    Button {
+                        showBookmarksPage = true
+                    } label: {
+                        Image(systemName: "bookmark.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                    }
+                }
+                .padding()
+                
+                // Search Bar
+                TextField("Search by verse, word, or feeling…", text: $searchText, onCommit: performSearch)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+                
+                // Search Results
+                if !searchResults.isEmpty {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(searchResults) { verse in
+                                VerseCard(verse: verse,
+                                          isBookmarked: bookmarks.contains(where: { $0.verse == verse }),
+                                          onBookmark: { toggleBookmark(verse) },
+                                          onReflect: { reflectVerse(verse) })
+                            }
+                        }
+                        .padding()
+                    }
+                } else {
+                    // Bible Scroll
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(verses) { verse in
+                                VerseCard(verse: verse,
+                                          isBookmarked: bookmarks.contains(where: { $0.verse == verse }),
+                                          onBookmark: { toggleBookmark(verse) },
+                                          onReflect: { reflectVerse(verse) })
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .sheet(isPresented: $showBookmarksPage) {
+                BookmarksPage(bookmarks: $bookmarks)
+            }
+        }
+    }
+    
+    // MARK: - Functions
+    func toggleBookmark(_ verse: Verse) {
+        if let index = bookmarks.firstIndex(where: { $0.verse == verse }) {
+            bookmarks.remove(at: index)
+        } else {
+            bookmarks.append(Bookmark(verse: verse))
+        }
+    }
+    
+    func reflectVerse(_ verse: Verse) {
+        ChatManager.shared.sendToChat("I want to reflect on this passage: \(verse.text)")
+    }
+    
+    func performSearch() {
+        // Placeholder: returns 3–5 curated verses based on "feeling"
+        // In production, replace with real search logic
+        if searchText.lowercased().contains("anxious") {
+            searchResults = Array(verses.prefix(3))
+        } else {
+            searchResults = Array(verses.prefix(5))
+        }
+    }
+}
+
+// MARK: - Verse Card
+struct VerseCard: View {
+    let verse: Verse
+    let isBookmarked: Bool
+    let onBookmark: () -> Void
+    let onReflect: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                Text("\(verse.number)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Text(verse.text)
+                    .font(.system(size: 17, weight: .regular, design: .serif))
+                    .lineSpacing(6)
+                
+                Spacer()
+            }
+            
+            HStack {
+                Button {
+                    onBookmark()
+                } label: {
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(.green)
+                }
+                
+                Spacer()
+                
+                Button {
+                    onReflect()
+                } label: {
+                    Image(systemName: "bubble.left")
+                        .foregroundStyle(.blue)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+        )
+    }
+}
+
+// MARK: - Bookmarks Page
+struct BookmarksPage: View {
+    @Binding var bookmarks: [Bookmark]
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(bookmarks) { bookmark in
+                    HStack {
+                        Text("\(bookmark.verse.book) \(bookmark.verse.number): \(bookmark.verse.text)")
+                        Spacer()
+                        Button {
+                            ChatManager.shared.sendToChat("I want to reflect on this passage: \(bookmark.verse.text)")
+                        } label: {
+                            Image(systemName: "bubble.left")
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+            .navigationTitle("Bookmarks")
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    SpiritualityAppView()
+}
