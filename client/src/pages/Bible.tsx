@@ -180,10 +180,39 @@ export default function Bible() {
   // Search results
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [showAllResults, setShowAllResults] = useState(false);
+
+  // Parse a reference like "Joshua 1:9" or "1 John 3:16" into parts
+  const parseReference = (reference: string): { book: string; chapter: string; verse: string } | null => {
+    // Clean up reference - remove translation tags like "(NIV)", "(KJV)", etc.
+    let cleanRef = reference
+      .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parentheses like (NIV)
+      .replace(/\s*-\s*[A-Z]+\s*$/, '') // Remove trailing translation codes like - NIV
+      .trim();
+    
+    // Handle references like "Joshua 1:9", "1 John 3:16", "Song of Solomon 2:1"
+    const match = cleanRef.match(/^(.+?)\s+(\d+):(\d+(?:-\d+)?)$/);
+    if (match) {
+      return { book: match[1].trim(), chapter: match[2], verse: match[3].split('-')[0] };
+    }
+    return null;
+  };
+
+  // Navigate to a verse from search results
+  const navigateToVerse = (reference: string) => {
+    const parsed = parseReference(reference);
+    if (parsed) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      setShowAllResults(false);
+      navigate(`/bible?book=${encodeURIComponent(parsed.book)}&chapter=${parsed.chapter}&verse=${parsed.verse}`);
+    }
+  };
 
   const handleSearch = useCallback(async () => {
     if (searchQuery.trim() && currentVersion) {
       setSearchLoading(true);
+      setShowAllResults(false); // Reset to show only 5 results for new searches
       try {
         const res = await fetch(`/api/bible/${currentVersion.id}/search?query=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
@@ -771,31 +800,38 @@ export default function Bible() {
             exit={{ opacity: 0 }}
           >
             <div className="max-w-lg mx-auto px-4 pointer-events-auto">
-              <div className="bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 max-h-[60vh] overflow-y-auto">
+              <div className="bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 max-h-[70vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm text-muted-foreground">
-                    {Math.min(searchResults.length, 5)} of {searchResults.length} results for "{searchQuery}"
+                    {showAllResults ? searchResults.length : Math.min(searchResults.length, 5)} of {searchResults.length} results
                   </p>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
-                    onClick={() => setSearchResults([])}
+                    onClick={() => {
+                      setSearchResults([]);
+                      setShowAllResults(false);
+                    }}
                     data-testid="button-close-search-results"
                   >
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="space-y-3">
-                  {searchResults.slice(0, 5).map((result: any, index: number) => (
+                <div className="space-y-2">
+                  {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05, duration: 0.2 }}
+                      transition={{ delay: Math.min(index, 5) * 0.05, duration: 0.2 }}
                     >
-                      <Card className="p-3 shadow-sm border bg-card/80">
-                        <p className="font-serif text-sm leading-relaxed text-foreground/90 mb-2 line-clamp-3">
+                      <Card 
+                        className="p-3 shadow-sm border bg-card/80 cursor-pointer hover-elevate active-elevate-2 transition-all"
+                        onClick={() => navigateToVerse(result.reference)}
+                        data-testid={`card-search-result-${index}`}
+                      >
+                        <p className="font-serif text-sm leading-relaxed text-foreground/90 mb-2 line-clamp-2">
                           {result.text}
                         </p>
                         <div className="flex items-center justify-between">
@@ -806,8 +842,9 @@ export default function Bible() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-2 text-xs text-primary gap-1"
-                              onClick={() => {
+                              className="h-6 px-2 text-xs text-muted-foreground gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 const newBookmark: BookmarkGroup = {
                                   id: `${result.reference}-${Date.now()}`,
                                   verses: [{ number: "1", text: result.text }],
@@ -815,25 +852,24 @@ export default function Bible() {
                                   dateSaved: new Date(),
                                 };
                                 setBookmarkGroups([...bookmarkGroups, newBookmark]);
-                                setSearchResults([]);
                               }}
                               data-testid={`button-bookmark-search-${index}`}
                             >
                               <Bookmark className="w-3 h-3" />
-                              Save
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-2 text-xs text-blue-500 gap-1"
-                              onClick={() => {
+                              className="h-6 px-2 text-xs text-muted-foreground gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSearchResults([]);
+                                setShowAllResults(false);
                                 navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
                               }}
                               data-testid={`button-reflect-search-${index}`}
                             >
                               <MessageCircle className="w-3 h-3" />
-                              Reflect
                             </Button>
                           </div>
                         </div>
@@ -841,6 +877,20 @@ export default function Bible() {
                     </motion.div>
                   ))}
                 </div>
+                {/* See All / Show Less button */}
+                {searchResults.length > 5 && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-primary"
+                      onClick={() => setShowAllResults(!showAllResults)}
+                      data-testid="button-see-all-results"
+                    >
+                      {showAllResults ? "Show Less" : `See All ${searchResults.length} Results`}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
