@@ -716,46 +716,38 @@ export default function Bible() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="space-y-4"
           >
-            {/* Grouped Scripture Cards - iOS style with tap-to-highlight */}
-            {groupShortVerses(verses).map((verseGroup, groupIndex) => (
-              <Card 
-                key={groupIndex}
-                className="p-5 shadow-lg border-0 bg-card"
-                data-testid={`card-scripture-${groupIndex}`}
-              >
-                  <div className="space-y-1">
-                    {verseGroup.map((verse) => {
-                      const isHighlighted = highlightedVerses.has(verse.number);
-                      return (
-                        <motion.div 
-                          key={verse.number}
-                          className="flex gap-3 cursor-pointer py-1 transition-all relative"
-                          onClick={() => handleVerseClick(verse.number)}
-                          data-verse={verse.number}
-                          whileTap={{ scale: 0.99 }}
-                        >
-                          <span className={cn(
-                            "text-xs font-medium pt-0.5 w-5 text-right shrink-0 transition-colors",
-                            isHighlighted ? "text-primary" : "text-muted-foreground"
-                          )}>
-                            {verse.number}
-                          </span>
-                          <span className="font-serif text-base leading-relaxed text-foreground/90 relative">
-                            {verse.text}
-                            {/* Dashed underline when highlighted */}
-                            <motion.span 
-                              className="absolute left-0 right-0 bottom-0 h-0.5 border-b-2 border-dashed border-primary"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: isHighlighted ? 1 : 0 }}
-                              transition={{ duration: 0.2 }}
-                            />
-                          </span>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </Card>
-            ))}
+            {/* Plain verse list - tap to highlight */}
+            <div className="space-y-1">
+              {verses.map((verse) => {
+                const isHighlighted = highlightedVerses.has(verse.number);
+                return (
+                  <motion.div 
+                    key={verse.number}
+                    className="flex gap-3 cursor-pointer py-1.5 transition-all relative"
+                    onClick={() => handleVerseClick(verse.number)}
+                    data-verse={verse.number}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <span className={cn(
+                      "text-xs font-medium pt-0.5 w-6 text-right shrink-0 transition-colors",
+                      isHighlighted ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {verse.number}
+                    </span>
+                    <span className="font-serif text-base leading-relaxed text-foreground/90 relative">
+                      {verse.text}
+                      {/* Dashed underline when highlighted */}
+                      <motion.span 
+                        className="absolute left-0 right-0 bottom-0 h-0.5 border-b-2 border-dashed border-primary"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: isHighlighted ? 1 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.div>
         )}
 
