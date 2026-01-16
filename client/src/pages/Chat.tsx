@@ -695,7 +695,7 @@ function MessageBubble({
   return (
     <motion.div
       className={cn(
-        "flex gap-3",
+        "flex",
         isUser ? "justify-end" : "justify-start"
       )}
       initial={{ opacity: 0, y: 10 }}
@@ -703,41 +703,39 @@ function MessageBubble({
       transition={{ duration: 0.3 }}
       data-testid={`message-${message.role}-${message.id}`}
     >
-      {!isUser && (
-        <div className="relative flex-shrink-0 mt-0.5">
-          <div className="relative w-7 h-7 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
+      {isUser ? (
+        <div className="max-w-[85%]">
+          <div className="rounded-2xl rounded-br-md px-3 py-2.5 gradient-primary text-white shadow-primary tracking-refined">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {parseContentWithVerseLinks(message.content, navigate, isUser)}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-1.5 max-w-[90%]">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-primary" />
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">Soulguide</span>
+          </div>
+          <div className="pl-8">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+              {parseContentWithVerseLinks(message.content, navigate, isUser)}
+              {isStreaming && (
+                <span className="inline-flex items-center gap-1 ml-2">
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
+              )}
+            </p>
+            {message.recommendationCards && message.recommendationCards.length > 0 && (
+              <RecommendationCards cards={message.recommendationCards} />
+            )}
           </div>
         </div>
       )}
-      <div className="flex flex-col max-w-[90%]">
-        <div
-          className={cn(
-            "tracking-refined",
-            isUser
-              ? "rounded-2xl rounded-br-md px-3 py-2.5 gradient-primary text-white shadow-primary"
-              : "py-1"
-          )}
-        >
-          <p className={cn(
-            "text-sm leading-relaxed whitespace-pre-wrap",
-            !isUser && "text-foreground"
-          )}>
-            {parseContentWithVerseLinks(message.content, navigate, isUser)}
-            {isStreaming && (
-              <span className="inline-flex items-center gap-1 ml-2">
-                <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </span>
-            )}
-          </p>
-        </div>
-        
-        {!isUser && message.recommendationCards && message.recommendationCards.length > 0 && (
-          <RecommendationCards cards={message.recommendationCards} />
-        )}
-      </div>
     </motion.div>
   );
 }
