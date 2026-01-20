@@ -1,0 +1,279 @@
+-- ============================================
+-- FEELING-TAGGED SCRIPTURES SEED DATA
+-- Scriptures tagged by emotional topic for RAG retrieval
+-- ============================================
+
+-- Clear existing and insert fresh
+DELETE FROM scriptures WHERE id IS NOT NULL;
+
+-- ============================================
+-- ANXIOUS / FEAR / WORRY
+-- ============================================
+
+INSERT INTO scriptures (book, chapter, verse_start, verse_end, reference, text, topics, themes, testament) VALUES
+
+('Philippians', 4, 6, 7, 'Philippians 4:6-7',
+ 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+ ARRAY['anxious', 'peace', 'prayer', 'worry', 'fear'], ARRAY['comfort', 'instruction'], 'new'),
+
+('1 Peter', 5, 7, NULL, '1 Peter 5:7',
+ 'Cast all your anxiety on him because he cares for you.',
+ ARRAY['anxious', 'worry', 'care', 'trust'], ARRAY['comfort', 'instruction'], 'new'),
+
+('John', 14, 27, NULL, 'John 14:27',
+ 'Peace I leave with you; my peace I give you. I do not give to you as the world gives. Do not let your hearts be troubled and do not be afraid.',
+ ARRAY['anxious', 'peace', 'fear', 'troubled'], ARRAY['comfort', 'promise'], 'new'),
+
+('Psalm', 94, 19, NULL, 'Psalm 94:19',
+ 'When anxiety was great within me, your consolation brought me joy.',
+ ARRAY['anxious', 'worry', 'joy', 'comfort'], ARRAY['comfort', 'testimony'], 'old'),
+
+('Psalm', 46, 10, NULL, 'Psalm 46:10',
+ 'Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth.',
+ ARRAY['anxious', 'peace', 'stillness', 'trust', 'presence'], ARRAY['comfort', 'command'], 'old'),
+
+('Isaiah', 41, 10, NULL, 'Isaiah 41:10',
+ 'So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.',
+ ARRAY['anxious', 'fear', 'strength', 'presence', 'help'], ARRAY['comfort', 'promise'], 'old'),
+
+('Matthew', 6, 25, 27, 'Matthew 6:25-27',
+ 'Therefore I tell you, do not worry about your life, what you will eat or drink; or about your body, what you will wear. Is not life more than food, and the body more than clothes? Look at the birds of the air; they do not sow or reap or store away in barns, and yet your heavenly Father feeds them. Are you not much more valuable than they?',
+ ARRAY['anxious', 'worry', 'provision', 'trust', 'value'], ARRAY['teaching', 'comfort'], 'new'),
+
+('Psalm', 27, 1, NULL, 'Psalm 27:1',
+ 'The Lord is my light and my salvation—whom shall I fear? The Lord is the stronghold of my life—of whom shall I be afraid?',
+ ARRAY['anxious', 'fear', 'salvation', 'protection', 'strength'], ARRAY['confidence', 'declaration'], 'old'),
+
+('Psalm', 56, 3, 4, 'Psalm 56:3-4',
+ 'When I am afraid, I put my trust in you. In God, whose word I praise—in God I trust and am not afraid. What can mere mortals do to me?',
+ ARRAY['anxious', 'fear', 'trust', 'courage'], ARRAY['declaration', 'confidence'], 'old'),
+
+('Isaiah', 43, 1, 2, 'Isaiah 43:1-2',
+ 'Do not fear, for I have redeemed you; I have summoned you by name; you are mine. When you pass through the waters, I will be with you; and when you pass through the rivers, they will not sweep over you.',
+ ARRAY['anxious', 'fear', 'identity', 'presence', 'protection'], ARRAY['comfort', 'promise'], 'old'),
+
+-- ============================================
+-- SAD / GRIEF / SORROW
+-- ============================================
+
+('Psalm', 34, 18, NULL, 'Psalm 34:18',
+ 'The Lord is close to the brokenhearted and saves those who are crushed in spirit.',
+ ARRAY['sad', 'grief', 'brokenhearted', 'comfort', 'presence'], ARRAY['comfort', 'promise'], 'old'),
+
+('Psalm', 147, 3, NULL, 'Psalm 147:3',
+ 'He heals the brokenhearted and binds up their wounds.',
+ ARRAY['sad', 'grief', 'healing', 'brokenhearted', 'comfort'], ARRAY['comfort', 'promise'], 'old'),
+
+('Matthew', 5, 4, NULL, 'Matthew 5:4',
+ 'Blessed are those who mourn, for they will be comforted.',
+ ARRAY['sad', 'grief', 'mourning', 'comfort', 'blessing'], ARRAY['teaching', 'promise'], 'new'),
+
+('Psalm', 30, 5, NULL, 'Psalm 30:5',
+ 'Weeping may stay for the night, but rejoicing comes in the morning.',
+ ARRAY['sad', 'grief', 'weeping', 'hope', 'joy'], ARRAY['comfort', 'promise'], 'old'),
+
+('Revelation', 21, 4, NULL, 'Revelation 21:4',
+ 'He will wipe every tear from their eyes. There will be no more death or mourning or crying or pain, for the old order of things has passed away.',
+ ARRAY['sad', 'grief', 'tears', 'hope', 'comfort', 'future'], ARRAY['promise', 'hope'], 'new'),
+
+('Psalm', 23, 4, NULL, 'Psalm 23:4',
+ 'Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.',
+ ARRAY['sad', 'grief', 'darkness', 'fear', 'comfort', 'presence'], ARRAY['comfort', 'trust'], 'old'),
+
+('Psalm', 34, 17, NULL, 'Psalm 34:17',
+ 'The righteous cry out, and the Lord hears them; he delivers them from all their troubles.',
+ ARRAY['sad', 'trouble', 'crying', 'deliverance', 'hearing'], ARRAY['comfort', 'promise'], 'old'),
+
+('Romans', 8, 28, NULL, 'Romans 8:28',
+ 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.',
+ ARRAY['sad', 'suffering', 'purpose', 'good', 'hope'], ARRAY['comfort', 'promise'], 'new'),
+
+('2 Corinthians', 1, 3, 4, '2 Corinthians 1:3-4',
+ 'Praise be to the God and Father of our Lord Jesus Christ, the Father of compassion and the God of all comfort, who comforts us in all our troubles, so that we can comfort those in any trouble with the comfort we ourselves receive from God.',
+ ARRAY['sad', 'grief', 'comfort', 'compassion', 'trouble'], ARRAY['comfort', 'teaching'], 'new'),
+
+('Psalm', 42, 11, NULL, 'Psalm 42:11',
+ 'Why, my soul, are you downcast? Why so disturbed within me? Put your hope in God, for I will yet praise him, my Savior and my God.',
+ ARRAY['sad', 'downcast', 'hope', 'praise', 'soul'], ARRAY['lament', 'hope'], 'old'),
+
+-- ============================================
+-- STRESSED / WEARY / OVERWHELMED
+-- ============================================
+
+('Matthew', 11, 28, 30, 'Matthew 11:28-30',
+ 'Come to me, all you who are weary and burdened, and I will give you rest. Take my yoke upon you and learn from me, for I am gentle and humble in heart, and you will find rest for your souls. For my yoke is easy and my burden is light.',
+ ARRAY['stressed', 'weary', 'burden', 'rest', 'tired'], ARRAY['invitation', 'comfort'], 'new'),
+
+('Psalm', 55, 22, NULL, 'Psalm 55:22',
+ 'Cast your cares on the Lord and he will sustain you; he will never let the righteous be shaken.',
+ ARRAY['stressed', 'burden', 'care', 'sustain', 'strength'], ARRAY['instruction', 'promise'], 'old'),
+
+('Isaiah', 40, 31, NULL, 'Isaiah 40:31',
+ 'But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.',
+ ARRAY['stressed', 'weary', 'strength', 'hope', 'renewal'], ARRAY['promise', 'encouragement'], 'old'),
+
+('Psalm', 46, 1, NULL, 'Psalm 46:1',
+ 'God is our refuge and strength, an ever-present help in trouble.',
+ ARRAY['stressed', 'trouble', 'refuge', 'strength', 'help'], ARRAY['declaration', 'comfort'], 'old'),
+
+('Psalm', 23, 1, 3, 'Psalm 23:1-3',
+ 'The Lord is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters, he refreshes my soul.',
+ ARRAY['stressed', 'rest', 'peace', 'refresh', 'provision'], ARRAY['comfort', 'trust'], 'old'),
+
+('Philippians', 4, 13, NULL, 'Philippians 4:13',
+ 'I can do all this through him who gives me strength.',
+ ARRAY['stressed', 'strength', 'ability', 'empowerment'], ARRAY['confidence', 'declaration'], 'new'),
+
+('2 Corinthians', 12, 9, NULL, '2 Corinthians 12:9',
+ 'But he said to me, "My grace is sufficient for you, for my power is made perfect in weakness." Therefore I will boast all the more gladly about my weaknesses, so that Christ''s power may rest on me.',
+ ARRAY['stressed', 'weakness', 'strength', 'grace', 'power'], ARRAY['comfort', 'teaching'], 'new'),
+
+('Psalm', 4, 8, NULL, 'Psalm 4:8',
+ 'In peace I will lie down and sleep, for you alone, Lord, make me dwell in safety.',
+ ARRAY['stressed', 'peace', 'sleep', 'rest', 'safety'], ARRAY['trust', 'declaration'], 'old'),
+
+('Exodus', 33, 14, NULL, 'Exodus 33:14',
+ 'The Lord replied, "My Presence will go with you, and I will give you rest."',
+ ARRAY['stressed', 'presence', 'rest', 'companionship'], ARRAY['promise', 'comfort'], 'old'),
+
+('Psalm', 62, 1, 2, 'Psalm 62:1-2',
+ 'Truly my soul finds rest in God; my salvation comes from him. Truly he is my rock and my salvation; he is my fortress, I will never be shaken.',
+ ARRAY['stressed', 'rest', 'peace', 'security', 'soul'], ARRAY['declaration', 'trust'], 'old'),
+
+-- ============================================
+-- JOYFUL / GRATEFUL / CELEBRATORY
+-- ============================================
+
+('Philippians', 4, 4, NULL, 'Philippians 4:4',
+ 'Rejoice in the Lord always. I will say it again: Rejoice!',
+ ARRAY['joyful', 'joy', 'rejoice', 'praise', 'celebration'], ARRAY['instruction', 'encouragement'], 'new'),
+
+('Psalm', 118, 24, NULL, 'Psalm 118:24',
+ 'This is the day the Lord has made; let us rejoice and be glad in it.',
+ ARRAY['joyful', 'joy', 'rejoice', 'gladness', 'gratitude'], ARRAY['praise', 'declaration'], 'old'),
+
+('Psalm', 16, 11, NULL, 'Psalm 16:11',
+ 'You make known to me the path of life; you will fill me with joy in your presence, with eternal pleasures at your right hand.',
+ ARRAY['joyful', 'joy', 'presence', 'life', 'pleasure'], ARRAY['declaration', 'praise'], 'old'),
+
+('Nehemiah', 8, 10, NULL, 'Nehemiah 8:10',
+ 'Do not grieve, for the joy of the Lord is your strength.',
+ ARRAY['joyful', 'joy', 'strength', 'encouragement'], ARRAY['instruction', 'encouragement'], 'old'),
+
+('Psalm', 100, 1, 2, 'Psalm 100:1-2',
+ 'Shout for joy to the Lord, all the earth. Worship the Lord with gladness; come before him with joyful songs.',
+ ARRAY['joyful', 'joy', 'worship', 'praise', 'gladness'], ARRAY['instruction', 'praise'], 'old'),
+
+('John', 15, 11, NULL, 'John 15:11',
+ 'I have told you this so that my joy may be in you and your joy may be complete.',
+ ARRAY['joyful', 'joy', 'fullness', 'completeness'], ARRAY['teaching', 'promise'], 'new'),
+
+('Psalm', 150, 6, NULL, 'Psalm 150:6',
+ 'Let everything that has breath praise the Lord. Praise the Lord!',
+ ARRAY['joyful', 'praise', 'worship', 'breath', 'life'], ARRAY['instruction', 'praise'], 'old'),
+
+('Psalm', 98, 1, NULL, 'Psalm 98:1',
+ 'Sing to the Lord a new song, for he has done marvelous things.',
+ ARRAY['joyful', 'praise', 'song', 'marvel', 'gratitude'], ARRAY['instruction', 'praise'], 'old'),
+
+('James', 1, 2, 3, 'James 1:2-3',
+ 'Consider it pure joy, my brothers and sisters, whenever you face trials of many kinds, because you know that the testing of your faith produces perseverance.',
+ ARRAY['joyful', 'joy', 'trials', 'perseverance', 'faith'], ARRAY['teaching', 'wisdom'], 'new'),
+
+('Psalm', 126, 3, NULL, 'Psalm 126:3',
+ 'The Lord has done great things for us, and we are filled with joy.',
+ ARRAY['joyful', 'joy', 'gratitude', 'blessing', 'praise'], ARRAY['testimony', 'praise'], 'old'),
+
+-- ============================================
+-- HOPEFUL / EXPECTANT / TRUSTING
+-- ============================================
+
+('Jeremiah', 29, 11, NULL, 'Jeremiah 29:11',
+ 'For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.',
+ ARRAY['hopeful', 'hope', 'future', 'plans', 'promise'], ARRAY['promise', 'encouragement'], 'old'),
+
+('Romans', 5, 5, NULL, 'Romans 5:5',
+ 'And hope does not put us to shame, because God''s love has been poured out into our hearts through the Holy Spirit, who has been given to us.',
+ ARRAY['hopeful', 'hope', 'love', 'spirit', 'assurance'], ARRAY['teaching', 'promise'], 'new'),
+
+('Hebrews', 11, 1, NULL, 'Hebrews 11:1',
+ 'Now faith is confidence in what we hope for and assurance about what we do not see.',
+ ARRAY['hopeful', 'hope', 'faith', 'confidence', 'assurance'], ARRAY['definition', 'teaching'], 'new'),
+
+('Romans', 15, 13, NULL, 'Romans 15:13',
+ 'May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.',
+ ARRAY['hopeful', 'hope', 'joy', 'peace', 'trust', 'spirit'], ARRAY['blessing', 'promise'], 'new'),
+
+('Lamentations', 3, 25, NULL, 'Lamentations 3:25',
+ 'The Lord is good to those whose hope is in him, to the one who seeks him.',
+ ARRAY['hopeful', 'hope', 'seeking', 'goodness'], ARRAY['promise', 'encouragement'], 'old'),
+
+('Psalm', 31, 24, NULL, 'Psalm 31:24',
+ 'Be strong and take heart, all you who hope in the Lord.',
+ ARRAY['hopeful', 'hope', 'strength', 'courage', 'heart'], ARRAY['instruction', 'encouragement'], 'old'),
+
+('Hebrews', 6, 19, NULL, 'Hebrews 6:19',
+ 'We have this hope as an anchor for the soul, firm and secure.',
+ ARRAY['hopeful', 'hope', 'anchor', 'soul', 'security'], ARRAY['teaching', 'comfort'], 'new'),
+
+('Psalm', 130, 5, NULL, 'Psalm 130:5',
+ 'I wait for the Lord, my whole being waits, and in his word I put my hope.',
+ ARRAY['hopeful', 'hope', 'waiting', 'word', 'trust'], ARRAY['declaration', 'trust'], 'old'),
+
+('Proverbs', 23, 18, NULL, 'Proverbs 23:18',
+ 'There is surely a future hope for you, and your hope will not be cut off.',
+ ARRAY['hopeful', 'hope', 'future', 'promise'], ARRAY['promise', 'wisdom'], 'old'),
+
+('Romans', 8, 24, 25, 'Romans 8:24-25',
+ 'For in this hope we were saved. But hope that is seen is no hope at all. Who hopes for what they already have? But if we hope for what we do not yet have, we wait for it patiently.',
+ ARRAY['hopeful', 'hope', 'patience', 'waiting', 'salvation'], ARRAY['teaching', 'wisdom'], 'new'),
+
+-- ============================================
+-- CONFUSED / SEEKING / UNCERTAIN
+-- ============================================
+
+('James', 1, 5, NULL, 'James 1:5',
+ 'If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you.',
+ ARRAY['confused', 'wisdom', 'guidance', 'asking', 'generosity'], ARRAY['instruction', 'promise'], 'new'),
+
+('Proverbs', 3, 5, 6, 'Proverbs 3:5-6',
+ 'Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.',
+ ARRAY['confused', 'trust', 'understanding', 'guidance', 'path'], ARRAY['instruction', 'wisdom'], 'old'),
+
+('Psalm', 119, 105, NULL, 'Psalm 119:105',
+ 'Your word is a lamp for my feet, a light on my path.',
+ ARRAY['confused', 'guidance', 'light', 'path', 'word'], ARRAY['declaration', 'wisdom'], 'old'),
+
+('Psalm', 32, 8, NULL, 'Psalm 32:8',
+ 'I will instruct you and teach you in the way you should go; I will counsel you with my loving eye on you.',
+ ARRAY['confused', 'instruction', 'guidance', 'teaching', 'counsel'], ARRAY['promise', 'comfort'], 'old'),
+
+('1 Corinthians', 14, 33, NULL, '1 Corinthians 14:33',
+ 'For God is not a God of confusion but of peace.',
+ ARRAY['confused', 'peace', 'clarity', 'order'], ARRAY['teaching', 'comfort'], 'new'),
+
+('Jeremiah', 33, 3, NULL, 'Jeremiah 33:3',
+ 'Call to me and I will answer you and tell you great and unsearchable things you do not know.',
+ ARRAY['confused', 'calling', 'answer', 'revelation', 'knowledge'], ARRAY['promise', 'invitation'], 'old'),
+
+('Isaiah', 58, 11, NULL, 'Isaiah 58:11',
+ 'The Lord will guide you always; he will satisfy your needs in a sun-scorched land and will strengthen your frame.',
+ ARRAY['confused', 'guidance', 'provision', 'strength', 'always'], ARRAY['promise', 'comfort'], 'old'),
+
+('Isaiah', 30, 21, NULL, 'Isaiah 30:21',
+ 'Whether you turn to the right or to the left, your ears will hear a voice behind you, saying, "This is the way; walk in it."',
+ ARRAY['confused', 'guidance', 'direction', 'voice', 'path'], ARRAY['promise', 'comfort'], 'old'),
+
+('Proverbs', 16, 9, NULL, 'Proverbs 16:9',
+ 'In their hearts humans plan their course, but the Lord establishes their steps.',
+ ARRAY['confused', 'plans', 'guidance', 'steps', 'direction'], ARRAY['wisdom', 'teaching'], 'old'),
+
+('John', 16, 13, NULL, 'John 16:13',
+ 'But when he, the Spirit of truth, comes, he will guide you into all the truth.',
+ ARRAY['confused', 'truth', 'guidance', 'spirit', 'clarity'], ARRAY['promise', 'teaching'], 'new');
+
+-- ============================================
+-- CREATE INDEX FOR TOPIC SEARCH
+-- ============================================
+
+CREATE INDEX IF NOT EXISTS idx_scriptures_topics_gin ON scriptures USING GIN(topics);

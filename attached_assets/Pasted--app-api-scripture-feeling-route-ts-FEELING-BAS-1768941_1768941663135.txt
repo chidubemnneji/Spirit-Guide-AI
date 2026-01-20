@@ -1,0 +1,147 @@
+// app/api/scripture/feeling/route.ts
+// ============================================
+// FEELING-BASED SCRIPTURE API
+// Returns scriptures based on selected feeling
+// ============================================
+
+import { NextRequest, NextResponse } from 'next/server';
+import { 
+  getScripturesByFeeling, 
+  isValidFeeling, 
+  Feeling, 
+  UserContext,
+  ScriptureResponse 
+} from '@/lib/scripture/feeling-scripture-service';
+
+// ============================================
+// TYPES
+// ============================================
+
+interface RequestBody {
+  feeling: string;
+  user_context?: {
+    phase?: string;
+    previous_scriptures_liked?: string[];
+    prayer_style?: string;
+    tradition?: string;
+    preferred_books?: string[];
+  };
+  count?: number;
+}
+
+// ============================================
+// POST HANDLER
+// ============================================
+
+export async function POST(request: NextRequest): Promise<NextResponse<ScriptureResponse | { error: string }>> {
+  try {
+    const body: RequestBody = await request.json();
+    const { feeling, user_context, count = 3 } = body;
+    
+    // ==========================================
+    // VALIDATION
+    // ==========================================
+    
+    // Feeling is required
+    if (!feeling) {
+      return NextResponse.json(
+        { error: 'Missing required field: feeling' },
+        { status: 400 }
+      );
+    }
+    
+    // Feeling must be from predefined list
+    if (!isValidFeeling(feeling)) {
+      return NextResponse.json(
+        { 
+          error: `Invalid feeling. Must be one of: anxious, sad, stressed, joyful, hopeful, confused` 
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Count must be reasonable
+    if (count < 1 || count > 10) {
+      return NextResponse.json(
+        { error: 'Count must be between 1 and 10' },
+        { status: 400 }
+      );
+    }
+    
+    // ==========================================
+    // TRANSFORM USER CONTEXT
+    // ==========================================
+    
+    let userContext: UserContext | undefined;
+    
+    if (user_context) {
+      userContext = {
+        phase: user_context.phase as UserContext['phase'],
+        previousScripturesLiked: user_context.previous_scriptures_liked,
+        prayerStyle: user_context.prayer_style as UserContext['prayerStyle'],
+        tradition: user_context.tradition as UserContext['tradition'],
+        preferredBooks: user_context.preferred_books,
+      };
+    }
+    
+    // ==========================================
+    // RETRIEVE SCRIPTURES
+    // ==========================================
+    
+    const response = await getScripturesByFeeling(
+      feeling as Feeling,
+      userContext,
+      count
+    );
+    
+    // ==========================================
+    // RETURN RESPONSE
+    // ==========================================
+    
+    return NextResponse.json(response);
+    
+  } catch (error) {
+    console.error('Scripture feeling API error:', error);
+    return NextResponse.json(
+      { error: 'Failed to retrieve scriptures' },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================
+// GET HANDLER (for testing / simple requests)
+// ============================================
+
+export async function GET(request: NextRequest): Promise<NextResponse<ScriptureResponse | { error: string }>> {
+  const { searchParams } = new URL(request.url);
+  const feeling = searchParams.get('feeling');
+  const count = parseInt(searchParams.get('count') || '3', 10);
+  
+  if (!feeling) {
+    return NextResponse.json(
+      { error: 'Missing required parameter: feeling' },
+      { status: 400 }
+    );
+  }
+  
+  if (!isValidFeeling(feeling)) {
+    return NextResponse.json(
+      { 
+        error: `Invalid feeling. Must be one of: anxious, sad, stressed, joyful, hopeful, confused` 
+      },
+      { status: 400 }
+    );
+  }
+  
+  try {
+    const response = await getScripturesByFeeling(feeling as Feeling, undefined, count);
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error('Scripture feeling API error:', error);
+    return NextResponse.json(
+      { error: 'Failed to retrieve scriptures' },
+      { status: 500 }
+    );
+  }
+}

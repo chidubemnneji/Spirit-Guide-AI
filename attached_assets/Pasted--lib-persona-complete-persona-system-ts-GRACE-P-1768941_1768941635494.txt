@@ -1,0 +1,987 @@
+// lib/persona/complete-persona-system.ts
+// ============================================
+// GRACE PERSONA SYSTEM v2.0
+// Complete implementation in one file
+// ============================================
+
+// ============================================
+// TYPES
+// ============================================
+
+export type Archetype =
+  | 'wounded_seeker'
+  | 'eager_builder'
+  | 'curious_explorer'
+  | 'returning_prodigal'
+  | 'struggling_saint';
+
+export type TrustLevel = 'new' | 'warming' | 'established' | 'deep';
+export type InteractionMode = 'support' | 'formation' | 'learning';
+export type EvolutionPhase = 'arriving' | 'settling' | 'engaged' | 'deepening' | 'stagnating' | 'regressing' | 'graduating';
+export type ShameType = 'identity' | 'performance' | 'comparison' | 'belonging' | 'past' | 'doubt' | 'spiritual';
+export type TraditionRelationship = 'embraced' | 'comfortable' | 'ambivalent' | 'distant' | 'wounded' | 'exploring';
+
+export interface PersonaProfile {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  archetype: Archetype;
+  archetypeConfidence: number;
+  
+  scores: PersonaScores;
+  trust: TrustProfile;
+  currentMode: InteractionMode;
+  modeHistory: ModeTransition[];
+  sensitivity: SensitivityMap;
+  tradition: TraditionProfile;
+  evolution: EvolutionState;
+  behavioralSignals: BehavioralSignals;
+  content: ContentProfile;
+  safety: SafetyProfile;
+}
+
+export interface PersonaScores {
+  vulnerability: number;
+  emotionalCapacity: number;
+  intellectualEngagement: number;
+  practicalFocus: number;
+  readinessForGrowth: number;
+  readinessForDepth: number;
+  emotionalSupportNeed: number;
+  structureNeed: number;
+  cognitiveDefensiveness: number;
+}
+
+export interface TrustProfile {
+  level: TrustLevel;
+  score: number;
+  earnedThrough: TrustMarker[];
+  lastUpdated: string;
+}
+
+export interface TrustMarker {
+  type: 'returned' | 'shared_deeply' | 'accepted_suggestion' | 'gave_feedback' | 'stayed_in_hard_moment';
+  timestamp: string;
+  weight: number;
+}
+
+export interface ModeTransition {
+  from: InteractionMode;
+  to: InteractionMode;
+  timestamp: string;
+  trigger: 'user_request' | 'stability_detected' | 'gentle_invitation' | 'crisis_regression';
+  userConsented: boolean;
+}
+
+export interface SensitivityMap {
+  baseline: 'low' | 'medium' | 'high';
+  topics: TopicSensitivity[];
+  detectedTriggers: string[];
+  volatileTopics: string[];
+}
+
+export interface TopicSensitivity {
+  topic: string;
+  level: 'safe' | 'careful' | 'avoid' | 'unknown';
+  source: 'declared' | 'inferred' | 'default';
+  lastUpdated: string;
+}
+
+export interface TraditionProfile {
+  declared: string;
+  relationship: TraditionRelationship;
+  distanceScore: number;
+  woundedAreas: { area: string; severity: string; source: string }[];
+  preferTraditionalContent: boolean;
+  preferTraditionalLanguage: boolean;
+}
+
+export interface EvolutionState {
+  phase: EvolutionPhase;
+  phaseStartedAt: string;
+  trajectory: 'improving' | 'stable' | 'declining' | 'volatile';
+  trajectoryConfidence: number;
+  daysInApp: number;
+  daysInCurrentPhase: number;
+  comfortStagnation: boolean;
+  stagnationDays: number;
+  growthInvitationEligible: boolean;
+  lastGrowthInvitation?: string;
+  growthInvitationResponse?: 'accepted' | 'declined' | 'ignored';
+}
+
+export interface BehavioralSignals {
+  sessionsThisWeek: number;
+  averageSessionLength: number;
+  timeOfDayPattern: string;
+  scriptureEngagement: ContentEngagement;
+  prayerEngagement: ContentEngagement;
+  readingPlanEngagement: ContentEngagement;
+  skippedContent: { type: string; topic?: string; timestamp: string }[];
+  avoidedTopics: string[];
+  earlyExits: { sessionId: string; lastTopic?: string; timestamp: string; possibleTrigger?: string }[];
+  bookmarked: string[];
+  returnedTo: string[];
+  sharedDepth: number;
+  acceptedSuggestions: number;
+  declinedSuggestions: number;
+  gaveFeedback: boolean;
+}
+
+export interface ContentEngagement {
+  offered: number;
+  engaged: number;
+  completed: number;
+  skipped: number;
+  rate: number;
+}
+
+export interface ContentProfile {
+  scriptureBias: string[];
+  scriptureAvoid: string[];
+  preferredBooks: string[];
+  prayerTypes: string[];
+  prayerTopics: string[];
+  terminology: { use: string[]; avoid: string[] };
+  preferredDepth: 'surface' | 'moderate' | 'deep';
+  maxResponseLength: 'brief' | 'moderate' | 'detailed';
+}
+
+export interface SafetyProfile {
+  crisisWatch: boolean;
+  crisisLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  lastCrisisCheck: string;
+  highVulnerability: boolean;
+  authorityWoundDetected: boolean;
+  consentRequiredForGuidance: boolean;
+  shamePatternDetected: boolean;
+  lastShameReframe?: string;
+  bypassingRisk: 'low' | 'medium' | 'high';
+  dependencyRisk: 'low' | 'medium' | 'high';
+  realWorldConnectionsEncouraged: boolean;
+}
+
+export interface ShameAssessment {
+  detected: boolean;
+  level: 'none' | 'mild' | 'moderate' | 'severe';
+  patterns: { type: ShameType; trigger: string; evidence: string }[];
+  suggestedReframe: string | null;
+  requiresIntervention: boolean;
+}
+
+export interface UserPreferences {
+  intent?: 'habit' | 'hard' | 'exploring' | 'returning';
+  primaryStruggle?: 'prayer' | 'consistency' | 'doubts' | 'distant' | 'bible' | 'unsure';
+  tonePreference?: 'warm' | 'direct';
+  tradition?: 'protestant' | 'catholic' | 'orthodox' | 'non-denominational';
+  prayerStyle?: 'conversational' | 'structured' | 'contemplative';
+}
+
+// ============================================
+// ARCHETYPE DEFINITIONS
+// ============================================
+
+export const ARCHETYPES: Record<Archetype, {
+  id: Archetype;
+  name: string;
+  description: string;
+  primaryNeeds: string[];
+  fears: string[];
+  defaultMode: InteractionMode;
+  scriptureTopics: string[];
+  avoidTopics: string[];
+  languagePatterns: { use: string[]; avoid: string[] };
+}> = {
+  wounded_seeker: {
+    id: 'wounded_seeker',
+    name: 'Wounded Seeker',
+    description: 'In pain, possibly from life or from faith itself. Needs presence before anything else.',
+    primaryNeeds: ['safety', 'presence', 'validation', 'no judgment'],
+    fears: ['platitudes', 'being fixed', 'abandonment', 'more pain'],
+    defaultMode: 'support',
+    scriptureTopics: ['comfort', 'lament', 'presence', 'peace', 'rest'],
+    avoidTopics: ['obedience', 'victory', 'discipline', 'sin'],
+    languagePatterns: {
+      use: ['I hear you', 'That makes sense', 'You\'re not alone', 'Take your time'],
+      avoid: ['You should', 'Have you tried', 'God\'s plan', 'Everything happens for a reason']
+    }
+  },
+  eager_builder: {
+    id: 'eager_builder',
+    name: 'Eager Builder',
+    description: 'Motivated to grow, wants practical help. May be frustrated with past failures.',
+    primaryNeeds: ['tools', 'encouragement', 'quick wins', 'structure'],
+    fears: ['failure', 'complexity', 'falling behind', 'not being good enough'],
+    defaultMode: 'formation',
+    scriptureTopics: ['encouragement', 'strength', 'wisdom', 'guidance', 'perseverance'],
+    avoidTopics: ['lament', 'suffering', 'doubt'],
+    languagePatterns: {
+      use: ['Here\'s something to try', 'Small steps count', 'You\'re making progress'],
+      avoid: ['It\'s complicated', 'There are many views', 'This takes years']
+    }
+  },
+  curious_explorer: {
+    id: 'curious_explorer',
+    name: 'Curious Explorer',
+    description: 'Questioning, intellectually engaged. May be skeptical or genuinely open.',
+    primaryNeeds: ['space', 'information', 'respect', 'no pressure'],
+    fears: ['being preached at', 'simplistic answers', 'manipulation', 'losing autonomy'],
+    defaultMode: 'learning',
+    scriptureTopics: ['wisdom', 'questions', 'parables', 'teaching', 'mystery'],
+    avoidTopics: ['commands', 'obedience', 'salvation urgency'],
+    languagePatterns: {
+      use: ['That\'s a great question', 'Some perspectives include', 'What do you think?'],
+      avoid: ['The Bible says you must', 'The answer is clear', 'You need to believe']
+    }
+  },
+  returning_prodigal: {
+    id: 'returning_prodigal',
+    name: 'Returning Prodigal',
+    description: 'Coming back to faith after time away. May carry shame or caution.',
+    primaryNeeds: ['welcome', 'no guilt', 'fresh start', 'patience'],
+    fears: ['judgment', 'having to explain', 'not belonging', 'being reminded of past'],
+    defaultMode: 'support',
+    scriptureTopics: ['welcome', 'grace', 'new beginnings', 'love', 'belonging'],
+    avoidTopics: ['prodigal son', 'lost sheep', 'repentance urgency'],
+    languagePatterns: {
+      use: ['Welcome back', 'No explanations needed', 'Glad you\'re here'],
+      avoid: ['Where have you been', 'You need to catch up', 'Backsliding']
+    }
+  },
+  struggling_saint: {
+    id: 'struggling_saint',
+    name: 'Struggling Saint',
+    description: 'Committed but wrestling with doubt. May feel alone in their questions.',
+    primaryNeeds: ['permission to doubt', 'intellectual engagement', 'solidarity'],
+    fears: ['losing faith', 'being alone', 'judgment from community', 'uncertainty'],
+    defaultMode: 'learning',
+    scriptureTopics: ['doubt', 'lament', 'questions', 'wrestling', 'honesty'],
+    avoidTopics: ['easy answers', 'victory', 'certainty'],
+    languagePatterns: {
+      use: ['Doubt is part of faith', 'You\'re not alone in this', 'Wrestling is honest'],
+      avoid: ['Just believe', 'Have more faith', 'The Bible is clear']
+    }
+  }
+};
+
+// ============================================
+// MODE DEFINITIONS
+// ============================================
+
+export const MODES: Record<InteractionMode, {
+  id: InteractionMode;
+  name: string;
+  purpose: string;
+  aiRole: string;
+  scripturePurpose: string;
+  canTransitionTo: InteractionMode[];
+  transitionRequires: 'consent' | 'stability' | 'invitation';
+}> = {
+  support: {
+    id: 'support',
+    name: 'Support Mode',
+    purpose: 'Be present, validate, create safety',
+    aiRole: 'A friend who sits with you in the hard',
+    scripturePurpose: 'Comfort and presence, never prescription',
+    canTransitionTo: ['formation'],
+    transitionRequires: 'stability'
+  },
+  formation: {
+    id: 'formation',
+    name: 'Formation Mode',
+    purpose: 'Build habits, practice spiritual disciplines',
+    aiRole: 'A gentle guide offering tools',
+    scripturePurpose: 'Encouragement and guidance for practice',
+    canTransitionTo: ['support', 'learning'],
+    transitionRequires: 'consent'
+  },
+  learning: {
+    id: 'learning',
+    name: 'Learning Mode',
+    purpose: 'Explore scripture, theology, questions',
+    aiRole: 'A thoughtful companion exploring alongside',
+    scripturePurpose: 'Understanding, context, multiple perspectives',
+    canTransitionTo: ['support', 'formation'],
+    transitionRequires: 'consent'
+  }
+};
+
+// ============================================
+// TRUST BEHAVIORS
+// ============================================
+
+export const TRUST_BEHAVIORS: Record<TrustLevel, {
+  assertiveness: string;
+  suggestionsPerSession: number | 'unlimited';
+  depthAllowed: string;
+  canChallenge: boolean;
+  disclaimerFrequency: string;
+  languageHedging: string;
+}> = {
+  new: {
+    assertiveness: 'very_low',
+    suggestionsPerSession: 1,
+    depthAllowed: 'surface',
+    canChallenge: false,
+    disclaimerFrequency: 'every_session',
+    languageHedging: 'high'
+  },
+  warming: {
+    assertiveness: 'low',
+    suggestionsPerSession: 2,
+    depthAllowed: 'moderate',
+    canChallenge: false,
+    disclaimerFrequency: 'weekly',
+    languageHedging: 'moderate'
+  },
+  established: {
+    assertiveness: 'moderate',
+    suggestionsPerSession: 3,
+    depthAllowed: 'deep',
+    canChallenge: true,
+    disclaimerFrequency: 'monthly',
+    languageHedging: 'low'
+  },
+  deep: {
+    assertiveness: 'comfortable',
+    suggestionsPerSession: 'unlimited',
+    depthAllowed: 'full',
+    canChallenge: true,
+    disclaimerFrequency: 'rarely',
+    languageHedging: 'minimal'
+  }
+};
+
+// ============================================
+// SHAME PATTERNS & REFRAMES
+// ============================================
+
+const SHAME_PATTERNS: Record<ShameType, RegExp[]> = {
+  identity: [
+    /i('m| am) (so )?(bad|broken|terrible|awful|worthless|unworthy|unlovable)/i,
+    /what('s| is) wrong with me/i,
+    /i('m| am) (a )?(failure|mess|disaster|lost cause)/i,
+    /i('ll| will) never (be|get|become)/i,
+    /god (must |probably )?(hate|regret|be disappointed in) me/i,
+    /i don't deserve/i,
+    /i('m| am) too (far gone|messed up|broken)/i,
+  ],
+  performance: [
+    /i('m| am) not (doing|praying|reading|trying) enough/i,
+    /i should (be |pray |read )more/i,
+    /i('m| am) (so )?(bad|terrible) at (this|praying|faith|being a christian)/i,
+    /i can't (even|seem to)/i,
+    /i keep (failing|messing up|falling short)/i,
+    /why can't i just/i,
+  ],
+  comparison: [
+    /everyone else (seems|is|can)/i,
+    /other (people|christians) (are|seem|have)/i,
+    /i('m| am) (so far )?behind/i,
+    /they (all |)(have|know|understand) (it|this)/i,
+    /i('m| am) the only one (who|that)/i,
+  ],
+  belonging: [
+    /i don't (fit|belong)/i,
+    /god (doesn't|wouldn't|can't) (want|love|accept) (someone like )?me/i,
+    /i('m| am) not (really |truly |a real )?(christian|believer|saved)/i,
+    /maybe (faith|god|church) isn't for (people like )?me/i,
+  ],
+  past: [
+    /after (what|all) i('ve| have) done/i,
+    /i('ve| have) done too (much|many)/i,
+    /god (can't|won't) forgive (me for )?/i,
+    /i (can't|don't know how to) forgive myself/i,
+  ],
+  doubt: [
+    /i shouldn't (doubt|question|feel this way)/i,
+    /real christians don't (doubt|question|struggle)/i,
+    /i('m| am) (a |)(bad|terrible) (christian|person) for (doubting|questioning)/i,
+  ],
+  spiritual: [
+    /my faith (isn't|is not) (real|strong|enough)/i,
+    /i don't (really |truly )?believe/i,
+    /i('m| am) (just )?faking/i,
+    /god (doesn't|can't) hear me/i,
+  ],
+};
+
+const SHAME_REFRAMES: Record<ShameType, string[]> = {
+  identity: [
+    "I hear a lot of weight in those words. Can I offer something? The fact that you're here, wrestling with this, says something different than 'broken.' Broken people don't usually show up and try.",
+    "That's a heavy thing to carry — believing that about yourself. I don't see you that way. I see someone who's struggling, which is very different from someone who's bad.",
+  ],
+  performance: [
+    "Can I push back gently? 'Enough' is a moving target that will always outrun you. What if showing up imperfectly still counts?",
+    "I hear 'should' in there, and 'should' is often shame in disguise. What if there's no quota you need to hit?",
+  ],
+  comparison: [
+    "Here's a secret: almost everyone feels behind. The people who look like they have it together? Many of them feel exactly like you do right now.",
+    "Comparison is tricky because you're comparing your insides to everyone else's outsides.",
+  ],
+  belonging: [
+    "I want to say this clearly: you belong here. Your questions, your doubts, your mess — all of it is welcome.",
+    "The feeling of not belonging is painful, but it's not the same as truth.",
+  ],
+  past: [
+    "Your past is real, and it matters. But it doesn't have the final word on who you are or who you can become.",
+    "Many people I admire most have pasts they're not proud of. The past shapes us; it doesn't have to define us.",
+  ],
+  doubt: [
+    "Can I tell you something? Doubt isn't the opposite of faith — certainty without questions is. Your doubts mean you're taking this seriously.",
+    "Some of the most faithful people in history were major doubters. You're in good company.",
+  ],
+  spiritual: [
+    "I don't think faith works the way we sometimes imagine — like a tank that's full or empty. It's more like breathing. Some days are deeper than others.",
+    "Feeling disconnected from God isn't proof that God is disconnected from you. Sometimes the silence is just a season.",
+  ],
+};
+
+const NORMALIZATION_STATEMENTS = [
+  "Struggling doesn't mean failing.",
+  "Questions are welcome here — all of them.",
+  "There's no timeline you're supposed to be on.",
+  "Showing up imperfectly still counts.",
+  "Doubt and faith can coexist.",
+  "Your pace is valid.",
+  "You don't have to earn your place here.",
+  "Hard days don't erase progress.",
+];
+
+// ============================================
+// PERSONA CREATION
+// ============================================
+
+export function createInitialPersona(
+  userId: string,
+  preferences: UserPreferences
+): PersonaProfile {
+  const archetype = determineArchetype(preferences);
+  const scores = calculateInitialScores(preferences);
+  
+  return {
+    id: crypto.randomUUID(),
+    userId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    
+    archetype,
+    archetypeConfidence: 70,
+    
+    scores,
+    
+    trust: {
+      level: 'new',
+      score: 20,
+      earnedThrough: [],
+      lastUpdated: new Date().toISOString()
+    },
+    
+    currentMode: ARCHETYPES[archetype].defaultMode,
+    modeHistory: [],
+    
+    sensitivity: {
+      baseline: scores.vulnerability > 70 ? 'high' : scores.vulnerability > 40 ? 'medium' : 'low',
+      topics: getDefaultSensitivities(),
+      detectedTriggers: [],
+      volatileTopics: []
+    },
+    
+    tradition: {
+      declared: preferences.tradition || 'non-denominational',
+      relationship: getInitialTraditionRelationship(preferences),
+      distanceScore: preferences.intent === 'returning' ? 50 : 30,
+      woundedAreas: [],
+      preferTraditionalContent: preferences.intent !== 'returning',
+      preferTraditionalLanguage: false
+    },
+    
+    evolution: {
+      phase: 'arriving',
+      phaseStartedAt: new Date().toISOString(),
+      trajectory: 'stable',
+      trajectoryConfidence: 30,
+      daysInApp: 0,
+      daysInCurrentPhase: 0,
+      comfortStagnation: false,
+      stagnationDays: 0,
+      growthInvitationEligible: false
+    },
+    
+    behavioralSignals: {
+      sessionsThisWeek: 0,
+      averageSessionLength: 0,
+      timeOfDayPattern: 'variable',
+      scriptureEngagement: { offered: 0, engaged: 0, completed: 0, skipped: 0, rate: 0 },
+      prayerEngagement: { offered: 0, engaged: 0, completed: 0, skipped: 0, rate: 0 },
+      readingPlanEngagement: { offered: 0, engaged: 0, completed: 0, skipped: 0, rate: 0 },
+      skippedContent: [],
+      avoidedTopics: [],
+      earlyExits: [],
+      bookmarked: [],
+      returnedTo: [],
+      sharedDepth: 0,
+      acceptedSuggestions: 0,
+      declinedSuggestions: 0,
+      gaveFeedback: false
+    },
+    
+    content: {
+      scriptureBias: ARCHETYPES[archetype].scriptureTopics,
+      scriptureAvoid: ARCHETYPES[archetype].avoidTopics,
+      preferredBooks: getPreferredBooks(archetype),
+      prayerTypes: getPrayerTypes(preferences.prayerStyle),
+      prayerTopics: getPrayerTopics(preferences.primaryStruggle),
+      terminology: ARCHETYPES[archetype].languagePatterns,
+      preferredDepth: 'surface',
+      maxResponseLength: preferences.tonePreference === 'direct' ? 'brief' : 'moderate'
+    },
+    
+    safety: {
+      crisisWatch: preferences.intent === 'hard',
+      crisisLevel: 'none',
+      lastCrisisCheck: new Date().toISOString(),
+      highVulnerability: preferences.intent === 'hard',
+      authorityWoundDetected: false,
+      consentRequiredForGuidance: preferences.intent === 'returning' || preferences.intent === 'hard',
+      shamePatternDetected: false,
+      bypassingRisk: 'low',
+      dependencyRisk: 'low',
+      realWorldConnectionsEncouraged: false
+    }
+  };
+}
+
+function determineArchetype(preferences: UserPreferences): Archetype {
+  const { intent, primaryStruggle } = preferences;
+  
+  if (intent === 'hard') return 'wounded_seeker';
+  if (intent === 'exploring') return 'curious_explorer';
+  if (intent === 'returning') return 'returning_prodigal';
+  if (intent === 'habit') {
+    if (primaryStruggle === 'doubts') return 'struggling_saint';
+    return 'eager_builder';
+  }
+  return 'eager_builder';
+}
+
+function calculateInitialScores(preferences: UserPreferences): PersonaScores {
+  let scores: PersonaScores = {
+    vulnerability: 50,
+    emotionalCapacity: 50,
+    intellectualEngagement: 50,
+    practicalFocus: 50,
+    readinessForGrowth: 50,
+    readinessForDepth: 50,
+    emotionalSupportNeed: 50,
+    structureNeed: 50,
+    cognitiveDefensiveness: 30
+  };
+  
+  // Intent adjustments
+  if (preferences.intent === 'hard') {
+    scores.vulnerability += 30;
+    scores.emotionalCapacity -= 20;
+    scores.emotionalSupportNeed += 30;
+    scores.readinessForGrowth -= 25;
+  } else if (preferences.intent === 'habit') {
+    scores.practicalFocus += 25;
+    scores.structureNeed += 20;
+    scores.readinessForGrowth += 20;
+  } else if (preferences.intent === 'exploring') {
+    scores.intellectualEngagement += 25;
+    scores.readinessForDepth += 15;
+  } else if (preferences.intent === 'returning') {
+    scores.vulnerability += 15;
+    scores.emotionalSupportNeed += 15;
+  }
+  
+  // Struggle adjustments
+  if (preferences.primaryStruggle === 'doubts') {
+    scores.intellectualEngagement += 20;
+    scores.vulnerability += 10;
+  } else if (preferences.primaryStruggle === 'distant') {
+    scores.emotionalSupportNeed += 25;
+    scores.vulnerability += 20;
+  } else if (preferences.primaryStruggle === 'consistency') {
+    scores.practicalFocus += 25;
+    scores.structureNeed += 20;
+  }
+  
+  // Tone adjustments
+  if (preferences.tonePreference === 'warm') {
+    scores.emotionalSupportNeed += 10;
+  } else if (preferences.tonePreference === 'direct') {
+    scores.practicalFocus += 10;
+    scores.readinessForGrowth += 10;
+  }
+  
+  // Cap all scores
+  return Object.fromEntries(
+    Object.entries(scores).map(([key, value]) => [key, Math.min(100, Math.max(0, value))])
+  ) as PersonaScores;
+}
+
+function getDefaultSensitivities(): TopicSensitivity[] {
+  return [
+    { topic: 'church', level: 'careful', source: 'default', lastUpdated: new Date().toISOString() },
+    { topic: 'authority', level: 'careful', source: 'default', lastUpdated: new Date().toISOString() },
+    { topic: 'sin_language', level: 'careful', source: 'default', lastUpdated: new Date().toISOString() },
+    { topic: 'hell', level: 'avoid', source: 'default', lastUpdated: new Date().toISOString() },
+  ];
+}
+
+function getInitialTraditionRelationship(preferences: UserPreferences): TraditionRelationship {
+  if (preferences.intent === 'returning') return 'ambivalent';
+  if (preferences.intent === 'exploring') return 'exploring';
+  if (preferences.intent === 'hard' && preferences.primaryStruggle === 'distant') return 'wounded';
+  return 'comfortable';
+}
+
+function getPreferredBooks(archetype: Archetype): string[] {
+  const books: Record<Archetype, string[]> = {
+    wounded_seeker: ['Psalms', 'Lamentations', 'Job', 'Isaiah'],
+    eager_builder: ['Proverbs', 'James', 'Philippians', 'Psalms'],
+    curious_explorer: ['Ecclesiastes', 'John', 'Luke', 'Proverbs'],
+    returning_prodigal: ['Luke', 'Psalms', 'Isaiah', 'John'],
+    struggling_saint: ['Psalms', 'Job', 'Mark', 'Romans']
+  };
+  return books[archetype];
+}
+
+function getPrayerTypes(style?: string): string[] {
+  if (style === 'contemplative') return ['breath', 'traditional'];
+  if (style === 'structured') return ['traditional', 'template'];
+  return ['template', 'contemporary'];
+}
+
+function getPrayerTopics(struggle?: string): string[] {
+  const topics: Record<string, string[]> = {
+    prayer: ['learning', 'simple', 'starting'],
+    consistency: ['perseverance', 'morning', 'evening'],
+    doubts: ['honesty', 'questions', 'seeking'],
+    distant: ['presence', 'comfort', 'connection'],
+    bible: ['wisdom', 'understanding', 'guidance'],
+    unsure: ['general', 'peace', 'guidance']
+  };
+  return topics[struggle || 'unsure'];
+}
+
+// ============================================
+// SHAME DETECTION
+// ============================================
+
+export function detectShame(message: string): ShameAssessment {
+  const patterns: { type: ShameType; trigger: string; evidence: string }[] = [];
+  
+  for (const [type, regexes] of Object.entries(SHAME_PATTERNS)) {
+    for (const regex of regexes) {
+      const match = message.match(regex);
+      if (match) {
+        patterns.push({
+          type: type as ShameType,
+          trigger: match[0],
+          evidence: message.substring(
+            Math.max(0, match.index! - 20),
+            Math.min(message.length, match.index! + match[0].length + 20)
+          ),
+        });
+        break;
+      }
+    }
+  }
+  
+  if (patterns.length === 0) {
+    return { detected: false, level: 'none', patterns: [], suggestedReframe: null, requiresIntervention: false };
+  }
+  
+  let level: ShameAssessment['level'] = 'mild';
+  if (patterns.length >= 3) level = 'severe';
+  else if (patterns.length >= 2 || patterns.some(p => p.type === 'identity')) level = 'moderate';
+  
+  const primaryPattern = patterns.find(p => p.type === 'identity') || patterns[0];
+  const reframes = SHAME_REFRAMES[primaryPattern.type];
+  const suggestedReframe = reframes[Math.floor(Math.random() * reframes.length)];
+  
+  return {
+    detected: true,
+    level,
+    patterns,
+    suggestedReframe,
+    requiresIntervention: level === 'severe' || primaryPattern.type === 'identity',
+  };
+}
+
+export function getRandomNormalization(): string {
+  return NORMALIZATION_STATEMENTS[Math.floor(Math.random() * NORMALIZATION_STATEMENTS.length)];
+}
+
+// ============================================
+// VULNERABILITY & AUTHORITY WOUND DETECTION
+// ============================================
+
+const VULNERABILITY_INDICATORS = [
+  /i('ve| have) never told/i,
+  /this is hard to (say|admit|share)/i,
+  /i('m| am) scared (to|of)/i,
+  /can i be honest/i,
+  /i('ve| have) been hiding/i,
+  /nobody knows/i,
+];
+
+export function detectVulnerability(message: string): boolean {
+  return VULNERABILITY_INDICATORS.some(pattern => pattern.test(message));
+}
+
+const AUTHORITY_WOUND_INDICATORS = [
+  /don't (tell|lecture|preach at) me/i,
+  /(pastors?|priests?|church(es)?|leaders?) (hurt|harmed|abused|betrayed)/i,
+  /i('ve| have) been (told|taught|made to believe)/i,
+  /spiritual(ly)? abuse/i,
+  /i was (shamed|guilted|manipulated)/i,
+];
+
+export function detectAuthorityWound(message: string): boolean {
+  return AUTHORITY_WOUND_INDICATORS.some(pattern => pattern.test(message));
+}
+
+// ============================================
+// TRUST MANAGEMENT
+// ============================================
+
+export function recordTrustEvent(
+  persona: PersonaProfile,
+  event: string
+): PersonaProfile {
+  const weights: Record<string, number> = {
+    returned_after_absence: 8,
+    shared_vulnerable_content: 10,
+    accepted_suggestion: 5,
+    declined_suggestion_gracefully: 3,
+    gave_positive_feedback: 4,
+    gave_constructive_feedback: 6,
+    stayed_during_hard_moment: 12,
+    completed_reading_plan: 7,
+    bookmarked_content: 2,
+    long_session: 3,
+  };
+  
+  const weight = weights[event] || 3;
+  const newScore = Math.min(100, persona.trust.score + weight);
+  
+  let newLevel: TrustLevel = 'new';
+  if (newScore >= 85) newLevel = 'deep';
+  else if (newScore >= 60) newLevel = 'established';
+  else if (newScore >= 25) newLevel = 'warming';
+  
+  return {
+    ...persona,
+    trust: {
+      level: newLevel,
+      score: newScore,
+      earnedThrough: [...persona.trust.earnedThrough, {
+        type: 'accepted_suggestion',
+        timestamp: new Date().toISOString(),
+        weight
+      }].slice(-50),
+      lastUpdated: new Date().toISOString()
+    }
+  };
+}
+
+// ============================================
+// PROMPT GENERATION
+// ============================================
+
+export function generatePersonaPrompt(persona: PersonaProfile): string {
+  const archetype = ARCHETYPES[persona.archetype];
+  const mode = MODES[persona.currentMode];
+  const trust = TRUST_BEHAVIORS[persona.trust.level];
+  
+  let prompt = `
+## PERSONA CONTEXT
+
+### Who You're Talking To
+- **Archetype**: ${archetype.name}
+- **Their primary needs**: ${archetype.primaryNeeds.join(', ')}
+- **Their fears**: ${archetype.fears.join(', ')}
+
+### Current State
+- **Mode**: ${persona.currentMode.toUpperCase()} — ${mode.aiRole}
+- **Trust Level**: ${persona.trust.level} (${persona.trust.score}/100)
+- **Vulnerability**: ${describeScore(persona.scores.vulnerability)}
+- **Readiness for Growth**: ${describeScore(persona.scores.readinessForGrowth)}
+
+### Your Role Right Now
+${mode.purpose}
+
+Scripture purpose: ${mode.scripturePurpose}
+Suggestions allowed: ${persona.currentMode !== 'support'}
+Challenge allowed: ${trust.canChallenge}
+
+### Language Calibration (Trust: ${persona.trust.level})
+- Hedging level: ${trust.languageHedging}
+- When suggesting: "${getSuggestionPrefix(persona.trust.level)}"
+${trust.canChallenge ? `- When challenging: "${getChallengePrefix(persona.trust.level)}"` : '- Do not challenge yet'}
+
+### Language to Use
+${archetype.languagePatterns.use.map(p => `✓ "${p}"`).join('\n')}
+
+### Language to Avoid
+${archetype.languagePatterns.avoid.map(p => `✗ "${p}"`).join('\n')}
+`;
+
+  // Sensitivity warnings
+  const avoidTopics = persona.sensitivity.topics.filter(t => t.level === 'avoid');
+  const carefulTopics = persona.sensitivity.topics.filter(t => t.level === 'careful');
+  
+  if (avoidTopics.length > 0 || carefulTopics.length > 0) {
+    prompt += `\n### Sensitivity Warnings ⚠️\n`;
+    for (const topic of avoidTopics) {
+      prompt += `- AVOID: "${topic.topic}"\n`;
+    }
+    for (const topic of carefulTopics) {
+      prompt += `- CAREFUL: "${topic.topic}"\n`;
+    }
+  }
+
+  // Safety flags
+  if (persona.safety.consentRequiredForGuidance) {
+    prompt += `\n### Consent Required ⚠️\nAlways ask before offering suggestions. Frame guidance as options.\n`;
+  }
+
+  if (persona.safety.shamePatternDetected) {
+    prompt += `\n### Shame Pattern Detected ⚠️\nWatch for shame language. Reframe gently.\nRemember: "${getRandomNormalization()}"\n`;
+  }
+
+  if (persona.safety.authorityWoundDetected) {
+    prompt += `\n### Authority Wound Detected ⚠️\nNever speak with directive authority. Emphasize their agency.\n`;
+  }
+
+  // Content preferences
+  prompt += `
+### Content Preferences
+- Scripture topics to favor: ${persona.content.scriptureBias.join(', ')}
+- Scripture topics to avoid: ${persona.content.scriptureAvoid.join(', ')}
+- Prayer types: ${persona.content.prayerTypes.join(', ')}
+- Response length: ${persona.content.maxResponseLength}
+`;
+
+  return prompt;
+}
+
+function describeScore(score: number): string {
+  if (score >= 80) return 'Very high';
+  if (score >= 60) return 'High';
+  if (score >= 40) return 'Moderate';
+  if (score >= 20) return 'Low';
+  return 'Very low';
+}
+
+function getSuggestionPrefix(level: TrustLevel): string {
+  switch (level) {
+    case 'new': return "Some people find it helpful to... but only if that resonates.";
+    case 'warming': return "One thing you might consider...";
+    case 'established': return "Here's something that might help:";
+    case 'deep': return "I think this could help:";
+  }
+}
+
+function getChallengePrefix(level: TrustLevel): string {
+  switch (level) {
+    case 'new': return "";
+    case 'warming': return "I wonder if...";
+    case 'established': return "Can I gently push back?";
+    case 'deep': return "I want to name something I'm noticing:";
+  }
+}
+
+// ============================================
+// USER DISPLAY
+// ============================================
+
+export function generatePersonaDisplay(persona: PersonaProfile): {
+  headline: string;
+  description: string;
+  sections: { icon: string; title: string; value: string; explanation: string }[];
+} {
+  const headlines: Record<Archetype, string> = {
+    wounded_seeker: "You're carrying something heavy",
+    eager_builder: "You're ready to grow",
+    curious_explorer: "You're asking good questions",
+    returning_prodigal: "You're finding your way back",
+    struggling_saint: "You're wrestling honestly"
+  };
+  
+  const descriptions: Record<Archetype, string> = {
+    wounded_seeker: "I'm here to sit with you, not fix you. There's no rush.",
+    eager_builder: "I'll help you build sustainable practices, one step at a time.",
+    curious_explorer: "I'll explore alongside you. Your questions are welcome here.",
+    returning_prodigal: "Welcome back. No explanations needed.",
+    struggling_saint: "Doubt and faith can coexist. I'll engage your questions honestly."
+  };
+  
+  const phaseLabels: Record<EvolutionPhase, string> = {
+    arriving: 'Just getting started',
+    settling: 'Finding your rhythm',
+    engaged: 'In a good flow',
+    deepening: 'Growing deeper',
+    stagnating: 'In a comfortable place',
+    regressing: 'Going through a hard season',
+    graduating: 'Becoming more independent'
+  };
+  
+  const modeIcons: Record<InteractionMode, string> = { support: '💜', formation: '🌱', learning: '📚' };
+  const modeNames: Record<InteractionMode, string> = {
+    support: 'Being present with you',
+    formation: 'Building practices together',
+    learning: 'Exploring ideas together'
+  };
+  
+  return {
+    headline: headlines[persona.archetype],
+    description: descriptions[persona.archetype],
+    sections: [
+      {
+        icon: '🌱',
+        title: 'Where You Are',
+        value: phaseLabels[persona.evolution.phase],
+        explanation: 'This shapes how I interact with you.'
+      },
+      {
+        icon: '💬',
+        title: 'How I Talk With You',
+        value: persona.scores.emotionalSupportNeed > 60 ? 'Gentle & warm' : 'Clear & direct',
+        explanation: 'This shapes my tone and suggestions.'
+      },
+      {
+        icon: modeIcons[persona.currentMode],
+        title: 'Current Focus',
+        value: modeNames[persona.currentMode],
+        explanation: persona.currentMode === 'support' 
+          ? "I'm focused on listening, not teaching."
+          : persona.currentMode === 'formation'
+          ? "I'll offer practical things to try."
+          : "We're exploring questions together."
+      },
+      {
+        icon: '📖',
+        title: 'Scripture Approach',
+        value: persona.content.scriptureBias.slice(0, 2).join(' & '),
+        explanation: 'I\'ll favor passages about these themes.'
+      }
+    ]
+  };
+}
+
+// ============================================
+// EXPORTS
+// ============================================
+
+export {
+  SHAME_PATTERNS,
+  SHAME_REFRAMES,
+  NORMALIZATION_STATEMENTS
+};
