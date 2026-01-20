@@ -11,6 +11,7 @@ import type { InsertUserPersona } from "@shared/schema";
 import { signupSchema, loginSchema } from "@shared/schema";
 import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
+import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 
 interface SessionWithUser extends Session {
   userId?: number;
@@ -234,7 +235,8 @@ export async function registerRoutes(
       // Assign persona based on responses
       const personaAssignment = assignPersona(onboardingData as any);
 
-      // Build persona object for storage
+      // Build persona object for storage with GRACE profile
+      const graceProfile = personaAssignment.graceProfile;
       const personaData: InsertUserPersona = {
         userId: userId || null,
         primaryStruggle: onboardingData.primaryStruggle || null,
@@ -247,6 +249,15 @@ export async function registerRoutes(
         transformationGoals: onboardingData.transformationGoals || [],
         primaryPersona: personaAssignment.primary,
         personaModifiers: personaAssignment.modifiers,
+        // GRACE Persona System v2.0 fields
+        graceArchetype: graceProfile?.archetype || null,
+        graceTrust: graceProfile?.trust || null,
+        graceMode: graceProfile?.mode || null,
+        graceEvolution: graceProfile?.evolution || null,
+        graceScores: graceProfile?.scores || null,
+        graceSensitivity: graceProfile?.sensitivity || null,
+        graceSafetyProfile: graceProfile?.safety || null,
+        graceTradition: graceProfile?.tradition || null,
       };
 
       // Save to storage
@@ -455,6 +466,7 @@ export async function registerRoutes(
       const { emotionalIntelligence } = await import("./services/emotionalIntelligence");
       const { crisisDetection } = await import("./services/crisisDetection");
       const { memoryExtractor } = await import("./services/memoryExtractor");
+      const { enhancePromptWithShameAwareness } = await import("./utils/aiPromptBuilder");
 
       // Get recent message history for context
       const recentHistory = allMessages.slice(-6).map(m => `${m.role}: ${m.content}`);
@@ -511,9 +523,16 @@ export async function registerRoutes(
       }
 
       // Build enhanced system prompt with all intelligence
-      const systemPrompt = persona
+      let systemPrompt = persona
         ? buildAISystemPrompt(persona, userTurnCount, user?.name, emotionalState, crisisProtocol, memoryContext)
         : "You are a warm, empathetic spiritual companion. Help the user explore their faith journey with kindness and without judgment.";
+
+      // Enhance with shame detection (GRACE System v2.0)
+      try {
+        systemPrompt = enhancePromptWithShameAwareness(systemPrompt, content);
+      } catch (shameError) {
+        console.error("Shame detection error (continuing):", shameError);
+      }
 
       // Set up SSE
       res.setHeader("Content-Type", "text/event-stream");
@@ -994,6 +1013,82 @@ I'm here to listen whenever you're ready to talk.`;
     } catch (error) {
       console.error("Error rating devotional:", error);
       res.status(500).json({ success: false, error: "Failed to rate devotional" });
+    }
+  });
+
+  // Feeling-based Scripture API
+  app.post("/api/scripture/feeling", async (req: Request, res: Response) => {
+    try {
+      const { feeling, user_context, count = 3 } = req.body;
+
+      if (!feeling) {
+        return res.status(400).json({ error: "Missing required field: feeling" });
+      }
+
+      if (!isValidFeeling(feeling)) {
+        return res.status(400).json({
+          error: "Invalid feeling. Must be one of: anxious, sad, stressed, joyful, hopeful, confused"
+        });
+      }
+
+      if (count < 1 || count > 10) {
+        return res.status(400).json({ error: "Count must be between 1 and 10" });
+      }
+
+      const response = getScripturesByFeeling(feeling, user_context, count);
+      res.json(response);
+    } catch (error) {
+      console.error("Scripture feeling API error:", error);
+      res.status(500).json({ error: "Failed to retrieve scriptures" });
+    }
+  });
+
+  app.get("/api/scripture/feeling", async (req: Request, res: Response) => {
+    try {
+      const feeling = req.query.feeling as string;
+      const count = parseInt(req.query.count as string) || 3;
+
+      if (!feeling) {
+        return res.status(400).json({ error: "Missing required parameter: feeling" });
+      }
+
+      if (!isValidFeeling(feeling)) {
+        return res.status(400).json({
+          error: "Invalid feeling. Must be one of: anxious, sad, stressed, joyful, hopeful, confused"
+        });
+      }
+
+      const response = getScripturesByFeeling(feeling, undefined, count);
+      res.json(response);
+    } catch (error) {
+      console.error("Scripture feeling API error:", error);
+      res.status(500).json({ error: "Failed to retrieve scriptures" });
+    }
+  });
+
+  // Detect feeling from message
+  app.post("/api/scripture/detect-feeling", async (req: Request, res: Response) => {
+    try {
+      const { message } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: "Missing required field: message" });
+      }
+
+      const detectedFeeling = detectFeelingFromMessage(message);
+      
+      if (detectedFeeling) {
+        const scriptures = getScripturesByFeeling(detectedFeeling, undefined, 3);
+        res.json({
+          feeling: detectedFeeling,
+          scriptures: scriptures.selected_scriptures
+        });
+      } else {
+        res.json({ feeling: null, scriptures: [] });
+      }
+    } catch (error) {
+      console.error("Feeling detection API error:", error);
+      res.status(500).json({ error: "Failed to detect feeling" });
     }
   });
 

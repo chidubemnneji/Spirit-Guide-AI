@@ -35,9 +35,21 @@ export const userPersonas = pgTable("user_personas", {
   // Phase 4: Hope Layer
   transformationGoals: text("transformation_goals").array(),
   
-  // Generated Persona
+  // Generated Persona (legacy)
   primaryPersona: varchar("primary_persona", { length: 50 }),
   personaModifiers: text("persona_modifiers").array(),
+  
+  // GRACE Persona System v2.0
+  graceArchetype: varchar("grace_archetype", { length: 50 }), // wounded_seeker, eager_builder, etc.
+  graceTrust: jsonb("grace_trust"), // TrustProfile: level, score, earnedThrough
+  graceMode: varchar("grace_mode", { length: 20 }), // support, formation, learning
+  graceEvolution: jsonb("grace_evolution"), // EvolutionState: phase, trajectory, daysInApp
+  graceBehavioralSignals: jsonb("grace_behavioral_signals"), // BehavioralSignals
+  graceContentProfile: jsonb("grace_content_profile"), // ContentProfile: scriptureBias, terminology
+  graceSafetyProfile: jsonb("grace_safety_profile"), // SafetyProfile: crisisWatch, shameDetected
+  graceSensitivity: jsonb("grace_sensitivity"), // SensitivityMap: topics, triggers
+  graceTradition: jsonb("grace_tradition"), // TraditionProfile: declared, relationship
+  graceScores: jsonb("grace_scores"), // PersonaScores: vulnerability, emotionalCapacity, etc.
   
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),

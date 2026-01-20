@@ -1,6 +1,36 @@
 import type { UserPersona, PersonaType, EmotionalState } from "@shared/schema";
 import { pastoralVoice } from "../services/pastoralVoice";
 import { emotionalIntelligence } from "../services/emotionalIntelligence";
+import { detectShame, getRandomNormalization, ARCHETYPES, MODES, TRUST_BEHAVIORS } from "../services/gracePersonaSystem";
+import type { Archetype, TrustLevel, InteractionMode } from "@shared/gracePersona";
+
+// Simplified GRACE profile for prompt building (matches database JSONB structure)
+interface GraceProfileData {
+  archetype: Archetype;
+  trust?: {
+    level: TrustLevel;
+    score: number;
+  };
+  mode?: InteractionMode;
+  evolution?: {
+    phase: string;
+    trajectory: string;
+    daysInApp: number;
+  };
+  scores?: {
+    vulnerability: number;
+    emotionalCapacity: number;
+  };
+  sensitivity?: {
+    baseline: string;
+    topics: { topic: string; level: string }[];
+  };
+  safety?: {
+    crisisWatch: boolean;
+    highVulnerability: boolean;
+    shamePatternDetected: boolean;
+  };
+}
 
 interface PersonaDefinition {
   tone: string;
@@ -196,6 +226,103 @@ interface BuildPromptOptions {
   memoryContext?: string;
 }
 
+// Build GRACE profile from persona JSONB fields
+function buildGraceProfileFromPersona(persona: UserPersona): GraceProfileData | null {
+  // If no GRACE archetype is set, return null (legacy persona)
+  if (!persona.graceArchetype) {
+    return null;
+  }
+
+  return {
+    archetype: (persona.graceArchetype as Archetype) || "curious_explorer",
+    trust: persona.graceTrust as GraceProfileData["trust"],
+    mode: (persona.graceMode as InteractionMode) || "support",
+    evolution: persona.graceEvolution as GraceProfileData["evolution"],
+    scores: persona.graceScores as GraceProfileData["scores"],
+    sensitivity: persona.graceSensitivity as GraceProfileData["sensitivity"],
+    safety: persona.graceSafetyProfile as GraceProfileData["safety"],
+  };
+}
+
+// Build GRACE-specific prompt context
+function buildGracePromptContext(profile: GraceProfileData): string {
+  const archetype = ARCHETYPES[profile.archetype];
+  const mode = MODES[profile.mode || "support"];
+  const trustBehavior = TRUST_BEHAVIORS[profile.trust?.level || "new"];
+
+  let context = `
+
+═══════════════════════════════════════════════════════════
+GRACE PERSONA PROFILE
+═══════════════════════════════════════════════════════════
+
+ARCHETYPE: ${profile.archetype.replace(/_/g, " ").toUpperCase()}
+${archetype ? `- Core Need: ${archetype.coreNeed}` : ""}
+${archetype ? `- Primary Fear: ${archetype.primaryFear}` : ""}
+${archetype ? `- Entry Posture: ${archetype.entryPosture}` : ""}
+${archetype ? `- Voice Adjustments: ${archetype.voiceAdjustments.join(", ")}` : ""}
+
+CURRENT MODE: ${(profile.mode || "support").toUpperCase()}
+${mode ? `- Posture: ${mode.posture}` : ""}
+${mode ? `- Suggestion Limit: ${mode.suggestionLimit} per response` : ""}
+${mode ? `- Invitation Language: "${mode.invitationLanguage}"` : ""}
+
+TRUST LEVEL: ${(profile.trust?.level || "new").toUpperCase()} (Score: ${profile.trust?.score || 0}/100)
+${trustBehavior ? `- Assertiveness: ${trustBehavior.assertiveness}` : ""}
+${trustBehavior ? `- Max Suggestions: ${trustBehavior.maxSuggestions}` : ""}
+${trustBehavior ? `- Phrasing: ${trustBehavior.phrasing}` : ""}`;
+
+  // Add sensitivity warnings
+  if (profile.sensitivity?.topics && profile.sensitivity.topics.length > 0) {
+    context += `
+
+SENSITIVITY ALERTS:
+${profile.sensitivity.topics.map(t => `- ${t.topic}: Handle with ${t.level} care`).join("\n")}`;
+  }
+
+  // Add safety profile
+  if (profile.safety?.highVulnerability) {
+    context += `
+
+⚠️ HIGH VULNERABILITY USER: Use extra gentleness, shorter responses, more validation.`;
+  }
+
+  return context;
+}
+
+// Enhance prompt with shame detection and reframing
+export function enhancePromptWithShameAwareness(
+  prompt: string,
+  userMessage: string
+): string {
+  const shameResult = detectShame(userMessage);
+  
+  if (shameResult.detected) {
+    let shameContext = `
+
+═══════════════════════════════════════════════════════════
+SHAME DETECTION ALERT
+═══════════════════════════════════════════════════════════
+
+⚠️ SHAME INDICATORS DETECTED in user message:
+- Types: ${shameResult.types.join(", ")}
+- Intensity: ${shameResult.intensity}/10
+- Watch for shame spirals and gently redirect
+
+REFRAMES TO USE:
+${shameResult.reframes.map(r => `• "${r}"`).join("\n")}
+
+NORMALIZE WITH:
+"${getRandomNormalization()}"
+
+CRITICAL: Do NOT lecture about shame. Simply embody the reframes naturally in your response.`;
+
+    return prompt + shameContext;
+  }
+
+  return prompt;
+}
+
 export function buildAISystemPrompt(
   persona: UserPersona,
   userTurnCount: number = 0,
@@ -286,6 +413,12 @@ Core Focus: ${primaryDef?.focus || "Meeting them where they are"}`;
   // Add memory context if available
   if (memoryContext) {
     prompt += memoryContext;
+  }
+
+  // Add GRACE Persona System v2.0 context if available
+  const graceProfile = buildGraceProfileFromPersona(persona);
+  if (graceProfile) {
+    prompt += buildGracePromptContext(graceProfile);
   }
 
   // Add pastoral voice guidelines
