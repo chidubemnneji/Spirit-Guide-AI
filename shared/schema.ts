@@ -133,6 +133,43 @@ export const recommendationCards = pgTable("recommendation_cards", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+// Trust Events - Logs trust-building interactions
+export const trustEvents = pgTable("trust_events", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  personaId: integer("persona_id").references(() => userPersonas.id, { onDelete: "cascade" }),
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  weight: integer("weight").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Shame Detections - Logs shame patterns detected and reframes given
+export const shameDetections = pgTable("shame_detections", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  personaId: integer("persona_id").references(() => userPersonas.id, { onDelete: "cascade" }),
+  messageId: integer("message_id").references(() => messages.id, { onDelete: "set null" }),
+  shameLevel: varchar("shame_level", { length: 20 }).notNull(),
+  shameTypes: text("shame_types").array(),
+  triggers: text("triggers").array(),
+  reframeGiven: text("reframe_given"),
+  reframeAccepted: integer("reframe_accepted"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Mode Transitions - Logs when users change modes
+export const modeTransitions = pgTable("mode_transitions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  personaId: integer("persona_id").references(() => userPersonas.id, { onDelete: "cascade" }),
+  fromMode: varchar("from_mode", { length: 20 }).notNull(),
+  toMode: varchar("to_mode", { length: 20 }).notNull(),
+  trigger: varchar("trigger", { length: 50 }).notNull(),
+  userConsented: integer("user_consented").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
