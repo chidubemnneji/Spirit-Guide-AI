@@ -36,12 +36,57 @@ Preferred communication style: Simple, everyday language.
 - **Storage Pattern**: Repository pattern with `IStorage` interface allowing for in-memory or database implementations
 - **Key Entities**: Users, UserPersonas (onboarding responses + assigned persona), Conversations, Messages, RecommendationCards
 
-### Persona System
+### Persona System (Legacy)
 The application assigns users one of 8 primary persona types based on onboarding responses:
 - seeker_in_void, doubter_in_crisis, isolated_wanderer, guilt_ridden_striver
 - overwhelmed_survivor, hungry_beginner, momentum_breaker, comparison_captive
 
 Each persona has defined characteristics (tone, language, practices, focus areas) that shape AI responses.
+
+### GRACE Persona System v2.0
+Located in `shared/gracePersona.ts` and `server/services/gracePersonaSystem.ts`:
+
+**5 Archetypes** (mapped from legacy personas):
+- `wounded_seeker`: Processing spiritual pain, needs safety-first, non-pressuring support
+- `eager_builder`: Ready to grow, wants practical steps and guidance
+- `curious_explorer`: Open but cautious, values intellectual honesty
+- `returning_prodigal`: Coming back after leaving, needs shame-free welcome
+- `struggling_saint`: Long-time believer in difficulty, needs honest companionship
+
+**4 Trust Levels** with behavior modifiers:
+- `new` (0-25): Minimal suggestions, pure empathy
+- `warming` (26-50): 1 suggestion per response, gentle invitations
+- `established` (51-75): 2 suggestions, direct but kind
+- `deep` (76-100): Full directness, pattern observations
+
+**3 Interaction Modes**:
+- `support`: Listen and validate only
+- `formation`: Gentle growth invitations
+- `learning`: Scripture study and teaching
+
+**Shame Detection** (7 types):
+- identity, performance, comparison, belonging, past, doubt, spiritual
+- Detects shame patterns in messages and provides reframes
+
+**Database Fields** (JSONB in user_personas):
+- graceArchetype, graceTrust, graceMode, graceEvolution
+- graceScores, graceSensitivity, graceSafetyProfile, graceTradition
+
+### Feeling-Based Scripture Service
+Located in `server/services/feelingScriptureService.ts`:
+
+**6 Supported Feelings**:
+- anxious, sad, stressed, joyful, hopeful, confused
+
+**API Endpoints**:
+- `POST /api/scripture/feeling` - Get scriptures by feeling with optional user context
+- `GET /api/scripture/feeling?feeling=anxious&count=3` - Simple scripture lookup
+- `POST /api/scripture/detect-feeling` - Auto-detect feeling from message text
+
+**Features**:
+- Verified Bible verses with fallback data
+- User context boosting for personalization
+- Weighted random selection for variety
 
 ### AI Intelligence Services (World-Class Features)
 
