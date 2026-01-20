@@ -685,6 +685,31 @@ I'm here to listen whenever you're ready to talk.`;
           }
         }
 
+        // Track trust events based on session behavior
+        if (userId) {
+          try {
+            const { trustTrackingService } = await import("./services/trustTrackingService");
+            
+            // Track long sessions (6+ exchanges)
+            if (userTurnCount >= 6 && userTurnCount % 3 === 0) {
+              await trustTrackingService.recordTrustEvent(userId, "long_session", { 
+                turnCount: userTurnCount, 
+                conversationId 
+              });
+            }
+            
+            // Track staying during hard moments (high intensity emotions)
+            if (emotionalState && emotionalState.intensity >= 7 && userTurnCount >= 2) {
+              await trustTrackingService.recordTrustEvent(userId, "stayed_during_hard_moment", {
+                emotion: emotionalState.primaryEmotion,
+                intensity: emotionalState.intensity
+              });
+            }
+          } catch (trustError) {
+            console.error("Trust tracking error (continuing):", trustError);
+          }
+        }
+
         res.write(`data: ${JSON.stringify({ 
           done: true, 
           messageId: savedMessage.id,
@@ -801,6 +826,22 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(404).json({ error: "Card not found" });
       }
       await storage.completeRecommendationCard(cardId);
+      
+      // Track accepted suggestion for trust building
+      const session = req.session as SessionWithUser;
+      if (session.userId) {
+        try {
+          const { trustTrackingService } = await import("./services/trustTrackingService");
+          await trustTrackingService.recordTrustEvent(session.userId, "accepted_suggestion", {
+            cardId,
+            practiceType: card.practiceType,
+            title: card.title
+          });
+        } catch (trustError) {
+          console.error("Trust tracking error (continuing):", trustError);
+        }
+      }
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error tracking card completion:", error);
@@ -823,6 +864,30 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(404).json({ error: "Card not found" });
       }
       await storage.rateRecommendationCard(cardId, rating);
+      
+      // Track feedback for trust building
+      const session = req.session as SessionWithUser;
+      if (session.userId) {
+        try {
+          const { trustTrackingService } = await import("./services/trustTrackingService");
+          if (rating >= 4) {
+            await trustTrackingService.recordTrustEvent(session.userId, "gave_positive_feedback", {
+              cardId,
+              rating,
+              practiceType: card.practiceType
+            });
+          } else if (rating <= 2) {
+            await trustTrackingService.recordTrustEvent(session.userId, "gave_constructive_feedback", {
+              cardId,
+              rating,
+              practiceType: card.practiceType
+            });
+          }
+        } catch (trustError) {
+          console.error("Trust tracking error (continuing):", trustError);
+        }
+      }
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error tracking card rating:", error);
@@ -990,6 +1055,20 @@ I'm here to listen whenever you're ready to talk.`;
       }
       const devotionalId = parseInt(req.params.devotionalId);
       const isBookmarked = await devotionalService.toggleBookmark(session.userId, devotionalId);
+      
+      // Track bookmarked content for trust building (only when bookmarking, not unbookmarking)
+      if (isBookmarked) {
+        try {
+          const { trustTrackingService } = await import("./services/trustTrackingService");
+          await trustTrackingService.recordTrustEvent(session.userId, "bookmarked_content", {
+            devotionalId,
+            contentType: "devotional"
+          });
+        } catch (trustError) {
+          console.error("Trust tracking error (continuing):", trustError);
+        }
+      }
+      
       res.json({ success: true, data: { isBookmarked } });
     } catch (error) {
       console.error("Error toggling bookmark:", error);
@@ -1089,6 +1168,260 @@ I'm here to listen whenever you're ready to talk.`;
     } catch (error) {
       console.error("Feeling detection API error:", error);
       res.status(500).json({ error: "Failed to detect feeling" });
+    }
+  });
+
+  // ============================================
+  // PERSONA TRUST API
+  // Record trust-building interactions
+  // ============================================
+
+  app.post("/api/persona/trust", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const { eventType, metadata } = req.body;
+      
+      if (!eventType) {
+        return res.status(400).json({ error: "Missing eventType" });
+      }
+
+      const { trustTrackingService } = await import("./services/trustTrackingService");
+      
+      if (!trustTrackingService.isValidEventType(eventType)) {
+        const validTypes = [
+          "returned_after_absence", "shared_vulnerable_content", "accepted_suggestion",
+          "declined_suggestion_gracefully", "gave_positive_feedback", "gave_constructive_feedback",
+          "stayed_during_hard_moment", "completed_reading_plan", "bookmarked_content", "long_session"
+        ];
+        return res.status(400).json({ 
+          error: `Invalid eventType. Must be one of: ${validTypes.join(", ")}` 
+        });
+      }
+
+      const result = await trustTrackingService.recordTrustEvent(session.userId, eventType, metadata);
+      
+      if (!result) {
+        return res.status(500).json({ error: "Failed to record trust event" });
+      }
+
+      res.json({
+        success: true,
+        trust: {
+          level: result.newLevel,
+          score: result.newScore,
+          increased: result.increased,
+          previousLevel: result.previousLevel,
+          previousScore: result.previousScore
+        }
+      });
+    } catch (error) {
+      console.error("Trust event error:", error);
+      res.status(500).json({ error: "Failed to record trust event" });
+    }
+  });
+
+  app.get("/api/persona/trust", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const { trustTrackingService } = await import("./services/trustTrackingService");
+      const trustProfile = await trustTrackingService.getTrustProfile(session.userId);
+      
+      if (!trustProfile) {
+        return res.status(404).json({ error: "Trust profile not found" });
+      }
+
+      res.json({ success: true, data: trustProfile });
+    } catch (error) {
+      console.error("Get trust profile error:", error);
+      res.status(500).json({ error: "Failed to get trust profile" });
+    }
+  });
+
+  // ============================================
+  // PERSONA MODE API
+  // Get and change interaction modes
+  // ============================================
+
+  app.get("/api/persona/mode", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const { modeTransitionService } = await import("./services/modeTransitionService");
+      const modeInfo = await modeTransitionService.getCurrentMode(session.userId);
+      
+      if (!modeInfo) {
+        return res.status(404).json({ error: "Mode info not found" });
+      }
+
+      res.json({
+        success: true,
+        currentMode: modeInfo.currentMode,
+        modeInfo: {
+          name: modeInfo.modeInfo.name,
+          purpose: modeInfo.modeInfo.purpose,
+          aiRole: modeInfo.modeInfo.aiRole,
+          scripturePurpose: modeInfo.modeInfo.scripturePurpose
+        },
+        canTransitionTo: modeInfo.canTransitionTo,
+        recentHistory: modeInfo.recentHistory
+      });
+    } catch (error) {
+      console.error("Get mode error:", error);
+      res.status(500).json({ error: "Failed to get mode" });
+    }
+  });
+
+  app.post("/api/persona/mode", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const { newMode, trigger, userConsented } = req.body;
+      
+      if (!newMode) {
+        return res.status(400).json({ error: "Missing newMode" });
+      }
+
+      const { modeTransitionService } = await import("./services/modeTransitionService");
+      
+      if (!modeTransitionService.isValidMode(newMode)) {
+        return res.status(400).json({ 
+          error: "Invalid mode. Must be: support, formation, or learning" 
+        });
+      }
+
+      const actualTrigger = trigger && modeTransitionService.isValidTrigger(trigger) 
+        ? trigger 
+        : "user_request";
+
+      const result = await modeTransitionService.requestModeTransition(
+        session.userId, 
+        newMode, 
+        actualTrigger, 
+        userConsented ?? false
+      );
+      
+      if (!result) {
+        return res.status(500).json({ error: "Failed to transition mode" });
+      }
+
+      if ("requiresConsent" in result && result.requiresConsent) {
+        return res.json({
+          allowed: false,
+          requiresConsent: true,
+          consentPrompt: result.consentPrompt
+        });
+      }
+
+      if ("allowed" in result && result.allowed === false) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Mode transition error:", error);
+      res.status(500).json({ error: "Failed to transition mode" });
+    }
+  });
+
+  // ============================================
+  // PERSONA SHAME API
+  // Log shame detections
+  // ============================================
+
+  app.post("/api/persona/shame", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const { messageId, level, types, triggers, reframeGiven } = req.body;
+      
+      if (!level || !types || !triggers) {
+        return res.status(400).json({ error: "Missing required fields: level, types, triggers" });
+      }
+
+      // Validate types is an array
+      if (!Array.isArray(types) || types.length === 0) {
+        return res.status(400).json({ error: "types must be a non-empty array of strings" });
+      }
+
+      // Validate triggers is an array
+      if (!Array.isArray(triggers) || triggers.length === 0) {
+        return res.status(400).json({ error: "triggers must be a non-empty array of strings" });
+      }
+
+      // Validate all items are strings
+      if (!types.every((t: unknown) => typeof t === "string")) {
+        return res.status(400).json({ error: "All items in types must be strings" });
+      }
+      if (!triggers.every((t: unknown) => typeof t === "string")) {
+        return res.status(400).json({ error: "All items in triggers must be strings" });
+      }
+
+      const { shameLoggingService } = await import("./services/shameLoggingService");
+      
+      if (!shameLoggingService.isValidShameLevel(level)) {
+        return res.status(400).json({ 
+          error: "Invalid level. Must be: mild, moderate, or severe" 
+        });
+      }
+
+      const validTypes = types.filter((t: string) => shameLoggingService.isValidShameType(t));
+      if (validTypes.length === 0) {
+        return res.status(400).json({ 
+          error: "Invalid types. Must include at least one of: identity, performance, comparison, belonging, past, doubt, spiritual" 
+        });
+      }
+
+      const result = await shameLoggingService.logShameDetection(session.userId, messageId || null, {
+        level,
+        types: validTypes,
+        triggers,
+        reframeGiven
+      });
+      
+      if (!result) {
+        return res.status(500).json({ error: "Failed to log shame detection" });
+      }
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error("Shame detection log error:", error);
+      res.status(500).json({ error: "Failed to log shame detection" });
+    }
+  });
+
+  app.get("/api/persona/shame", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ success: false, error: "Not authenticated" });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const { shameLoggingService } = await import("./services/shameLoggingService");
+      const detections = await shameLoggingService.getRecentDetections(session.userId, limit);
+      
+      res.json({ success: true, data: detections });
+    } catch (error) {
+      console.error("Get shame detections error:", error);
+      res.status(500).json({ error: "Failed to get shame detections" });
     }
   });
 
