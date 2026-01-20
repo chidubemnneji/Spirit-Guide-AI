@@ -1,0 +1,585 @@
+// lib/supabase/persona-service.ts
+// ============================================
+// PERSONA SUPABASE SERVICE
+// CRUD operations for persona system
+// ============================================
+
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { 
+  PersonaProfile, 
+  UserPreferences,
+  createInitialPersona,
+  ARCHETYPES 
+} from '@/lib/persona/complete-persona-system';
+
+// ============================================
+// SUPABASE CLIENT
+// ============================================
+
+function getSupabase(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
+// ============================================
+// CREATE PERSONA
+// ============================================
+
+export async function createPersona(
+  userId: string,
+  preferences: UserPreferences
+): Promise<PersonaProfile | null> {
+  const supabase = getSupabase();
+  
+  // Generate initial persona from preferences
+  const persona = createInitialPersona(userId, preferences);
+  const archetype = ARCHETYPES[persona.archetype];
+  
+  const { data, error } = await supabase
+    .from('personas')
+    .insert({
+      user_id: userId,
+      
+      // Archetype
+      archetype: persona.archetype,
+      archetype_confidence: persona.archetypeConfidence,
+      
+      // Scores
+      scores: persona.scores,
+      
+      // Trust
+      trust_level: persona.trust.level,
+      trust_score: persona.trust.score,
+      trust_markers: persona.trust.earnedThrough,
+      
+      // Mode
+      current_mode: persona.currentMode,
+      mode_history: persona.modeHistory,
+      
+      // Sensitivity
+      sensitivity_baseline: persona.sensitivity.baseline,
+      sensitivity_topics: persona.sensitivity.topics,
+      detected_triggers: persona.sensitivity.detectedTriggers,
+      volatile_topics: persona.sensitivity.volatileTopics,
+      
+      // Tradition
+      tradition_declared: persona.tradition.declared,
+      tradition_relationship: persona.tradition.relationship,
+      tradition_distance_score: persona.tradition.distanceScore,
+      tradition_wounded_areas: persona.tradition.woundedAreas,
+      tradition_prefer_traditional_content: persona.tradition.preferTraditionalContent,
+      tradition_prefer_traditional_language: persona.tradition.preferTraditionalLanguage,
+      
+      // Evolution
+      evolution_phase: persona.evolution.phase,
+      evolution_trajectory: persona.evolution.trajectory,
+      evolution_trajectory_confidence: persona.evolution.trajectoryConfidence,
+      evolution_days_in_app: persona.evolution.daysInApp,
+      evolution_days_in_current_phase: persona.evolution.daysInCurrentPhase,
+      evolution_comfort_stagnation: persona.evolution.comfortStagnation,
+      evolution_stagnation_days: persona.evolution.stagnationDays,
+      evolution_growth_invitation_eligible: persona.evolution.growthInvitationEligible,
+      
+      // Behavioral signals
+      behavioral_signals: persona.behavioralSignals,
+      
+      // Content
+      content_scripture_bias: persona.content.scriptureBias,
+      content_scripture_avoid: persona.content.scriptureAvoid,
+      content_preferred_books: persona.content.preferredBooks,
+      content_prayer_types: persona.content.prayerTypes,
+      content_prayer_topics: persona.content.prayerTopics,
+      content_terminology_use: persona.content.terminology.use,
+      content_terminology_avoid: persona.content.terminology.avoid,
+      content_preferred_depth: persona.content.preferredDepth,
+      content_max_response_length: persona.content.maxResponseLength,
+      
+      // Safety
+      safety_crisis_watch: persona.safety.crisisWatch,
+      safety_crisis_level: persona.safety.crisisLevel,
+      safety_high_vulnerability: persona.safety.highVulnerability,
+      safety_authority_wound_detected: persona.safety.authorityWoundDetected,
+      safety_consent_required_for_guidance: persona.safety.consentRequiredForGuidance,
+      safety_shame_pattern_detected: persona.safety.shamePatternDetected,
+      safety_bypassing_risk: persona.safety.bypassingRisk,
+      safety_dependency_risk: persona.safety.dependencyRisk,
+      safety_real_world_connections_encouraged: persona.safety.realWorldConnectionsEncouraged,
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Failed to create persona:', error);
+    return null;
+  }
+  
+  return mapDbToPersona(data);
+}
+
+// ============================================
+// GET PERSONA
+// ============================================
+
+export async function getPersona(userId: string): Promise<PersonaProfile | null> {
+  const supabase = getSupabase();
+  
+  const { data, error } = await supabase
+    .from('personas')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+  
+  if (error || !data) {
+    return null;
+  }
+  
+  return mapDbToPersona(data);
+}
+
+// ============================================
+// GET PERSONA FOR PROMPT (Optimized)
+// ============================================
+
+export async function getPersonaForPrompt(userId: string): Promise<any | null> {
+  const supabase = getSupabase();
+  
+  const { data, error } = await supabase
+    .rpc('get_persona_for_prompt', { p_user_id: userId });
+  
+  if (error || !data) {
+    console.error('Failed to get persona for prompt:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+// ============================================
+// UPDATE PERSONA
+// ============================================
+
+export async function updatePersona(
+  userId: string,
+  updates: Partial<PersonaProfile>
+): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  const dbUpdates: any = {};
+  
+  // Map PersonaProfile fields to DB columns
+  if (updates.archetype) dbUpdates.archetype = updates.archetype;
+  if (updates.archetypeConfidence) dbUpdates.archetype_confidence = updates.archetypeConfidence;
+  if (updates.scores) dbUpdates.scores = updates.scores;
+  
+  if (updates.trust) {
+    if (updates.trust.level) dbUpdates.trust_level = updates.trust.level;
+    if (updates.trust.score !== undefined) dbUpdates.trust_score = updates.trust.score;
+    if (updates.trust.earnedThrough) dbUpdates.trust_markers = updates.trust.earnedThrough;
+  }
+  
+  if (updates.currentMode) dbUpdates.current_mode = updates.currentMode;
+  if (updates.modeHistory) dbUpdates.mode_history = updates.modeHistory;
+  
+  if (updates.sensitivity) {
+    if (updates.sensitivity.baseline) dbUpdates.sensitivity_baseline = updates.sensitivity.baseline;
+    if (updates.sensitivity.topics) dbUpdates.sensitivity_topics = updates.sensitivity.topics;
+    if (updates.sensitivity.detectedTriggers) dbUpdates.detected_triggers = updates.sensitivity.detectedTriggers;
+  }
+  
+  if (updates.evolution) {
+    if (updates.evolution.phase) dbUpdates.evolution_phase = updates.evolution.phase;
+    if (updates.evolution.trajectory) dbUpdates.evolution_trajectory = updates.evolution.trajectory;
+    if (updates.evolution.daysInApp !== undefined) dbUpdates.evolution_days_in_app = updates.evolution.daysInApp;
+    if (updates.evolution.daysInCurrentPhase !== undefined) dbUpdates.evolution_days_in_current_phase = updates.evolution.daysInCurrentPhase;
+    if (updates.evolution.comfortStagnation !== undefined) dbUpdates.evolution_comfort_stagnation = updates.evolution.comfortStagnation;
+    if (updates.evolution.stagnationDays !== undefined) dbUpdates.evolution_stagnation_days = updates.evolution.stagnationDays;
+  }
+  
+  if (updates.behavioralSignals) dbUpdates.behavioral_signals = updates.behavioralSignals;
+  
+  if (updates.safety) {
+    if (updates.safety.crisisWatch !== undefined) dbUpdates.safety_crisis_watch = updates.safety.crisisWatch;
+    if (updates.safety.crisisLevel) dbUpdates.safety_crisis_level = updates.safety.crisisLevel;
+    if (updates.safety.authorityWoundDetected !== undefined) dbUpdates.safety_authority_wound_detected = updates.safety.authorityWoundDetected;
+    if (updates.safety.shamePatternDetected !== undefined) dbUpdates.safety_shame_pattern_detected = updates.safety.shamePatternDetected;
+    if (updates.safety.consentRequiredForGuidance !== undefined) dbUpdates.safety_consent_required_for_guidance = updates.safety.consentRequiredForGuidance;
+  }
+  
+  const { error } = await supabase
+    .from('personas')
+    .update(dbUpdates)
+    .eq('user_id', userId);
+  
+  return !error;
+}
+
+// ============================================
+// RECORD TRUST EVENT
+// ============================================
+
+export type TrustEventType = 
+  | 'returned_after_absence'
+  | 'shared_vulnerable_content'
+  | 'accepted_suggestion'
+  | 'declined_suggestion_gracefully'
+  | 'gave_positive_feedback'
+  | 'gave_constructive_feedback'
+  | 'stayed_during_hard_moment'
+  | 'completed_reading_plan'
+  | 'bookmarked_content'
+  | 'long_session';
+
+export async function recordTrustEvent(
+  userId: string,
+  eventType: TrustEventType
+): Promise<{ newLevel: string; newScore: number; increased: boolean } | null> {
+  const supabase = getSupabase();
+  
+  const { data, error } = await supabase
+    .rpc('record_trust_event', {
+      p_user_id: userId,
+      p_event_type: eventType
+    });
+  
+  if (error || !data || data.length === 0) {
+    console.error('Failed to record trust event:', error);
+    return null;
+  }
+  
+  return {
+    newLevel: data[0].new_trust_level,
+    newScore: data[0].new_trust_score,
+    increased: data[0].trust_increased
+  };
+}
+
+// ============================================
+// UPDATE MODE
+// ============================================
+
+export async function updateMode(
+  userId: string,
+  newMode: 'support' | 'formation' | 'learning',
+  trigger: 'user_request' | 'stability_detected' | 'gentle_invitation' | 'crisis_regression',
+  userConsented: boolean
+): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  // Get current mode
+  const persona = await getPersona(userId);
+  if (!persona) return false;
+  
+  const transition = {
+    from: persona.currentMode,
+    to: newMode,
+    timestamp: new Date().toISOString(),
+    trigger,
+    userConsented
+  };
+  
+  // Update persona
+  const { error: updateError } = await supabase
+    .from('personas')
+    .update({
+      current_mode: newMode,
+      mode_history: [...persona.modeHistory, transition]
+    })
+    .eq('user_id', userId);
+  
+  if (updateError) {
+    console.error('Failed to update mode:', updateError);
+    return false;
+  }
+  
+  // Log transition
+  const { error: logError } = await supabase
+    .from('mode_transitions')
+    .insert({
+      persona_id: persona.id,
+      user_id: userId,
+      from_mode: persona.currentMode,
+      to_mode: newMode,
+      trigger,
+      user_consented: userConsented
+    });
+  
+  if (logError) {
+    console.error('Failed to log mode transition:', logError);
+  }
+  
+  return true;
+}
+
+// ============================================
+// LOG SHAME DETECTION
+// ============================================
+
+export async function logShameDetection(
+  userId: string,
+  messageId: string | null,
+  detection: {
+    level: 'mild' | 'moderate' | 'severe';
+    types: string[];
+    triggers: string[];
+    reframeGiven?: string;
+  }
+): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  // Get persona
+  const persona = await getPersona(userId);
+  if (!persona) return false;
+  
+  // Update shame pattern flag
+  await supabase
+    .from('personas')
+    .update({
+      safety_shame_pattern_detected: true,
+      safety_last_shame_reframe: detection.reframeGiven ? new Date().toISOString() : undefined
+    })
+    .eq('user_id', userId);
+  
+  // Log detection
+  const { error } = await supabase
+    .from('shame_detections')
+    .insert({
+      persona_id: persona.id,
+      user_id: userId,
+      message_id: messageId,
+      shame_level: detection.level,
+      shame_types: detection.types,
+      triggers: detection.triggers,
+      reframe_given: detection.reframeGiven
+    });
+  
+  return !error;
+}
+
+// ============================================
+// UPDATE SENSITIVITY
+// ============================================
+
+export async function addSensitivityTopic(
+  userId: string,
+  topic: string,
+  level: 'safe' | 'careful' | 'avoid',
+  source: 'declared' | 'inferred'
+): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  const persona = await getPersona(userId);
+  if (!persona) return false;
+  
+  // Check if topic already exists
+  const existingIndex = persona.sensitivity.topics.findIndex(t => t.topic === topic);
+  
+  let updatedTopics = [...persona.sensitivity.topics];
+  
+  if (existingIndex >= 0) {
+    updatedTopics[existingIndex] = {
+      ...updatedTopics[existingIndex],
+      level,
+      source,
+      lastUpdated: new Date().toISOString()
+    };
+  } else {
+    updatedTopics.push({
+      topic,
+      level,
+      source,
+      lastUpdated: new Date().toISOString()
+    });
+  }
+  
+  const { error } = await supabase
+    .from('personas')
+    .update({
+      sensitivity_topics: updatedTopics,
+      detected_triggers: level === 'avoid' 
+        ? [...new Set([...persona.sensitivity.detectedTriggers, topic])]
+        : persona.sensitivity.detectedTriggers
+    })
+    .eq('user_id', userId);
+  
+  return !error;
+}
+
+// ============================================
+// INCREMENT DAILY COUNTERS
+// Called once per day via cron or on first session
+// ============================================
+
+export async function incrementDailyCounters(userId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  const { error } = await supabase
+    .from('personas')
+    .update({
+      evolution_days_in_app: supabase.rpc('increment', { x: 1, row_id: userId }),
+      evolution_days_in_current_phase: supabase.rpc('increment', { x: 1, row_id: userId })
+    })
+    .eq('user_id', userId);
+  
+  // Alternative: direct SQL
+  const { error: sqlError } = await supabase.rpc('increment_persona_days', { p_user_id: userId });
+  
+  return !error && !sqlError;
+}
+
+// ============================================
+// CHECK EVOLUTION TRANSITION
+// ============================================
+
+export async function checkEvolutionTransition(userId: string): Promise<{
+  changed: boolean;
+  oldPhase: string;
+  newPhase: string;
+} | null> {
+  const supabase = getSupabase();
+  
+  const { data, error } = await supabase
+    .rpc('check_evolution_transition', { p_user_id: userId });
+  
+  if (error || !data || data.length === 0) {
+    return null;
+  }
+  
+  return {
+    changed: data[0].phase_changed,
+    oldPhase: data[0].old_phase,
+    newPhase: data[0].new_phase
+  };
+}
+
+// ============================================
+// UPDATE BEHAVIORAL SIGNALS
+// ============================================
+
+export async function updateBehavioralSignals(
+  userId: string,
+  updates: Partial<PersonaProfile['behavioralSignals']>
+): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  const persona = await getPersona(userId);
+  if (!persona) return false;
+  
+  const updatedSignals = {
+    ...persona.behavioralSignals,
+    ...updates
+  };
+  
+  const { error } = await supabase
+    .from('personas')
+    .update({ behavioral_signals: updatedSignals })
+    .eq('user_id', userId);
+  
+  return !error;
+}
+
+// ============================================
+// HELPER: Map DB Row to PersonaProfile
+// ============================================
+
+function mapDbToPersona(data: any): PersonaProfile {
+  return {
+    id: data.id,
+    userId: data.user_id,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    
+    archetype: data.archetype,
+    archetypeConfidence: data.archetype_confidence,
+    
+    scores: data.scores,
+    
+    trust: {
+      level: data.trust_level,
+      score: data.trust_score,
+      earnedThrough: data.trust_markers || [],
+      lastUpdated: data.trust_last_updated
+    },
+    
+    currentMode: data.current_mode,
+    modeHistory: data.mode_history || [],
+    
+    sensitivity: {
+      baseline: data.sensitivity_baseline,
+      topics: data.sensitivity_topics || [],
+      detectedTriggers: data.detected_triggers || [],
+      volatileTopics: data.volatile_topics || []
+    },
+    
+    tradition: {
+      declared: data.tradition_declared,
+      relationship: data.tradition_relationship,
+      distanceScore: data.tradition_distance_score,
+      woundedAreas: data.tradition_wounded_areas || [],
+      preferTraditionalContent: data.tradition_prefer_traditional_content,
+      preferTraditionalLanguage: data.tradition_prefer_traditional_language
+    },
+    
+    evolution: {
+      phase: data.evolution_phase,
+      phaseStartedAt: data.evolution_phase_started_at,
+      trajectory: data.evolution_trajectory,
+      trajectoryConfidence: data.evolution_trajectory_confidence,
+      daysInApp: data.evolution_days_in_app,
+      daysInCurrentPhase: data.evolution_days_in_current_phase,
+      comfortStagnation: data.evolution_comfort_stagnation,
+      stagnationDays: data.evolution_stagnation_days,
+      growthInvitationEligible: data.evolution_growth_invitation_eligible,
+      lastGrowthInvitation: data.evolution_last_growth_invitation,
+      growthInvitationResponse: data.evolution_growth_invitation_response
+    },
+    
+    behavioralSignals: data.behavioral_signals,
+    
+    content: {
+      scriptureBias: data.content_scripture_bias || [],
+      scriptureAvoid: data.content_scripture_avoid || [],
+      preferredBooks: data.content_preferred_books || [],
+      prayerTypes: data.content_prayer_types || [],
+      prayerTopics: data.content_prayer_topics || [],
+      terminology: {
+        use: data.content_terminology_use || [],
+        avoid: data.content_terminology_avoid || []
+      },
+      preferredDepth: data.content_preferred_depth,
+      maxResponseLength: data.content_max_response_length
+    },
+    
+    safety: {
+      crisisWatch: data.safety_crisis_watch,
+      crisisLevel: data.safety_crisis_level,
+      lastCrisisCheck: data.safety_last_crisis_check,
+      highVulnerability: data.safety_high_vulnerability,
+      authorityWoundDetected: data.safety_authority_wound_detected,
+      consentRequiredForGuidance: data.safety_consent_required_for_guidance,
+      shamePatternDetected: data.safety_shame_pattern_detected,
+      lastShameReframe: data.safety_last_shame_reframe,
+      bypassingRisk: data.safety_bypassing_risk,
+      dependencyRisk: data.safety_dependency_risk,
+      realWorldConnectionsEncouraged: data.safety_real_world_connections_encouraged
+    }
+  };
+}
+
+// ============================================
+// EXPORTS
+// ============================================
+
+export {
+  createPersona,
+  getPersona,
+  getPersonaForPrompt,
+  updatePersona,
+  updateMode,
+  logShameDetection,
+  addSensitivityTopic,
+  updateBehavioralSignals,
+  checkEvolutionTransition,
+  incrementDailyCounters
+};

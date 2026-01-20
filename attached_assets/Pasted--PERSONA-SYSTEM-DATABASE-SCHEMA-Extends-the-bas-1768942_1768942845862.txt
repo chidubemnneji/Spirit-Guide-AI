@@ -1,0 +1,473 @@
+-- ============================================
+-- PERSONA SYSTEM DATABASE SCHEMA
+-- Extends the base schema with persona tables
+-- Run this AFTER schema.sql
+-- ============================================
+
+-- ============================================
+-- PERSONAS TABLE
+-- Stores the complete persona profile
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS personas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- ===== ARCHETYPE =====
+  archetype VARCHAR(50) NOT NULL CHECK (archetype IN (
+    'wounded_seeker', 'eager_builder', 'curious_explorer', 
+    'returning_prodigal', 'struggling_saint'
+  )),
+  archetype_confidence INT DEFAULT 70 CHECK (archetype_confidence BETWEEN 0 AND 100),
+  
+  -- ===== SCORES (stored as JSONB for flexibility) =====
+  scores JSONB NOT NULL DEFAULT '{
+    "vulnerability": 50,
+    "emotionalCapacity": 50,
+    "intellectualEngagement": 50,
+    "practicalFocus": 50,
+    "readinessForGrowth": 50,
+    "readinessForDepth": 50,
+    "emotionalSupportNeed": 50,
+    "structureNeed": 50,
+    "cognitiveDefensiveness": 30
+  }'::JSONB,
+  
+  -- ===== TRUST =====
+  trust_level VARCHAR(20) NOT NULL DEFAULT 'new' CHECK (trust_level IN ('new', 'warming', 'established', 'deep')),
+  trust_score INT DEFAULT 20 CHECK (trust_score BETWEEN 0 AND 100),
+  trust_markers JSONB DEFAULT '[]'::JSONB,
+  trust_last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- ===== MODE =====
+  current_mode VARCHAR(20) NOT NULL DEFAULT 'support' CHECK (current_mode IN ('support', 'formation', 'learning')),
+  mode_history JSONB DEFAULT '[]'::JSONB,
+  
+  -- ===== SENSITIVITY =====
+  sensitivity_baseline VARCHAR(20) DEFAULT 'medium' CHECK (sensitivity_baseline IN ('low', 'medium', 'high')),
+  sensitivity_topics JSONB DEFAULT '[]'::JSONB,
+  detected_triggers TEXT[] DEFAULT '{}',
+  volatile_topics TEXT[] DEFAULT '{}',
+  
+  -- ===== TRADITION =====
+  tradition_declared VARCHAR(50) DEFAULT 'non-denominational',
+  tradition_relationship VARCHAR(20) DEFAULT 'comfortable' CHECK (tradition_relationship IN (
+    'embraced', 'comfortable', 'ambivalent', 'distant', 'wounded', 'exploring'
+  )),
+  tradition_distance_score INT DEFAULT 30 CHECK (tradition_distance_score BETWEEN 0 AND 100),
+  tradition_wounded_areas JSONB DEFAULT '[]'::JSONB,
+  tradition_prefer_traditional_content BOOLEAN DEFAULT TRUE,
+  tradition_prefer_traditional_language BOOLEAN DEFAULT FALSE,
+  
+  -- ===== EVOLUTION =====
+  evolution_phase VARCHAR(20) DEFAULT 'arriving' CHECK (evolution_phase IN (
+    'arriving', 'settling', 'engaged', 'deepening', 'stagnating', 'regressing', 'graduating'
+  )),
+  evolution_phase_started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  evolution_trajectory VARCHAR(20) DEFAULT 'stable' CHECK (evolution_trajectory IN ('improving', 'stable', 'declining', 'volatile')),
+  evolution_trajectory_confidence INT DEFAULT 30,
+  evolution_days_in_app INT DEFAULT 0,
+  evolution_days_in_current_phase INT DEFAULT 0,
+  evolution_comfort_stagnation BOOLEAN DEFAULT FALSE,
+  evolution_stagnation_days INT DEFAULT 0,
+  evolution_growth_invitation_eligible BOOLEAN DEFAULT FALSE,
+  evolution_last_growth_invitation TIMESTAMP WITH TIME ZONE,
+  evolution_growth_invitation_response VARCHAR(20) CHECK (evolution_growth_invitation_response IN ('accepted', 'declined', 'ignored', NULL)),
+  
+  -- ===== BEHAVIORAL SIGNALS =====
+  behavioral_signals JSONB NOT NULL DEFAULT '{
+    "sessionsThisWeek": 0,
+    "averageSessionLength": 0,
+    "timeOfDayPattern": "variable",
+    "scriptureEngagement": {"offered": 0, "engaged": 0, "completed": 0, "skipped": 0, "rate": 0},
+    "prayerEngagement": {"offered": 0, "engaged": 0, "completed": 0, "skipped": 0, "rate": 0},
+    "readingPlanEngagement": {"offered": 0, "engaged": 0, "completed": 0, "skipped": 0, "rate": 0},
+    "skippedContent": [],
+    "avoidedTopics": [],
+    "earlyExits": [],
+    "bookmarked": [],
+    "returnedTo": [],
+    "sharedDepth": 0,
+    "acceptedSuggestions": 0,
+    "declinedSuggestions": 0,
+    "gaveFeedback": false
+  }'::JSONB,
+  
+  -- ===== CONTENT PREFERENCES =====
+  content_scripture_bias TEXT[] DEFAULT '{}',
+  content_scripture_avoid TEXT[] DEFAULT '{}',
+  content_preferred_books TEXT[] DEFAULT '{}',
+  content_prayer_types TEXT[] DEFAULT ARRAY['template', 'contemporary'],
+  content_prayer_topics TEXT[] DEFAULT '{}',
+  content_terminology_use TEXT[] DEFAULT '{}',
+  content_terminology_avoid TEXT[] DEFAULT '{}',
+  content_preferred_depth VARCHAR(20) DEFAULT 'surface' CHECK (content_preferred_depth IN ('surface', 'moderate', 'deep')),
+  content_max_response_length VARCHAR(20) DEFAULT 'moderate' CHECK (content_max_response_length IN ('brief', 'moderate', 'detailed')),
+  
+  -- ===== SAFETY =====
+  safety_crisis_watch BOOLEAN DEFAULT FALSE,
+  safety_crisis_level VARCHAR(20) DEFAULT 'none' CHECK (safety_crisis_level IN ('none', 'low', 'medium', 'high', 'critical')),
+  safety_last_crisis_check TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  safety_high_vulnerability BOOLEAN DEFAULT FALSE,
+  safety_authority_wound_detected BOOLEAN DEFAULT FALSE,
+  safety_consent_required_for_guidance BOOLEAN DEFAULT FALSE,
+  safety_shame_pattern_detected BOOLEAN DEFAULT FALSE,
+  safety_last_shame_reframe TIMESTAMP WITH TIME ZONE,
+  safety_bypassing_risk VARCHAR(20) DEFAULT 'low' CHECK (safety_bypassing_risk IN ('low', 'medium', 'high')),
+  safety_dependency_risk VARCHAR(20) DEFAULT 'low' CHECK (safety_dependency_risk IN ('low', 'medium', 'high')),
+  safety_real_world_connections_encouraged BOOLEAN DEFAULT FALSE,
+  
+  -- Ensure one persona per user
+  UNIQUE(user_id)
+);
+
+-- Indexes
+CREATE INDEX idx_personas_user ON personas(user_id);
+CREATE INDEX idx_personas_archetype ON personas(archetype);
+CREATE INDEX idx_personas_trust_level ON personas(trust_level);
+CREATE INDEX idx_personas_current_mode ON personas(current_mode);
+CREATE INDEX idx_personas_evolution_phase ON personas(evolution_phase);
+CREATE INDEX idx_personas_crisis ON personas(safety_crisis_level) WHERE safety_crisis_level != 'none';
+
+-- ============================================
+-- TRUST EVENTS TABLE
+-- Logs trust-building interactions
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS trust_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  persona_id UUID NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  event_type VARCHAR(50) NOT NULL CHECK (event_type IN (
+    'returned_after_absence',
+    'shared_vulnerable_content',
+    'accepted_suggestion',
+    'declined_suggestion_gracefully',
+    'gave_positive_feedback',
+    'gave_constructive_feedback',
+    'stayed_during_hard_moment',
+    'completed_reading_plan',
+    'bookmarked_content',
+    'long_session'
+  )),
+  
+  weight INT NOT NULL,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  metadata JSONB DEFAULT '{}'::JSONB
+);
+
+CREATE INDEX idx_trust_events_persona ON trust_events(persona_id);
+CREATE INDEX idx_trust_events_user ON trust_events(user_id);
+CREATE INDEX idx_trust_events_created ON trust_events(created_at);
+
+-- ============================================
+-- SHAME DETECTIONS TABLE
+-- Logs shame patterns detected and reframes given
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS shame_detections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  persona_id UUID NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message_id UUID REFERENCES messages(id) ON DELETE SET NULL,
+  
+  shame_level VARCHAR(20) NOT NULL CHECK (shame_level IN ('mild', 'moderate', 'severe')),
+  shame_types TEXT[] NOT NULL,
+  triggers TEXT[] NOT NULL,
+  
+  reframe_given TEXT,
+  reframe_accepted BOOLEAN,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_shame_detections_persona ON shame_detections(persona_id);
+CREATE INDEX idx_shame_detections_level ON shame_detections(shame_level);
+
+-- ============================================
+-- MODE TRANSITIONS TABLE
+-- Logs when users change modes
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS mode_transitions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  persona_id UUID NOT NULL REFERENCES personas(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  from_mode VARCHAR(20) NOT NULL,
+  to_mode VARCHAR(20) NOT NULL,
+  trigger VARCHAR(50) NOT NULL CHECK (trigger IN (
+    'user_request', 'stability_detected', 'gentle_invitation', 'crisis_regression'
+  )),
+  user_consented BOOLEAN NOT NULL,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_mode_transitions_persona ON mode_transitions(persona_id);
+
+-- ============================================
+-- FUNCTIONS
+-- ============================================
+
+-- Update persona updated_at timestamp
+CREATE OR REPLACE FUNCTION update_persona_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_personas_updated_at
+  BEFORE UPDATE ON personas
+  FOR EACH ROW
+  EXECUTE FUNCTION update_persona_updated_at();
+
+-- ============================================
+-- FUNCTION: Record Trust Event
+-- ============================================
+
+CREATE OR REPLACE FUNCTION record_trust_event(
+  p_user_id UUID,
+  p_event_type VARCHAR(50)
+)
+RETURNS TABLE (
+  new_trust_level VARCHAR(20),
+  new_trust_score INT,
+  trust_increased BOOLEAN
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_persona_id UUID;
+  v_old_score INT;
+  v_new_score INT;
+  v_weight INT;
+  v_new_level VARCHAR(20);
+BEGIN
+  -- Get weight for event type
+  v_weight := CASE p_event_type
+    WHEN 'returned_after_absence' THEN 8
+    WHEN 'shared_vulnerable_content' THEN 10
+    WHEN 'accepted_suggestion' THEN 5
+    WHEN 'declined_suggestion_gracefully' THEN 3
+    WHEN 'gave_positive_feedback' THEN 4
+    WHEN 'gave_constructive_feedback' THEN 6
+    WHEN 'stayed_during_hard_moment' THEN 12
+    WHEN 'completed_reading_plan' THEN 7
+    WHEN 'bookmarked_content' THEN 2
+    WHEN 'long_session' THEN 3
+    ELSE 3
+  END;
+  
+  -- Get persona
+  SELECT id, trust_score INTO v_persona_id, v_old_score
+  FROM personas WHERE user_id = p_user_id;
+  
+  IF v_persona_id IS NULL THEN
+    RAISE EXCEPTION 'Persona not found for user %', p_user_id;
+  END IF;
+  
+  -- Calculate new score
+  v_new_score := LEAST(100, v_old_score + v_weight);
+  
+  -- Determine new level
+  v_new_level := CASE
+    WHEN v_new_score >= 85 THEN 'deep'
+    WHEN v_new_score >= 60 THEN 'established'
+    WHEN v_new_score >= 25 THEN 'warming'
+    ELSE 'new'
+  END;
+  
+  -- Update persona
+  UPDATE personas
+  SET 
+    trust_score = v_new_score,
+    trust_level = v_new_level,
+    trust_last_updated = NOW(),
+    trust_markers = trust_markers || jsonb_build_object(
+      'type', p_event_type,
+      'timestamp', NOW(),
+      'weight', v_weight
+    )
+  WHERE id = v_persona_id;
+  
+  -- Log event
+  INSERT INTO trust_events (persona_id, user_id, event_type, weight)
+  VALUES (v_persona_id, p_user_id, p_event_type, v_weight);
+  
+  RETURN QUERY SELECT v_new_level, v_new_score, v_new_score > v_old_score;
+END;
+$$;
+
+-- ============================================
+-- FUNCTION: Update Evolution Phase
+-- ============================================
+
+CREATE OR REPLACE FUNCTION check_evolution_transition(p_user_id UUID)
+RETURNS TABLE (
+  phase_changed BOOLEAN,
+  old_phase VARCHAR(20),
+  new_phase VARCHAR(20)
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_persona RECORD;
+  v_new_phase VARCHAR(20);
+BEGIN
+  -- Get current persona state
+  SELECT * INTO v_persona FROM personas WHERE user_id = p_user_id;
+  
+  IF v_persona IS NULL THEN
+    RETURN QUERY SELECT FALSE, NULL::VARCHAR, NULL::VARCHAR;
+    RETURN;
+  END IF;
+  
+  v_new_phase := v_persona.evolution_phase;
+  
+  -- Check transitions based on rules
+  CASE v_persona.evolution_phase
+    WHEN 'arriving' THEN
+      IF v_persona.evolution_days_in_current_phase >= 7 AND 
+         (v_persona.behavioral_signals->>'sessionsThisWeek')::INT >= 3 THEN
+        v_new_phase := 'settling';
+      END IF;
+      
+    WHEN 'settling' THEN
+      IF v_persona.evolution_days_in_current_phase >= 21 AND
+         v_persona.evolution_trajectory = 'stable' THEN
+        v_new_phase := 'engaged';
+      END IF;
+      
+    WHEN 'engaged' THEN
+      IF v_persona.evolution_trajectory = 'declining' AND 
+         v_persona.evolution_days_in_current_phase >= 7 THEN
+        v_new_phase := 'regressing';
+      ELSIF v_persona.evolution_stagnation_days >= 14 THEN
+        v_new_phase := 'stagnating';
+      ELSIF v_persona.evolution_trajectory = 'improving' AND
+            v_persona.evolution_days_in_current_phase >= 14 THEN
+        v_new_phase := 'deepening';
+      END IF;
+      
+    WHEN 'regressing' THEN
+      IF v_persona.evolution_trajectory = 'improving' AND
+         v_persona.evolution_days_in_current_phase >= 7 THEN
+        v_new_phase := 'settling';
+      END IF;
+      
+    ELSE
+      -- No transition
+      NULL;
+  END CASE;
+  
+  -- Apply transition if changed
+  IF v_new_phase != v_persona.evolution_phase THEN
+    UPDATE personas
+    SET 
+      evolution_phase = v_new_phase,
+      evolution_phase_started_at = NOW(),
+      evolution_days_in_current_phase = 0
+    WHERE user_id = p_user_id;
+    
+    RETURN QUERY SELECT TRUE, v_persona.evolution_phase, v_new_phase;
+  ELSE
+    RETURN QUERY SELECT FALSE, v_persona.evolution_phase, v_persona.evolution_phase;
+  END IF;
+END;
+$$;
+
+-- ============================================
+-- FUNCTION: Get Persona For Prompt
+-- Returns persona data formatted for prompt generation
+-- ============================================
+
+CREATE OR REPLACE FUNCTION get_persona_for_prompt(p_user_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_persona RECORD;
+  v_result JSONB;
+BEGIN
+  SELECT * INTO v_persona FROM personas WHERE user_id = p_user_id;
+  
+  IF v_persona IS NULL THEN
+    RETURN NULL;
+  END IF;
+  
+  v_result := jsonb_build_object(
+    'archetype', v_persona.archetype,
+    'scores', v_persona.scores,
+    'trust', jsonb_build_object(
+      'level', v_persona.trust_level,
+      'score', v_persona.trust_score
+    ),
+    'currentMode', v_persona.current_mode,
+    'sensitivity', jsonb_build_object(
+      'baseline', v_persona.sensitivity_baseline,
+      'topics', v_persona.sensitivity_topics,
+      'detectedTriggers', v_persona.detected_triggers
+    ),
+    'tradition', jsonb_build_object(
+      'declared', v_persona.tradition_declared,
+      'relationship', v_persona.tradition_relationship,
+      'distanceScore', v_persona.tradition_distance_score
+    ),
+    'evolution', jsonb_build_object(
+      'phase', v_persona.evolution_phase,
+      'trajectory', v_persona.evolution_trajectory,
+      'daysInApp', v_persona.evolution_days_in_app
+    ),
+    'content', jsonb_build_object(
+      'scriptureBias', v_persona.content_scripture_bias,
+      'scriptureAvoid', v_persona.content_scripture_avoid,
+      'preferredBooks', v_persona.content_preferred_books,
+      'prayerTypes', v_persona.content_prayer_types,
+      'terminologyUse', v_persona.content_terminology_use,
+      'terminologyAvoid', v_persona.content_terminology_avoid,
+      'maxResponseLength', v_persona.content_max_response_length
+    ),
+    'safety', jsonb_build_object(
+      'crisisWatch', v_persona.safety_crisis_watch,
+      'crisisLevel', v_persona.safety_crisis_level,
+      'highVulnerability', v_persona.safety_high_vulnerability,
+      'authorityWoundDetected', v_persona.safety_authority_wound_detected,
+      'consentRequiredForGuidance', v_persona.safety_consent_required_for_guidance,
+      'shamePatternDetected', v_persona.safety_shame_pattern_detected
+    )
+  );
+  
+  RETURN v_result;
+END;
+$$;
+
+-- ============================================
+-- ROW LEVEL SECURITY
+-- ============================================
+
+ALTER TABLE personas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trust_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shame_detections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mode_transitions ENABLE ROW LEVEL SECURITY;
+
+-- Users can only access their own data
+CREATE POLICY personas_own_data ON personas
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY trust_events_own_data ON trust_events
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY shame_detections_own_data ON shame_detections
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY mode_transitions_own_data ON mode_transitions
+  FOR ALL USING (auth.uid() = user_id);

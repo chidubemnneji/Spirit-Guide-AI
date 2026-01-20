@@ -1,0 +1,148 @@
+// app/api/persona/route.ts
+// ============================================
+// PERSONA API ENDPOINTS
+// Create, read, update persona profiles
+// ============================================
+
+import { NextRequest, NextResponse } from 'next/server';
+import { 
+  createPersona, 
+  getPersona, 
+  updatePersona 
+} from '@/lib/supabase/persona-service';
+import { generatePersonaDisplay } from '@/lib/persona/complete-persona-system';
+
+// ============================================
+// GET - Retrieve user's persona
+// ============================================
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Missing userId parameter' },
+        { status: 400 }
+      );
+    }
+    
+    const persona = await getPersona(userId);
+    
+    if (!persona) {
+      return NextResponse.json(
+        { error: 'Persona not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Include user-friendly display data
+    const display = generatePersonaDisplay(persona);
+    
+    return NextResponse.json({
+      persona,
+      display
+    });
+    
+  } catch (error) {
+    console.error('Get persona error:', error);
+    return NextResponse.json(
+      { error: 'Failed to retrieve persona' },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================
+// POST - Create new persona from onboarding
+// ============================================
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, preferences } = body;
+    
+    if (!userId || !preferences) {
+      return NextResponse.json(
+        { error: 'Missing userId or preferences' },
+        { status: 400 }
+      );
+    }
+    
+    // Check if persona already exists
+    const existing = await getPersona(userId);
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Persona already exists for this user' },
+        { status: 409 }
+      );
+    }
+    
+    const persona = await createPersona(userId, preferences);
+    
+    if (!persona) {
+      return NextResponse.json(
+        { error: 'Failed to create persona' },
+        { status: 500 }
+      );
+    }
+    
+    const display = generatePersonaDisplay(persona);
+    
+    return NextResponse.json({
+      persona,
+      display
+    }, { status: 201 });
+    
+  } catch (error) {
+    console.error('Create persona error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create persona' },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================
+// PATCH - Update existing persona
+// ============================================
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, updates } = body;
+    
+    if (!userId || !updates) {
+      return NextResponse.json(
+        { error: 'Missing userId or updates' },
+        { status: 400 }
+      );
+    }
+    
+    const success = await updatePersona(userId, updates);
+    
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Failed to update persona' },
+        { status: 500 }
+      );
+    }
+    
+    // Return updated persona
+    const persona = await getPersona(userId);
+    const display = persona ? generatePersonaDisplay(persona) : null;
+    
+    return NextResponse.json({
+      persona,
+      display
+    });
+    
+  } catch (error) {
+    console.error('Update persona error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update persona' },
+      { status: 500 }
+    );
+  }
+}
