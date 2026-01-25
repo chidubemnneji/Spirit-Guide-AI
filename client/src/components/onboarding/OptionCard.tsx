@@ -31,40 +31,35 @@ export function OptionCard({
       data-testid={testId || `option-${id}`}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.1 * index }}
-      whileHover={{ scale: 1.01 }}
+      transition={{ duration: 0.3, delay: 0.05 * index }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "w-full p-5 text-left rounded-xl border transition-all duration-300 relative",
-        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+        "w-full p-4 text-left rounded-2xl transition-all duration-200",
+        "border-2 focus:outline-none focus:ring-2 focus:ring-primary/30",
         selected
-          ? "border-primary/50 glass shadow-primary glow-border"
-          : "glass-subtle glow-border shadow-subtle hover:shadow-elevated",
+          ? "bg-primary/5 border-primary shadow-sm"
+          : "bg-card border-transparent hover:bg-muted/50",
         disabled && !selected && "opacity-50 cursor-not-allowed"
       )}
     >
       <div className="flex items-center gap-4">
         {icon && (
-          <motion.span 
-            className="text-3xl flex-shrink-0"
-            animate={{ scale: selected ? 1.1 : 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
+          <div className={cn(
+            "flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
+            selected ? "bg-primary/10" : "bg-muted"
+          )}>
             {icon}
-          </motion.span>
+          </div>
         )}
-        <span className="text-base font-medium leading-relaxed flex-1 tracking-refined">{text}</span>
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ 
-            scale: selected ? 1 : 0, 
-            opacity: selected ? 1 : 0 
-          }}
-          transition={{ type: "spring", stiffness: 500, damping: 25 }}
-          className="flex-shrink-0 w-7 h-7 rounded-full gradient-primary shadow-primary flex items-center justify-center"
-        >
-          <Check className="w-4 h-4 text-white" />
-        </motion.div>
+        <span className="text-base font-medium leading-relaxed flex-1">{text}</span>
+        <div className={cn(
+          "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+          selected
+            ? "bg-primary border-primary"
+            : "border-muted-foreground/30"
+        )}>
+          {selected && <Check className="w-4 h-4 text-primary-foreground" />}
+        </div>
       </div>
     </motion.button>
   );

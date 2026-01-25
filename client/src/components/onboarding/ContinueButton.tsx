@@ -23,6 +23,7 @@ export function ContinueButton({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
+      className="pt-4"
     >
       <Button
         onClick={onClick}
@@ -30,9 +31,9 @@ export function ContinueButton({
         size="lg"
         data-testid="button-continue"
         className={cn(
-          "w-full py-6 text-base font-semibold tracking-premium transition-all duration-300",
-          !disabled && "gradient-primary shadow-primary hover:shadow-floating",
-          variant === "complete" && "gradient-sage shadow-sage"
+          "w-full h-14 text-base font-semibold rounded-2xl transition-all duration-300",
+          !disabled && "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25",
+          disabled && "bg-muted text-muted-foreground"
         )}
       >
         {loading ? (
@@ -52,7 +53,7 @@ export function ContinueButton({
           >
             {variant === "complete" && <Sparkles className="h-5 w-5" />}
             {children || "Continue"}
-            <ArrowRight className="h-5 w-5" />
+            {variant !== "complete" && <ArrowRight className="h-5 w-5" />}
           </motion.span>
         )}
       </Button>

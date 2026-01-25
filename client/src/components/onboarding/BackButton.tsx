@@ -12,9 +12,9 @@ export function BackButton({ onClick }: BackButtonProps) {
       size="sm"
       onClick={onClick}
       data-testid="button-back"
-      className="text-muted-foreground hover:text-foreground"
+      className="text-muted-foreground hover:text-foreground -ml-2 gap-1"
     >
-      <ArrowLeft className="mr-1 h-4 w-4" />
+      <ArrowLeft className="h-4 w-4" />
       Back
     </Button>
   );

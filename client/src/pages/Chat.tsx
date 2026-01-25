@@ -434,23 +434,20 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-border/50 glass">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
+        <div className="max-w-4xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-gentle" />
-              <div className="relative w-9 h-9 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary" />
-              </div>
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-primary" />
             </div>
-            <span className="font-serif font-bold text-lg tracking-premium">Soulguide</span>
+            <span className="font-serif font-semibold text-lg">Soulguide</span>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleNewChat}
-              className="hover:shadow-subtle transition-all"
+              className="rounded-full"
               data-testid="button-new-chat"
             >
               <RotateCcw className="w-4 h-4" />

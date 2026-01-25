@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { OptionCard } from "./OptionCard";
 import { ContinueButton } from "./ContinueButton";
 import { BackButton } from "./BackButton";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Check } from "lucide-react";
 
 interface Phase4Props {
   onComplete: () => void;
@@ -42,24 +43,34 @@ export function Phase4({ onComplete, onBack, isSubmitting }: Phase4Props) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="space-y-2">
-        <BackButton onClick={onBack} />
-      </div>
+    <motion.div 
+      className="space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <BackButton onClick={onBack} />
 
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium">
+      <motion.div 
+        className="space-y-3"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+      >
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
           <Sparkles className="w-4 h-4" />
           Final Step
         </div>
-        <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground leading-tight">
-          Imagine it's 3 months from now and things have shifted. What does that look like?
-        </h2>
-        <p className="text-sm text-muted-foreground">Pick your top 2</p>
-      </div>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+          Imagine 3 months from now, things have shifted. What does that look like?
+        </h1>
+        <p className="text-muted-foreground">
+          Pick your top 2
+        </p>
+      </motion.div>
 
       <div className="space-y-3">
-        {options.map((option) => (
+        {options.map((option, index) => (
           <OptionCard
             key={option.id}
             id={option.id}
@@ -67,6 +78,7 @@ export function Phase4({ onComplete, onBack, isSubmitting }: Phase4Props) {
             selected={selected.includes(option.id)}
             disabled={!selected.includes(option.id) && selected.length >= 2}
             onClick={() => handleSelect(option.id)}
+            index={index}
           />
         ))}
       </div>
@@ -77,8 +89,8 @@ export function Phase4({ onComplete, onBack, isSubmitting }: Phase4Props) {
         loading={isSubmitting}
         variant="complete"
       >
-        Complete Setup & Start Journey
+        Start Your Journey
       </ContinueButton>
-    </div>
+    </motion.div>
   );
 }

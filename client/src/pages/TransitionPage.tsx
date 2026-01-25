@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { motion } from "framer-motion";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { Button } from "@/components/ui/button";
+import { Check, Sparkles } from "lucide-react";
 
 const bibleVerses: Record<string, { verse: string; reference: string; supportingText: string }> = {
   distant_from_god: {
@@ -27,14 +29,20 @@ const bibleVerses: Record<string, { verse: string; reference: string; supporting
   life_overwhelming: {
     verse: "Come to me, all who are weary and burdened, and I will give you rest.",
     reference: "Matthew 11:28",
-    supportingText: "Your life is full and overwhelming right now. We're not here to add more pressure, just to walk with you in the moments you have. That's enough."
+    supportingText: "Your life is full and overwhelming right now. We're not here to add more pressure, just to walk with you in the moments you have."
   },
   new_to_faith: {
     verse: "I am the way, the truth, and the life.",
     reference: "John 14:6",
-    supportingText: "You're at the beginning of something beautiful. There's no rush, no test, no 'right way' except His way. Let's discover it together, one step at a time."
+    supportingText: "You're at the beginning of something beautiful. There's no rush, no test, no 'right way' except His way. Let's discover it together."
   }
 };
+
+const features = [
+  { text: "Personalized guidance", delay: 0.3 },
+  { text: "Daily devotionals", delay: 0.4 },
+  { text: "Scripture-based support", delay: 0.5 },
+];
 
 export default function TransitionPage() {
   const [, setLocation] = useLocation();
@@ -47,89 +55,93 @@ export default function TransitionPage() {
     setIsVisible(true);
     
     const timer = setTimeout(() => {
-      setLocation("/chat");
-    }, 10000);
+      setLocation("/devotion");
+    }, 12000);
 
     return () => clearTimeout(timer);
   }, [setLocation]);
 
   const handleContinue = () => {
-    setLocation("/chat");
+    setLocation("/devotion");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950 p-8">
-      <div 
-        className={`max-w-2xl text-center space-y-6 transition-all duration-1000 ${
-          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        }`}
-      >
-        
-        {/* Curvy Road Icon */}
-        <div className="mb-14 flex justify-center">
-          <svg 
-            className="w-56 h-52 opacity-65" 
-            viewBox="0 0 200 200"
-            style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+    <div className="min-h-screen flex flex-col gradient-onboarding">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <motion.div 
+          className="max-w-md text-center space-y-8"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.div
+            className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
           >
-            {/* Road base (full width of road) */}
-            <path 
-              d="M 40 170 Q 60 120, 80 100 T 120 60 T 160 30" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth="35" 
-              fill="none" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-            />
-            
-            {/* Center dashed line (like highway center line) */}
-            <path 
-              d="M 40 170 Q 60 120, 80 100 T 120 60 T 160 30" 
-              stroke="hsl(var(--primary-foreground))" 
-              strokeWidth="2.5" 
-              fill="none" 
-              strokeDasharray="8 6" 
-              strokeLinecap="round" 
-            />
-            
-            {/* Starting point marker (you are here) */}
-            <circle cx="40" cy="170" r="6" fill="hsl(var(--primary))" />
-          </svg>
-        </div>
-        
-        {/* Bible Verse (quoted) */}
-        <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground leading-snug px-4">
-          "{content.verse}"
-        </h3>
-        
-        {/* Scripture Reference */}
-        <p className="text-base text-muted-foreground font-light italic">
-          {content.reference}
-        </p>
-        
-        {/* Supporting Text */}
-        <p className="text-sm text-muted-foreground leading-relaxed mt-6 px-8 max-w-lg mx-auto">
-          {content.supportingText}
-        </p>
-        
-        {/* Continue Button */}
-        <div className="mt-12 pt-8">
-          <Button 
-            variant="ghost"
-            onClick={handleContinue}
-            data-testid="button-continue"
-          >
-            Continue →
-          </Button>
-        </div>
+            <Check className="w-10 h-10 text-primary" />
+          </motion.div>
 
-        {/* Loading Dots */}
-        <div className="flex justify-center gap-2 mt-8">
-          <div className="w-2 h-2 bg-primary/30 rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-primary/30 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 bg-primary/30 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-        </div>
-      </div>
+          <motion.div
+            className="space-y-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h1 className="font-serif text-3xl font-bold">Your space is ready!</h1>
+            <p className="text-muted-foreground">
+              Your journey has been set up and personalized.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="p-6 rounded-2xl bg-card shadow-sm space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <p className="font-serif text-lg leading-relaxed italic">
+              "{content.verse}"
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {content.reference}
+            </p>
+          </motion.div>
+
+          <div className="space-y-3">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.text}
+                className="flex items-center gap-3 justify-center"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: feature.delay }}
+              >
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-primary" />
+                </div>
+                <span className="text-sm text-muted-foreground">{feature.text}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="pt-4"
+          >
+            <Button 
+              className="w-full h-14 rounded-2xl text-base font-semibold bg-foreground text-background hover:bg-foreground/90"
+              onClick={handleContinue}
+              data-testid="button-continue"
+            >
+              Start Your Journey
+            </Button>
+          </motion.div>
+        </motion.div>
+      </main>
     </div>
   );
 }

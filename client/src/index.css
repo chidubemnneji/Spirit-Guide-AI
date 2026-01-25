@@ -2,74 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Enhanced Spiritual Palette */
+/* LIGHT MODE - Warm Cream & Peach Wellness Palette */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-  --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --button-outline: rgba(0,0,0, .08);
+  --badge-outline: rgba(0,0,0, .04);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(0,0,0, .025);
+  --elevate-2: rgba(0,0,0, .06);
   
-  /* Core spiritual colors */
-  --sage: 98 12% 56%;
-  --teal: 173 21% 52%;
-  --beige: 40 33% 94%;
-  --navy: 207 28% 24%;
+  /* Core warm wellness colors */
+  --cream: 40 30% 96%;
+  --peach: 24 85% 65%;
+  --coral: 16 80% 58%;
+  --amber: 35 90% 55%;
+  --warm-gray: 30 10% 35%;
   
-  /* Emotional state colors */
-  --struggling: 14 60% 75%;
-  --peaceful: 185 30% 78%;
-  --hopeful: 35 90% 81%;
-  --overwhelmed: 265 20% 81%;
+  /* Mood/emotion colors */
+  --mood-happy: 45 90% 60%;
+  --mood-sad: 220 40% 65%;
+  --mood-calm: 180 35% 65%;
+  --mood-anxious: 30 75% 60%;
   
   /* System semantic colors */
-  --success: 135 30% 60%;
-  --warning: 28 86% 65%;
-  --error: 12 65% 63%;
+  --success: 145 45% 50%;
+  --warning: 35 90% 55%;
+  --error: 0 65% 55%;
   
   /* Glass surfaces */
-  --glass: 40 33% 94% / 0.85;
-  --glass-border: 173 21% 52% / 0.2;
+  --glass: 40 25% 97% / 0.9;
+  --glass-border: 30 20% 85% / 0.5;
   
-  /* Updated palette using spiritual colors */
-  --background: 40 33% 96%;
-  --foreground: 207 28% 24%;
-  --border: 40 20% 88%;
-  --card: 40 30% 95%;
-  --card-foreground: 207 28% 24%;
-  --card-border: 40 20% 88%;
-  --sidebar: 40 25% 93%;
-  --sidebar-foreground: 207 28% 24%;
-  --sidebar-border: 40 18% 85%;
-  --sidebar-primary: 173 21% 52%;
+  /* Gradient stops for onboarding */
+  --gradient-start: 20 100% 95%;
+  --gradient-end: 35 100% 92%;
+  
+  /* Updated warm palette */
+  --background: 40 25% 97%;
+  --foreground: 30 15% 20%;
+  --border: 35 20% 90%;
+  --card: 0 0% 100%;
+  --card-foreground: 30 15% 20%;
+  --card-border: 35 15% 88%;
+  --sidebar: 40 20% 95%;
+  --sidebar-foreground: 30 15% 20%;
+  --sidebar-border: 35 15% 88%;
+  --sidebar-primary: 24 85% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 40 20% 88%;
-  --sidebar-accent-foreground: 207 28% 24%;
-  --sidebar-ring: 173 21% 52%;
-  --popover: 40 30% 94%;
-  --popover-foreground: 207 28% 24%;
-  --popover-border: 40 18% 85%;
-  --primary: 173 21% 52%;
+  --sidebar-accent: 35 25% 92%;
+  --sidebar-accent-foreground: 30 15% 20%;
+  --sidebar-ring: 24 85% 60%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 30 15% 20%;
+  --popover-border: 35 15% 88%;
+  --primary: 24 85% 60%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 98 12% 56%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 40 15% 88%;
-  --muted-foreground: 207 15% 45%;
-  --accent: 173 21% 48%;
+  --secondary: 35 25% 92%;
+  --secondary-foreground: 30 15% 25%;
+  --muted: 35 15% 93%;
+  --muted-foreground: 30 10% 50%;
+  --accent: 16 80% 58%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 12 65% 55%;
+  --destructive: 0 65% 55%;
   --destructive-foreground: 0 0% 100%;
-  --input: 40 18% 78%;
-  --ring: 173 21% 52%;
-  --chart-1: 173 21% 52%;
-  --chart-2: 98 12% 56%;
-  --chart-3: 35 90% 65%;
-  --chart-4: 185 30% 60%;
-  --chart-5: 14 60% 65%;
-  --font-sans: Inter, sans-serif;
+  --input: 35 20% 88%;
+  --ring: 24 85% 60%;
+  --chart-1: 24 85% 60%;
+  --chart-2: 45 90% 60%;
+  --chart-3: 180 35% 65%;
+  --chart-4: 220 40% 65%;
+  --chart-5: 0 65% 55%;
+  --font-sans: Inter, system-ui, sans-serif;
   --font-serif: Crimson Pro, Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: .75rem;
+  --radius: 1rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(240 6% 10% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(240 6% 10% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(240 6% 10% / 0.00), 0px 1px 2px -1px hsl(240 6% 10% / 0.00);
@@ -113,66 +118,71 @@
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
-  --opaque-button-border-intensity: 9;
+  --opaque-button-border-intensity: 8;
   --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-2: rgba(255,255,255, .08);
   
-  /* Core spiritual colors (adjusted for dark mode) */
-  --sage: 98 15% 45%;
-  --teal: 173 25% 45%;
-  --beige: 40 20% 18%;
-  --navy: 207 25% 85%;
+  /* Core warm wellness colors (dark mode) */
+  --cream: 30 10% 12%;
+  --peach: 24 70% 55%;
+  --coral: 16 65% 50%;
+  --amber: 35 80% 50%;
+  --warm-gray: 30 8% 75%;
   
-  /* Emotional state colors (adjusted for dark mode) */
-  --struggling: 14 50% 55%;
-  --peaceful: 185 25% 55%;
-  --hopeful: 35 80% 60%;
-  --overwhelmed: 265 20% 60%;
+  /* Mood/emotion colors (dark mode) */
+  --mood-happy: 45 80% 55%;
+  --mood-sad: 220 35% 55%;
+  --mood-calm: 180 30% 55%;
+  --mood-anxious: 30 65% 55%;
   
   /* System semantic colors */
-  --success: 135 35% 50%;
-  --warning: 28 80% 55%;
-  --error: 12 60% 55%;
+  --success: 145 40% 45%;
+  --warning: 35 80% 50%;
+  --error: 0 60% 50%;
   
   /* Glass surfaces (dark mode) */
-  --glass: 220 18% 16% / 0.85;
-  --glass-border: 173 25% 45% / 0.25;
+  --glass: 30 10% 12% / 0.9;
+  --glass-border: 30 15% 25% / 0.5;
+  
+  /* Gradient stops for onboarding (dark) */
+  --gradient-start: 30 15% 15%;
+  --gradient-end: 25 12% 12%;
   
   /* Updated dark mode palette */
-  --background: 220 18% 11%;
-  --foreground: 40 25% 92%;
-  --border: 220 15% 22%;
-  --card: 220 16% 14%;
-  --card-foreground: 40 25% 92%;
-  --card-border: 220 15% 20%;
-  --sidebar: 220 16% 13%;
-  --sidebar-foreground: 40 25% 92%;
-  --sidebar-border: 220 15% 20%;
-  --sidebar-primary: 173 25% 50%;
+  --background: 30 10% 8%;
+  --foreground: 35 20% 92%;
+  --border: 30 10% 18%;
+  --card: 30 8% 12%;
+  --card-foreground: 35 20% 92%;
+  --card-border: 30 10% 16%;
+  --sidebar: 30 8% 10%;
+  --sidebar-foreground: 35 20% 92%;
+  --sidebar-border: 30 10% 16%;
+  --sidebar-primary: 24 70% 55%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 15% 20%;
-  --sidebar-accent-foreground: 40 25% 92%;
-  --sidebar-ring: 173 25% 50%;
-  --popover: 220 16% 16%;
-  --popover-foreground: 40 25% 92%;
-  --popover-border: 220 15% 24%;
-  --primary: 173 25% 50%;
+  --sidebar-accent: 30 10% 18%;
+  --sidebar-accent-foreground: 35 20% 92%;
+  --sidebar-ring: 24 70% 55%;
+  --popover: 30 8% 12%;
+  --popover-foreground: 35 20% 92%;
+  --popover-border: 30 10% 18%;
+  --primary: 24 70% 55%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 98 15% 35%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 220 14% 20%;
-  --muted-foreground: 40 12% 60%;
-  --accent: 173 25% 45%;
+  --secondary: 30 10% 18%;
+  --secondary-foreground: 35 20% 92%;
+  --muted: 30 8% 16%;
+  --muted-foreground: 35 12% 55%;
+  --accent: 16 65% 50%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 12 60% 50%;
+  --destructive: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
-  --input: 220 15% 28%;
-  --ring: 173 25% 50%;
-  --chart-1: 173 25% 55%;
-  --chart-2: 98 15% 50%;
-  --chart-3: 35 75% 55%;
-  --chart-4: 185 25% 55%;
-  --chart-5: 14 50% 55%;
+  --input: 30 10% 22%;
+  --ring: 24 70% 55%;
+  --chart-1: 24 70% 55%;
+  --chart-2: 45 80% 55%;
+  --chart-3: 180 30% 55%;
+  --chart-4: 220 35% 55%;
+  --chart-5: 0 60% 50%;
   --shadow-2xs: 0px 2px 0px 0px hsl(240 5% 96% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(240 5% 96% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(240 5% 96% / 0.00), 0px 1px 2px -1px hsl(240 5% 96% / 0.00);
@@ -389,19 +399,39 @@
    * ======================================== */
   
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--teal)), hsl(173 21% 45%));
+    background: linear-gradient(135deg, hsl(var(--peach)), hsl(var(--coral)));
   }
   
-  .gradient-sage {
-    background: linear-gradient(135deg, hsl(var(--sage)), hsl(98 12% 50%));
+  .gradient-peach {
+    background: linear-gradient(180deg, hsl(20 100% 97%), hsl(25 100% 94%));
+  }
+  
+  .dark .gradient-peach {
+    background: linear-gradient(180deg, hsl(30 15% 15%), hsl(25 12% 12%));
   }
   
   .gradient-warm {
-    background: linear-gradient(180deg, #FFFFFF, hsl(var(--beige)));
+    background: linear-gradient(180deg, hsl(40 30% 98%), hsl(35 35% 95%));
   }
   
   .dark .gradient-warm {
-    background: linear-gradient(180deg, hsl(var(--background)), hsl(220 18% 8%));
+    background: linear-gradient(180deg, hsl(30 10% 10%), hsl(30 8% 8%));
+  }
+  
+  .gradient-onboarding {
+    background: linear-gradient(180deg, hsl(20 100% 97%), hsl(30 80% 93%));
+  }
+  
+  .dark .gradient-onboarding {
+    background: linear-gradient(180deg, hsl(30 12% 14%), hsl(25 10% 10%));
+  }
+  
+  .gradient-amber-soft {
+    background: linear-gradient(135deg, hsl(35 90% 92%), hsl(40 85% 88%));
+  }
+  
+  .dark .gradient-amber-soft {
+    background: linear-gradient(135deg, hsl(35 40% 18%), hsl(40 35% 14%));
   }
 
   /* ========================================

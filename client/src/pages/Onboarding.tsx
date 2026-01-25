@@ -102,15 +102,15 @@ export default function Onboarding() {
   const displayPhase = currentPhase === 0 ? 1 : currentPhase;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen gradient-onboarding">
       <ProgressBar currentPhase={displayPhase} totalPhases={TOTAL_PHASES} />
       
       <div className="fixed top-3 right-4 z-50">
         <ThemeToggle />
       </div>
 
-      <main className="pt-20 pb-12">
-        <div className="max-w-2xl mx-auto px-6">
+      <main className="pt-24 pb-12">
+        <div className="max-w-lg mx-auto px-5">
           {renderPhase()}
         </div>
       </main>

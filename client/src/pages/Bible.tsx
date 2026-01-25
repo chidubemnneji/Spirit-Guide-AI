@@ -402,9 +402,8 @@ export default function Bible() {
   const verses = currentChapter ? parseVerses(currentChapter.content) : [];
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-20">
-      {/* iOS-style Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
+    <div className="min-h-screen bg-background pb-24">
+      <header className="sticky top-0 z-40 bg-card border-b border-border">
         {/* Chapter Title & Version with Bookmark on Right */}
         <div className="flex items-center justify-between py-4 px-4">
           <div className="w-10" /> {/* Spacer for balance */}

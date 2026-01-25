@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -72,147 +72,152 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="min-h-screen flex flex-col gradient-onboarding">
       <header className="flex items-center p-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setLocation("/")}
           data-testid="button-back"
+          className="rounded-full"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 pb-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="font-serif text-2xl">Create Your Account</CardTitle>
-            <CardDescription>
+      <main className="flex-1 flex flex-col justify-center px-6 pb-12">
+        <motion.div 
+          className="w-full max-w-md mx-auto space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="space-y-2">
+            <h1 className="font-serif text-3xl font-bold">Create account</h1>
+            <p className="text-muted-foreground">
               Start your personalized spiritual journey
-            </CardDescription>
-          </CardHeader>
+            </p>
+          </div>
           
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Your Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="How should we call you?"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  data-testid="input-name"
-                  className={errors.name ? "border-destructive" : ""}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">{errors.name}</p>
-                )}
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="How should we call you?"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="input-name"
+                className={`h-12 rounded-xl bg-card border-0 ${errors.name ? "ring-2 ring-destructive" : ""}`}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  data-testid="input-email"
-                  className={errors.email ? "border-destructive" : ""}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                data-testid="input-email"
+                className={`h-12 rounded-xl bg-card border-0 ${errors.email ? "ring-2 ring-destructive" : ""}`}
+              />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    data-testid="input-password"
-                    className={errors.password ? "border-destructive pr-10" : "pr-10"}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    data-testid="button-toggle-password"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-                <PasswordStrengthIndicator password={password} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <div className="relative">
                 <Input
-                  id="confirmPassword"
+                  id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  data-testid="input-confirm-password"
-                  className={confirmPassword && password !== confirmPassword ? "border-destructive" : ""}
+                  placeholder="Create a strong password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="input-password"
+                  className={`h-12 rounded-xl bg-card border-0 pr-12 ${errors.password ? "ring-2 ring-destructive" : ""}`}
                 />
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-sm text-destructive" data-testid="text-password-mismatch">
-                    Passwords don't match
-                  </p>
-                )}
-                {confirmPassword && password === confirmPassword && password && (
-                  <p className="text-sm text-green-600 dark:text-green-400" data-testid="text-password-match">
-                    Passwords match
-                  </p>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  data-testid="button-toggle-password"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </Button>
               </div>
+              <PasswordStrengthIndicator password={password} />
+            </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                data-testid="input-confirm-password"
+                className={`h-12 rounded-xl bg-card border-0 ${confirmPassword && password !== confirmPassword ? "ring-2 ring-destructive" : ""}`}
+              />
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-sm text-destructive" data-testid="text-password-mismatch">
+                  Passwords don't match
+                </p>
+              )}
+              {confirmPassword && password === confirmPassword && password && (
+                <p className="text-sm text-green-600 dark:text-green-400" data-testid="text-password-match">
+                  Passwords match
+                </p>
+              )}
+            </div>
+
+            <div className="pt-2">
               <Button
                 type="submit"
-                className="w-full"
-                size="lg"
+                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
                 disabled={isLoading || !canSubmit}
                 data-testid="button-signup"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Creating account...
                   </>
                 ) : (
                   "Create Account"
                 )}
               </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  className="font-semibold text-primary hover:underline"
-                  onClick={() => setLocation("/login")}
-                  data-testid="link-login"
-                >
-                  Sign in
-                </button>
-              </p>
             </div>
-          </CardContent>
-        </Card>
+          </form>
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <button
+                type="button"
+                className="font-semibold text-primary"
+                onClick={() => setLocation("/login")}
+                data-testid="link-login"
+              >
+                Sign in
+              </button>
+            </p>
+          </div>
+        </motion.div>
       </main>
     </div>
   );
