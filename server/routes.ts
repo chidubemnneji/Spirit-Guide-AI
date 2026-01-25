@@ -1,9 +1,10 @@
 import type { Express, Request, Response } from "express";
 import type { Session } from "express-session";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { assignPersona } from "./utils/personaAssignment";
-import { buildAISystemPrompt } from "./utils/aiPromptBuilder";
+import { buildAISystemPrompt, enhancePromptWithShameAwareness } from "./utils/aiPromptBuilder";
 import { bibleAPI } from "./bibleAPI";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -12,6 +13,38 @@ import { signupSchema, loginSchema } from "@shared/schema";
 import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
+import { emotionalIntelligence } from "./services/emotionalIntelligence";
+import { crisisDetection } from "./services/crisisDetection";
+import { memoryExtractor } from "./services/memoryExtractor";
+import { recommendationEngine } from "./services/recommendationEngine";
+import { trustTrackingService } from "./services/trustTrackingService";
+import { modeTransitionService } from "./services/modeTransitionService";
+import { shameLoggingService } from "./services/shameLoggingService";
+
+// Rate limiters for API protection
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { error: "Too many messages. Please wait a moment before sending more." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const aiGenerationLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many requests. Please wait before trying again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 interface SessionWithUser extends Session {
   userId?: number;
@@ -53,7 +86,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Auth: Signup
-  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+  app.post("/api/auth/signup", authLimiter, async (req: Request, res: Response) => {
     try {
       const parseResult = signupSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -98,7 +131,7 @@ export async function registerRoutes(
   });
 
   // Auth: Login
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  app.post("/api/auth/login", authLimiter, async (req: Request, res: Response) => {
     try {
       const parseResult = loginSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -157,7 +190,8 @@ export async function registerRoutes(
   // Auth: Get current user
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
       if (!userId) {
         return res.status(401).json({ success: false, error: "Not authenticated" });
       }
@@ -201,9 +235,7 @@ export async function registerRoutes(
         });
       }
       
-      // Note: In-memory storage currently aggregates all activity.
-      // For proper multi-user support, storage methods need userId scoping.
-      const stats = await storage.getUserStats();
+      const stats = await storage.getUserStats(userId);
       res.json(stats);
     } catch (error) {
       console.error("Get user stats error:", error);
@@ -230,10 +262,24 @@ export async function registerRoutes(
       }
 
       const onboardingData = parseResult.data;
-      const userId = (req.session as any)?.userId;
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
 
-      // Assign persona based on responses
-      const personaAssignment = assignPersona(onboardingData as any);
+      // Assign persona based on responses (transform optional fields)
+      const behavioralReality = onboardingData.behavioralReality ? {
+        dailyRhythm: onboardingData.behavioralReality.dailyRhythm ?? [],
+        pastConnectionMoment: onboardingData.behavioralReality.pastConnectionMoment ?? null,
+        connectionRecency: onboardingData.behavioralReality.connectionRecency ?? null,
+        peakEnergyTime: onboardingData.behavioralReality.peakEnergyTime ?? null,
+        obstacles: onboardingData.behavioralReality.obstacles ?? [],
+      } : null;
+      
+      const personaAssignment = assignPersona({
+        primaryStruggle: onboardingData.primaryStruggle ?? null,
+        depthLayer: onboardingData.depthLayer ?? null,
+        behavioralReality,
+        transformationGoals: onboardingData.transformationGoals ?? [],
+      });
 
       // Build persona object for storage with GRACE profile
       const graceProfile = personaAssignment.graceProfile;
@@ -416,7 +462,7 @@ export async function registerRoutes(
   });
 
   // Send message and get AI response (streaming)
-  app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
+  app.post("/api/conversations/:id/messages", chatLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
       if (isNaN(conversationId)) {
@@ -440,9 +486,10 @@ export async function registerRoutes(
       }
 
       // Get user and persona for system prompt
-      const userId = (req.session as any)?.userId;
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
       const user = userId ? await storage.getUser(userId) : null;
-      const persona = await storage.getPersona();
+      const persona = await storage.getPersona(userId);
 
       // Save user message
       await storage.createMessage({
@@ -463,10 +510,10 @@ export async function registerRoutes(
 
       // === ENHANCED AI INTELLIGENCE ===
       // Import services dynamically to avoid circular dependencies
-      const { emotionalIntelligence } = await import("./services/emotionalIntelligence");
-      const { crisisDetection } = await import("./services/crisisDetection");
-      const { memoryExtractor } = await import("./services/memoryExtractor");
-      const { enhancePromptWithShameAwareness } = await import("./utils/aiPromptBuilder");
+      
+      
+      
+      
 
       // Get recent message history for context
       const recentHistory = allMessages.slice(-6).map(m => `${m.role}: ${m.content}`);
@@ -597,7 +644,7 @@ I'm here to listen whenever you're ready to talk.`;
         let fallbackCards: any[] = [];
         if (userTurnCount >= 4) {
           try {
-            const { recommendationEngine } = await import("./services/recommendationEngine");
+            
             const cardData = await recommendationEngine.generateRecommendationCards(
               content,
               persona || null,
@@ -659,7 +706,7 @@ I'm here to listen whenever you're ready to talk.`;
         let recommendationCards: any[] = [];
         if (userTurnCount >= 4) {
           try {
-            const { recommendationEngine } = await import("./services/recommendationEngine");
+            
             const cardData = await recommendationEngine.generateRecommendationCards(
               content,
               persona || null,
@@ -688,7 +735,7 @@ I'm here to listen whenever you're ready to talk.`;
         // Track trust events based on session behavior
         if (userId) {
           try {
-            const { trustTrackingService } = await import("./services/trustTrackingService");
+            
             
             // Track long sessions (6+ exchanges)
             if (userTurnCount >= 6 && userTurnCount % 3 === 0) {
@@ -736,7 +783,7 @@ I'm here to listen whenever you're ready to talk.`;
         console.log(`[Chat] AI error path: userTurnCount=${userTurnCount}, generating cards: ${userTurnCount >= 4}`);
         if (userTurnCount >= 4) {
           try {
-            const { recommendationEngine } = await import("./services/recommendationEngine");
+            
             const cardData = await recommendationEngine.generateRecommendationCards(
               content,
               persona || null,
@@ -831,7 +878,7 @@ I'm here to listen whenever you're ready to talk.`;
       const session = req.session as SessionWithUser;
       if (session.userId) {
         try {
-          const { trustTrackingService } = await import("./services/trustTrackingService");
+          
           await trustTrackingService.recordTrustEvent(session.userId, "accepted_suggestion", {
             cardId,
             practiceType: card.practiceType,
@@ -869,7 +916,7 @@ I'm here to listen whenever you're ready to talk.`;
       const session = req.session as SessionWithUser;
       if (session.userId) {
         try {
-          const { trustTrackingService } = await import("./services/trustTrackingService");
+          
           if (rating >= 4) {
             await trustTrackingService.recordTrustEvent(session.userId, "gave_positive_feedback", {
               cardId,
@@ -1059,7 +1106,7 @@ I'm here to listen whenever you're ready to talk.`;
       // Track bookmarked content for trust building (only when bookmarking, not unbookmarking)
       if (isBookmarked) {
         try {
-          const { trustTrackingService } = await import("./services/trustTrackingService");
+          
           await trustTrackingService.recordTrustEvent(session.userId, "bookmarked_content", {
             devotionalId,
             contentType: "devotional"
@@ -1189,7 +1236,7 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(400).json({ error: "Missing eventType" });
       }
 
-      const { trustTrackingService } = await import("./services/trustTrackingService");
+      
       
       if (!trustTrackingService.isValidEventType(eventType)) {
         const validTypes = [
@@ -1231,7 +1278,7 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(401).json({ success: false, error: "Not authenticated" });
       }
 
-      const { trustTrackingService } = await import("./services/trustTrackingService");
+      
       const trustProfile = await trustTrackingService.getTrustProfile(session.userId);
       
       if (!trustProfile) {
@@ -1257,7 +1304,7 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(401).json({ success: false, error: "Not authenticated" });
       }
 
-      const { modeTransitionService } = await import("./services/modeTransitionService");
+      
       const modeInfo = await modeTransitionService.getCurrentMode(session.userId);
       
       if (!modeInfo) {
@@ -1295,7 +1342,7 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(400).json({ error: "Missing newMode" });
       }
 
-      const { modeTransitionService } = await import("./services/modeTransitionService");
+      
       
       if (!modeTransitionService.isValidMode(newMode)) {
         return res.status(400).json({ 
@@ -1373,7 +1420,7 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(400).json({ error: "All items in triggers must be strings" });
       }
 
-      const { shameLoggingService } = await import("./services/shameLoggingService");
+      
       
       if (!shameLoggingService.isValidShameLevel(level)) {
         return res.status(400).json({ 
@@ -1415,7 +1462,7 @@ I'm here to listen whenever you're ready to talk.`;
 
       const limit = parseInt(req.query.limit as string) || 10;
       
-      const { shameLoggingService } = await import("./services/shameLoggingService");
+      
       const detections = await shameLoggingService.getRecentDetections(session.userId, limit);
       
       res.json({ success: true, data: detections });

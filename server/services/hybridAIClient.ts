@@ -38,7 +38,7 @@ async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<S
   const { systemPrompt, messages, maxTokens = 1024 } = options;
 
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-5",
+    model: process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5",
     max_tokens: maxTokens,
     system: systemPrompt,
     messages: messages.map((m) => ({
@@ -70,7 +70,7 @@ async function* streamFromOpenAI(options: HybridStreamOptions): AsyncGenerator<S
   ];
 
   const stream = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: process.env.FALLBACK_AI_MODEL || "gpt-4o-mini",
     messages: openaiMessages,
     max_tokens: maxTokens,
     stream: true,

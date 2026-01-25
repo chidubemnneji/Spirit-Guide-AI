@@ -58,6 +58,7 @@ export const userPersonas = pgTable("user_personas", {
 // Conversations table
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
   personaId: integer("persona_id"),
   title: text("title").default("New Conversation"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),

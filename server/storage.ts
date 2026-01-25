@@ -60,14 +60,17 @@ export interface IStorage {
   completeRecommendationCard(id: number): Promise<void>;
   rateRecommendationCard(id: number, rating: number): Promise<void>;
 
-  // User Stats
-  getUserStats(): Promise<{
+  // User Stats (scoped to specific user)
+  getUserStats(userId: number): Promise<{
     conversationCount: number;
     messageCount: number;
     practicesCompleted: number;
     currentStreak: number;
     longestStreak: number;
   }>;
+
+  // Conversations by user
+  getConversationsByUser(userId: number): Promise<Conversation[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -167,6 +170,16 @@ export class MemStorage implements IStorage {
       transformationGoals: persona.transformationGoals ?? null,
       primaryPersona: persona.primaryPersona ?? null,
       personaModifiers: persona.personaModifiers ?? null,
+      graceArchetype: persona.graceArchetype ?? null,
+      graceTrust: persona.graceTrust ?? null,
+      graceMode: persona.graceMode ?? null,
+      graceEvolution: persona.graceEvolution ?? null,
+      graceBehavioralSignals: persona.graceBehavioralSignals ?? null,
+      graceContentProfile: persona.graceContentProfile ?? null,
+      graceSafetyProfile: persona.graceSafetyProfile ?? null,
+      graceSensitivity: persona.graceSensitivity ?? null,
+      graceTradition: persona.graceTradition ?? null,
+      graceScores: persona.graceScores ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -202,6 +215,7 @@ export class MemStorage implements IStorage {
     const id = this.nextConversationId++;
     const newConversation: Conversation = {
       id,
+      userId: conversation.userId ?? null,
       title: conversation.title || "New Conversation",
       personaId: conversation.personaId || null,
       createdAt: new Date(),
@@ -374,19 +388,30 @@ export class MemStorage implements IStorage {
     }
   }
 
-  // User Stats
-  async getUserStats(): Promise<{
+  // Get conversations by user
+  async getConversationsByUser(userId: number): Promise<Conversation[]> {
+    return Array.from(this.conversations.values())
+      .filter(c => c.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // User Stats (scoped to specific user)
+  async getUserStats(userId: number): Promise<{
     conversationCount: number;
     messageCount: number;
     practicesCompleted: number;
     currentStreak: number;
     longestStreak: number;
   }> {
-    const conversations = Array.from(this.conversations.values());
-    const messages = Array.from(this.messages.values());
-    const cards = Array.from(this.recommendationCards.values());
+    const userConversations = Array.from(this.conversations.values()).filter(c => c.userId === userId);
+    const userConversationIds = new Set(userConversations.map(c => c.id));
+    const messages = Array.from(this.messages.values()).filter(m => userConversationIds.has(m.conversationId));
+    const cards = Array.from(this.recommendationCards.values()).filter(c => {
+      const msg = Array.from(this.messages.values()).find(m => m.id === c.messageId);
+      return msg && userConversationIds.has(msg.conversationId);
+    });
     
-    const conversationCount = conversations.length;
+    const conversationCount = userConversations.length;
     const messageCount = messages.filter(m => m.role === "user").length;
     const practicesCompleted = cards.filter(c => c.completed === 1).length;
     
