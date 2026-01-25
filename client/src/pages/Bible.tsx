@@ -1002,14 +1002,14 @@ export default function Bible() {
 
         {currentChapter && verses.length > 0 && (
           <>
-            {/* Action bar for highlighted verses */}
+            {/* Action bar for highlighted verses - fixed at bottom */}
             <AnimatePresence>
               {highlightedVerses.size > 0 && (
                 <motion.div
-                  initial={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="sticky top-[105px] z-30 mb-4"
+                  exit={{ opacity: 0, y: 20 }}
+                  className="fixed bottom-20 left-4 right-4 z-30"
                 >
                   <Card className="p-2 shadow-lg">
                     <div className="flex items-center justify-between gap-2">
