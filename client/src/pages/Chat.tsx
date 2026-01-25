@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cross, HelpCircle, Sunrise, Lightbulb, ArrowRight, CloudRain, Minus, Sun, Mic, MicOff, Volume2 } from "lucide-react";
+import { ArrowUp, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cross, HelpCircle, Sunrise, Lightbulb, ArrowRight, CloudRain, Minus, Sun, Mic, MicOff, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
@@ -715,7 +715,7 @@ export default function Chat() {
                   {isStreaming ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <ArrowUp className="w-4 h-4" />
                   )}
                 </Button>
               </motion.div>
