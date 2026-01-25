@@ -1,13 +1,13 @@
 import { useLocation, Link } from "wouter";
-import { Home, Compass, BookOpen, User } from "lucide-react";
+import { Home, Heart, BookOpen, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 
 const navItems = [
   { path: "/devotion", icon: Home, label: "Home" },
-  { path: "/chat", icon: Compass, label: "Explore" },
-  { path: "/bible", icon: BookOpen, label: "Journey" },
+  { path: "/chat", icon: Heart, label: "Soul Care" },
+  { path: "/bible", icon: BookOpen, label: "Word" },
   { path: "/account", icon: User, label: "Profile" },
 ];
 
@@ -25,7 +25,7 @@ export function BottomNav() {
           exit={{ y: 100 }}
           transition={{ type: "spring", damping: 28, stiffness: 350 }}
         >
-          <div className="flex items-center justify-around h-20 max-w-lg mx-auto px-4 pb-4 pt-2">
+          <div className="flex items-center justify-around gap-2 h-20 max-w-lg mx-auto px-4 pb-4 pt-2">
             {navItems.map((item) => {
               const isActive = location === item.path || 
                 (item.path === "/chat" && location === "/transition") ||

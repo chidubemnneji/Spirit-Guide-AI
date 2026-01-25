@@ -1,0 +1,676 @@
+// ============================================
+// SOULGUIDE - PRAYER CIRCLE (COMMUNITY)
+// Matches Cross app "Circle" design + AI advantages
+// ============================================
+
+import SwiftUI
+
+// MARK: - Prayer Circle View Model
+
+@MainActor
+class PrayerCircleViewModel: ObservableObject {
+    @Published var selectedTab: PrayerTab = .live
+    @Published var activePrayerCount: Int = 1942
+    @Published var livePrayers: [LivePrayerRequest] = []
+    @Published var pendingPrayers: [PendingPrayerRequest] = []
+    @Published var globalPrayers: [GlobalPrayerRequest] = []
+    
+    @Published var isLoading: Bool = false
+    @Published var showCreatePrayer: Bool = false
+    @Published var selectedPrayer: LivePrayerRequest?
+    
+    enum PrayerTab {
+        case live
+        case global
+    }
+    
+    init() {
+        loadPrayers()
+        startLiveUpdates()
+    }
+    
+    func loadPrayers() {
+        // Live prayers (happening now)
+        livePrayers = [
+            LivePrayerRequest(
+                id: UUID(),
+                userName: "David",
+                content: "I used to be friends with this one girl and I broke up my friendship with her because she made me uncomfortable...",
+                timeRemaining: 47,
+                currentPrayers: 23,
+                emotion: .struggling
+            )
+        ]
+        
+        // Pending prayers (coming up)
+        pendingPrayers = [
+            PendingPrayerRequest(
+                id: UUID(),
+                userName: "Sarah",
+                content: "I used to be friends with this one girl and I broke up my friendship with her because she made me uncomfortable...",
+                startsIn: 60
+            ),
+            PendingPrayerRequest(
+                id: UUID(),
+                userName: "Michael",
+                content: "I used to be friends with this one girl and I broke up my friendship with her because she made me uncomfortable...",
+                startsIn: 120
+            )
+        ]
+    }
+    
+    func startLiveUpdates() {
+        // Simulate live counter updates
+        Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.activePrayerCount += Int.random(in: -5...10)
+            }
+        }
+    }
+    
+    func joinPrayer(_ prayer: LivePrayerRequest) {
+        selectedPrayer = prayer
+    }
+}
+
+// MARK: - Prayer Models
+
+struct LivePrayerRequest: Identifiable {
+    let id: UUID
+    let userName: String
+    let content: String
+    var timeRemaining: Int // seconds
+    var currentPrayers: Int
+    let emotion: UserEmotion
+    
+    enum UserEmotion {
+        case struggling, anxious, grateful, hopeful
+    }
+}
+
+struct PendingPrayerRequest: Identifiable {
+    let id: UUID
+    let userName: String
+    let content: String
+    var startsIn: Int // seconds
+}
+
+struct GlobalPrayerRequest: Identifiable {
+    let id: UUID
+    let userName: String
+    let content: String
+    let prayerCount: Int
+    let heartCount: Int
+    let aiGeneratedPrayer: String
+    let createdAt: Date
+}
+
+// MARK: - Prayer Circle View
+
+struct PrayerCircleView: View {
+    @StateObject private var viewModel = PrayerCircleViewModel()
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            DesignTokens.Colors.background
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                PrayerCircleHeader()
+                
+                // Tab Selector
+                PrayerTabSelector(selectedTab: $viewModel.selectedTab)
+                
+                // Live Counter
+                LivePrayerCounter(count: viewModel.activePrayerCount)
+                    .padding(.top, DesignTokens.Spacing.lg)
+                
+                // Content
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+                        if viewModel.selectedTab == .live {
+                            LivePrayerContent(viewModel: viewModel)
+                        } else {
+                            GlobalPrayerContent(viewModel: viewModel)
+                        }
+                        
+                        Spacer().frame(height: 100)
+                    }
+                    .padding(.horizontal, DesignTokens.Spacing.md)
+                    .padding(.top, DesignTokens.Spacing.md)
+                }
+                
+                Spacer()
+            }
+            
+            // Floating Add Button
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    AddPrayerButton {
+                        viewModel.showCreatePrayer = true
+                    }
+                    .padding(.trailing, DesignTokens.Spacing.md)
+                    .padding(.bottom, 100)
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.showCreatePrayer) {
+            CreatePrayerView()
+        }
+        .sheet(item: $viewModel.selectedPrayer) { prayer in
+            PrayerSessionView(prayer: prayer)
+        }
+    }
+}
+
+// MARK: - Prayer Circle Header
+
+struct PrayerCircleHeader: View {
+    var body: some View {
+        HStack {
+            ProfileAvatar(size: 36)
+            
+            Spacer()
+            
+            Button(action: {}) {
+                HStack(spacing: DesignTokens.Spacing.xs) {
+                    Image(systemName: "headphones")
+                        .font(.system(size: 14))
+                    Text("My Prayer Wall")
+                        .font(DesignTokens.Typography.labelMedium)
+                }
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                .padding(.horizontal, DesignTokens.Spacing.sm)
+                .padding(.vertical, DesignTokens.Spacing.xs)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignTokens.Radius.full)
+                        .stroke(Color(hex: "E0E0E0"), lineWidth: 1)
+                )
+            }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+    }
+}
+
+// MARK: - Tab Selector
+
+struct PrayerTabSelector: View {
+    @Binding var selectedTab: PrayerCircleViewModel.PrayerTab
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            TabButton(
+                title: "Live Prayer",
+                isSelected: selectedTab == .live,
+                action: { selectedTab = .live }
+            )
+            
+            TabButton(
+                title: "Global Prayers",
+                isSelected: selectedTab == .global,
+                action: { selectedTab = .global }
+            )
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+    }
+}
+
+struct TabButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: DesignTokens.Spacing.xs) {
+                Text(title)
+                    .font(DesignTokens.Typography.labelLarge)
+                    .foregroundColor(isSelected ? DesignTokens.Colors.textPrimary : DesignTokens.Colors.textTertiary)
+                
+                Rectangle()
+                    .fill(isSelected ? DesignTokens.Colors.textPrimary : Color.clear)
+                    .frame(height: 2)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+// MARK: - Live Prayer Counter
+
+struct LivePrayerCounter: View {
+    let count: Int
+    
+    var body: some View {
+        HStack(spacing: DesignTokens.Spacing.xs) {
+            Text("\(count.formatted())")
+                .font(DesignTokens.Typography.displayMedium)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+            
+            Text("believers praying")
+                .font(DesignTokens.Typography.bodyLarge)
+                .foregroundColor(DesignTokens.Colors.textSecondary)
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+    }
+}
+
+// MARK: - Live Prayer Content
+
+struct LivePrayerContent: View {
+    @ObservedObject var viewModel: PrayerCircleViewModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            // Happening Now Section
+            if !viewModel.livePrayers.isEmpty {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                    Text("Happening Now")
+                        .font(DesignTokens.Typography.labelMedium)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                    
+                    ForEach(viewModel.livePrayers) { prayer in
+                        LivePrayerCard(
+                            prayer: prayer,
+                            onJoin: { viewModel.joinPrayer(prayer) }
+                        )
+                    }
+                }
+            }
+            
+            // Pending Prayers Section
+            if !viewModel.pendingPrayers.isEmpty {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                    Text("Pending Prayer Request")
+                        .font(DesignTokens.Typography.labelMedium)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                    
+                    ForEach(viewModel.pendingPrayers) { prayer in
+                        PendingPrayerCard(prayer: prayer)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Live Prayer Card
+
+struct LivePrayerCard: View {
+    let prayer: LivePrayerRequest
+    let onJoin: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            // Time badge
+            HStack {
+                Text("\(prayer.timeRemaining)S LEFT")
+                    .font(DesignTokens.Typography.labelSmall)
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+                    .padding(.horizontal, DesignTokens.Spacing.xs)
+                    .padding(.vertical, DesignTokens.Spacing.xxxs)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.sm)
+                            .stroke(Color(hex: "E0E0E0"), lineWidth: 1)
+                    )
+                
+                Spacer()
+                
+                // Live indicator
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 6, height: 6)
+                    Text("\(prayer.currentPrayers) praying")
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                }
+            }
+            
+            // Content
+            Text(prayer.content)
+                .font(DesignTokens.Typography.bodyLarge)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                .lineLimit(3)
+            
+            // Join Button
+            Button(action: onJoin) {
+                Text("Join in Prayer")
+                    .font(DesignTokens.Typography.labelLarge)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignTokens.Radius.md)
+                            .stroke(DesignTokens.Colors.textPrimary, lineWidth: 1.5)
+                    )
+            }
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - Pending Prayer Card
+
+struct PendingPrayerCard: View {
+    let prayer: PendingPrayerRequest
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            // Time badge
+            Text("START IN \(formatTime(prayer.startsIn))")
+                .font(DesignTokens.Typography.labelSmall)
+                .foregroundColor(DesignTokens.Colors.textTertiary)
+                .padding(.horizontal, DesignTokens.Spacing.xs)
+                .padding(.vertical, DesignTokens.Spacing.xxxs)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignTokens.Radius.sm)
+                        .stroke(Color(hex: "E0E0E0"), lineWidth: 1)
+                )
+            
+            // Content
+            Text(prayer.content)
+                .font(DesignTokens.Typography.bodyLarge)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                .lineLimit(3)
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+    
+    private func formatTime(_ seconds: Int) -> String {
+        if seconds < 60 {
+            return "\(seconds) SEC"
+        } else {
+            return "\(seconds / 60) MIN"
+        }
+    }
+}
+
+// MARK: - Global Prayer Content
+
+struct GlobalPrayerContent: View {
+    @ObservedObject var viewModel: PrayerCircleViewModel
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.md) {
+            ForEach(viewModel.globalPrayers) { prayer in
+                GlobalPrayerCard(prayer: prayer)
+            }
+        }
+    }
+}
+
+struct GlobalPrayerCard: View {
+    let prayer: GlobalPrayerRequest
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            HStack {
+                ProfileAvatar(size: 32)
+                Text(prayer.userName)
+                    .font(DesignTokens.Typography.labelLarge)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                Spacer()
+                Text(timeAgo(prayer.createdAt))
+                    .font(DesignTokens.Typography.caption)
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+            }
+            
+            Text(prayer.content)
+                .font(DesignTokens.Typography.bodyMedium)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+            
+            HStack(spacing: DesignTokens.Spacing.md) {
+                HStack(spacing: DesignTokens.Spacing.xxs) {
+                    Image(systemName: "hands.clap")
+                    Text("\(prayer.prayerCount)")
+                }
+                
+                HStack(spacing: DesignTokens.Spacing.xxs) {
+                    Image(systemName: "heart")
+                    Text("\(prayer.heartCount)")
+                }
+                
+                Spacer()
+            }
+            .font(DesignTokens.Typography.caption)
+            .foregroundColor(DesignTokens.Colors.textTertiary)
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+    
+    private func timeAgo(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+// MARK: - Add Prayer Button
+
+struct AddPrayerButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundColor(.white)
+                .frame(width: 56, height: 56)
+                .background(DesignTokens.Colors.primary)
+                .cornerRadius(DesignTokens.Radius.full)
+                .shadow(color: DesignTokens.Colors.primary.opacity(0.4), radius: 12, x: 0, y: 4)
+        }
+    }
+}
+
+// MARK: - Prayer Session View (Full Screen)
+
+struct PrayerSessionView: View {
+    let prayer: LivePrayerRequest
+    @Environment(\.dismiss) private var dismiss
+    @State private var aiGeneratedPrayer: String = ""
+    @State private var isPlaying: Bool = false
+    @State private var hasHearted: Bool = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.vertical, DesignTokens.Spacing.sm)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+                    // Title
+                    Text("Pray for \(prayer.userName)")
+                        .font(DesignTokens.Typography.displaySmall)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                    
+                    // Original Request
+                    Text(prayer.content)
+                        .font(DesignTokens.Typography.bodyMedium)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                        .padding(DesignTokens.Spacing.md)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "E8F4F8"), Color(hex: "F5F9FB")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(DesignTokens.Radius.md)
+                    
+                    // AI Generated Prayer
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                        Text("Your Prayer for \(prayer.userName)")
+                            .font(DesignTokens.Typography.caption)
+                            .foregroundColor(DesignTokens.Colors.textTertiary)
+                        
+                        Text("""
+                        Dear God, we lift up \(prayer.userName) to You, seeking Your divine guidance and provision. Please bless her finances, providing the resources she needs to support her family. Draw her closer to You, rekindling her faith and strengthening her relationship with You.
+                        
+                        Grant \(prayer.userName) wisdom and perseverance in her studies, helping her to succeed and achieve her goals. May she find peace and assurance in Your presence, trusting in Your perfect plan for her life.
+                        """)
+                            .font(DesignTokens.Typography.bodyLarge)
+                            .foregroundColor(DesignTokens.Colors.textPrimary)
+                            .lineSpacing(6)
+                    }
+                    
+                    Spacer().frame(height: DesignTokens.Spacing.xxl)
+                }
+                .padding(.horizontal, DesignTokens.Spacing.md)
+            }
+            
+            // Audio Controls
+            VStack(spacing: DesignTokens.Spacing.lg) {
+                // Playback controls
+                HStack(spacing: DesignTokens.Spacing.xxl) {
+                    // Audio wave
+                    Image(systemName: "waveform")
+                        .font(.system(size: 24))
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                    
+                    // Play button
+                    Button(action: { isPlaying.toggle() }) {
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                            .frame(width: 56, height: 56)
+                            .background(DesignTokens.Colors.textPrimary)
+                            .cornerRadius(DesignTokens.Radius.full)
+                    }
+                    
+                    // Repeat
+                    Button(action: {}) {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 24))
+                            .foregroundColor(DesignTokens.Colors.textTertiary)
+                    }
+                }
+                
+                // Heart & Comment
+                HStack(spacing: DesignTokens.Spacing.xxl) {
+                    Button(action: { hasHearted.toggle() }) {
+                        VStack(spacing: DesignTokens.Spacing.xxs) {
+                            Image(systemName: hasHearted ? "heart.fill" : "heart")
+                                .font(.system(size: 24))
+                                .foregroundColor(hasHearted ? .red : DesignTokens.Colors.textPrimary)
+                            Text("Heart")
+                                .font(DesignTokens.Typography.caption)
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
+                        }
+                    }
+                    
+                    Button(action: {}) {
+                        VStack(spacing: DesignTokens.Spacing.xxs) {
+                            Image(systemName: "message")
+                                .font(.system(size: 24))
+                                .foregroundColor(DesignTokens.Colors.textPrimary)
+                            Text("Comment")
+                                .font(DesignTokens.Typography.caption)
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, DesignTokens.Spacing.xl)
+            .background(DesignTokens.Colors.surface)
+        }
+        .background(DesignTokens.Colors.background)
+    }
+}
+
+// MARK: - Create Prayer View
+
+struct CreatePrayerView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var prayerContent: String = ""
+    @State private var isAnonymous: Bool = false
+    @State private var isSubmitting: Bool = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: DesignTokens.Spacing.lg) {
+                // Text input
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                    Text("Share your prayer request")
+                        .font(DesignTokens.Typography.labelMedium)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                    
+                    TextEditor(text: $prayerContent)
+                        .font(DesignTokens.Typography.bodyLarge)
+                        .frame(minHeight: 150)
+                        .padding(DesignTokens.Spacing.sm)
+                        .background(DesignTokens.Colors.surfaceSecondary)
+                        .cornerRadius(DesignTokens.Radius.md)
+                }
+                
+                // Anonymous toggle
+                Toggle(isOn: $isAnonymous) {
+                    HStack {
+                        Image(systemName: "eye.slash")
+                        Text("Post anonymously")
+                    }
+                    .font(DesignTokens.Typography.bodyMedium)
+                }
+                .tint(DesignTokens.Colors.primary)
+                
+                Spacer()
+                
+                // Submit button
+                PrimaryButton(
+                    title: "Request Prayer",
+                    action: submitPrayer,
+                    isLoading: isSubmitting
+                )
+            }
+            .padding(DesignTokens.Spacing.md)
+            .navigationTitle("New Prayer Request")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+    
+    private func submitPrayer() {
+        isSubmitting = true
+        // API call here
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            isSubmitting = false
+            dismiss()
+        }
+    }
+}
+
+// MARK: - Preview
+
+struct PrayerCircleView_Previews: PreviewProvider {
+    static var previews: some View {
+        PrayerCircleView()
+    }
+}

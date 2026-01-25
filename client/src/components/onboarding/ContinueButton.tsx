@@ -31,8 +31,8 @@ export function ContinueButton({
         size="lg"
         data-testid="button-continue"
         className={cn(
-          "w-full h-14 text-base font-semibold rounded-2xl transition-all duration-300",
-          !disabled && "bg-primary shadow-lg shadow-primary/25",
+          "w-full text-base font-semibold rounded-2xl transition-all duration-300",
+          !disabled && "shadow-lg shadow-primary/25",
           disabled && "bg-muted text-muted-foreground"
         )}
       >

@@ -1,0 +1,433 @@
+// ============================================
+// SOULGUIDE - BIBLE VIEW (THE LIVING WORD)
+// Matches Cross app Bible section
+// ============================================
+
+import SwiftUI
+
+// MARK: - Bible View Model
+
+@MainActor
+class BibleViewModel: ObservableObject {
+    @Published var searchQuery: String = ""
+    @Published var isSearching: Bool = false
+    @Published var searchResults: [BibleVerse] = []
+    @Published var savedVerses: [BibleVerse] = []
+    @Published var dailyVerse: BibleVerse?
+    @Published var streakCount: Int = 12
+    
+    let quickPrompts = [
+        QuickPrompt(icon: "questionmark.circle", text: "What does God say about my anxiety?", color: .primary),
+        QuickPrompt(icon: "heart.fill", text: "Help me forgive someone", color: .red)
+    ]
+    
+    init() {
+        loadDailyVerse()
+    }
+    
+    func loadDailyVerse() {
+        dailyVerse = BibleVerse(
+            reference: "Psalm 46:10",
+            text: "Be still, and know that I am God.",
+            translation: "NIV"
+        )
+    }
+    
+    func search() {
+        guard !searchQuery.isEmpty else { return }
+        isSearching = true
+        
+        // Simulate search
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.isSearching = false
+            self?.searchResults = [
+                BibleVerse(reference: "Philippians 4:6-7", text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.", translation: "NIV"),
+                BibleVerse(reference: "Matthew 6:34", text: "Therefore do not worry about tomorrow, for tomorrow will worry about itself.", translation: "NIV"),
+                BibleVerse(reference: "1 Peter 5:7", text: "Cast all your anxiety on him because he cares for you.", translation: "NIV")
+            ]
+        }
+    }
+}
+
+struct BibleVerse: Identifiable {
+    let id = UUID()
+    let reference: String
+    let text: String
+    let translation: String
+}
+
+struct QuickPrompt: Identifiable {
+    let id = UUID()
+    let icon: String
+    let text: String
+    let color: Color
+}
+
+// MARK: - Bible View
+
+struct BibleView: View {
+    @StateObject private var viewModel = BibleViewModel()
+    @State private var selectedTab: BottomNavigation.Tab = .bible
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            DesignTokens.Colors.background
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                BibleHeader(streakCount: viewModel.streakCount)
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+                        // Title
+                        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                            Text("The Living Word")
+                                .font(DesignTokens.Typography.displayMedium)
+                                .foregroundColor(DesignTokens.Colors.textPrimary)
+                            
+                            Text("Every answer you need is already written. Let me help you find it.")
+                                .font(DesignTokens.Typography.bodyMedium)
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
+                        }
+                        .padding(.horizontal, DesignTokens.Spacing.md)
+                        
+                        // Search Bar
+                        BibleSearchBar(
+                            query: $viewModel.searchQuery,
+                            onSearch: viewModel.search
+                        )
+                        .padding(.horizontal, DesignTokens.Spacing.md)
+                        
+                        // Quick Prompts
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: DesignTokens.Spacing.sm) {
+                                ForEach(viewModel.quickPrompts) { prompt in
+                                    QuickPromptChip(prompt: prompt) {
+                                        viewModel.searchQuery = prompt.text
+                                        viewModel.search()
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, DesignTokens.Spacing.md)
+                        }
+                        
+                        // Search Results or Default Content
+                        if viewModel.isSearching {
+                            SearchingView()
+                        } else if !viewModel.searchResults.isEmpty {
+                            SearchResultsView(results: viewModel.searchResults)
+                        } else {
+                            DefaultBibleContent(
+                                dailyVerse: viewModel.dailyVerse,
+                                savedCount: viewModel.savedVerses.count
+                            )
+                        }
+                        
+                        Spacer().frame(height: 100)
+                    }
+                    .padding(.top, DesignTokens.Spacing.md)
+                }
+                
+                Spacer()
+            }
+            
+            BottomNavigation(selectedTab: $selectedTab)
+        }
+    }
+}
+
+// MARK: - Bible Header
+
+struct BibleHeader: View {
+    let streakCount: Int
+    
+    var body: some View {
+        HStack {
+            ProfileAvatar(size: 36)
+            
+            Spacer()
+            
+            StreakBadge(count: streakCount)
+            
+            Spacer()
+            
+            Button(action: {}) {
+                Image(systemName: "bell")
+                    .font(.system(size: 20))
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+            }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+    }
+}
+
+// MARK: - Search Bar
+
+struct BibleSearchBar: View {
+    @Binding var query: String
+    let onSearch: () -> Void
+    
+    var body: some View {
+        HStack(spacing: DesignTokens.Spacing.sm) {
+            TextField("Ask me anything about the Bible...", text: $query)
+                .font(DesignTokens.Typography.bodyMedium)
+                .onSubmit(onSearch)
+            
+            Button(action: onSearch) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18))
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+            }
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surfaceSecondary)
+        .cornerRadius(DesignTokens.Radius.md)
+    }
+}
+
+// MARK: - Quick Prompt Chip
+
+struct QuickPromptChip: View {
+    let prompt: QuickPrompt
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                Image(systemName: prompt.icon)
+                    .font(.system(size: 14))
+                Text(prompt.text)
+                    .font(DesignTokens.Typography.bodySmall)
+            }
+            .foregroundColor(DesignTokens.Colors.textSecondary)
+            .padding(.horizontal, DesignTokens.Spacing.sm)
+            .padding(.vertical, DesignTokens.Spacing.xs)
+            .background(DesignTokens.Colors.surface)
+            .cornerRadius(DesignTokens.Radius.full)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.full)
+                    .stroke(Color(hex: "E8E8E8"), lineWidth: 1)
+            )
+        }
+    }
+}
+
+// MARK: - Searching View
+
+struct SearchingView: View {
+    @State private var dotCount: Int = 0
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            Spacer()
+            
+            VStack(spacing: DesignTokens.Spacing.md) {
+                // Book icon
+                Image(systemName: "book.pages")
+                    .font(.system(size: 48))
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+                
+                Text("Searching 31,102 verses\(String(repeating: ".", count: dotCount))")
+                    .font(DesignTokens.Typography.displaySmall)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                
+                Text("Letting the Word guide us")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+            }
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .onAppear {
+            startDotAnimation()
+        }
+    }
+    
+    private func startDotAnimation() {
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            dotCount = (dotCount + 1) % 4
+        }
+    }
+}
+
+// MARK: - Search Results
+
+struct SearchResultsView: View {
+    let results: [BibleVerse]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+            Text("RELEVANT VERSES")
+                .font(DesignTokens.Typography.labelSmall)
+                .foregroundColor(DesignTokens.Colors.textTertiary)
+                .tracking(1.2)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            ForEach(results) { verse in
+                VerseCard(verse: verse)
+            }
+        }
+    }
+}
+
+struct VerseCard: View {
+    let verse: BibleVerse
+    @State private var isBookmarked: Bool = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            HStack {
+                Text(verse.reference)
+                    .font(DesignTokens.Typography.labelLarge)
+                    .foregroundColor(DesignTokens.Colors.primary)
+                
+                Text(verse.translation)
+                    .font(DesignTokens.Typography.caption)
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+                    .padding(.horizontal, DesignTokens.Spacing.xs)
+                    .padding(.vertical, 2)
+                    .background(DesignTokens.Colors.surfaceSecondary)
+                    .cornerRadius(DesignTokens.Radius.sm)
+                
+                Spacer()
+                
+                Button(action: { isBookmarked.toggle() }) {
+                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+                        .foregroundColor(isBookmarked ? DesignTokens.Colors.primary : DesignTokens.Colors.textTertiary)
+                }
+            }
+            
+            Text(verse.text)
+                .font(DesignTokens.Typography.bodyMedium)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                .lineSpacing(4)
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+        .padding(.horizontal, DesignTokens.Spacing.md)
+    }
+}
+
+// MARK: - Default Bible Content
+
+struct DefaultBibleContent: View {
+    let dailyVerse: BibleVerse?
+    let savedCount: Int
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.md) {
+            // Full Bible Reader Card
+            NavigationCard(
+                badge: "NIV VERSION",
+                badgeColor: DesignTokens.Colors.primary,
+                title: "Full Bible Reader",
+                subtitle: "Read scripture in your preferred translation",
+                icon: "book.fill"
+            )
+            
+            // Verse Collection Card
+            NavigationCard(
+                badge: "\(savedCount) VERSES SAVED",
+                badgeColor: DesignTokens.Colors.textTertiary,
+                title: "Your Verse Collection",
+                subtitle: "Verses you have bookmarked and memorized",
+                icon: "star.fill"
+            )
+            
+            // Daily Verse Widget Preview
+            if let verse = dailyVerse {
+                DailyVerseWidget(verse: verse)
+            }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+    }
+}
+
+struct NavigationCard: View {
+    let badge: String
+    let badgeColor: Color
+    let title: String
+    let subtitle: String
+    let icon: String
+    
+    var body: some View {
+        Button(action: {}) {
+            HStack {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                    Text(badge)
+                        .font(DesignTokens.Typography.labelSmall)
+                        .foregroundColor(badgeColor)
+                        .tracking(1)
+                    
+                    Text(title)
+                        .font(DesignTokens.Typography.headlineMedium)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                    
+                    Text(subtitle)
+                        .font(DesignTokens.Typography.bodySmall)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+            }
+            .padding(DesignTokens.Spacing.md)
+            .background(DesignTokens.Colors.surface)
+            .cornerRadius(DesignTokens.Radius.md)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct DailyVerseWidget: View {
+    let verse: BibleVerse
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            Text("PERSONALIZED WIDGET PREVIEW")
+                .font(DesignTokens.Typography.labelSmall)
+                .foregroundColor(DesignTokens.Colors.textTertiary)
+                .tracking(1)
+            
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                Text("\"\(verse.text)\"")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                    .italic()
+                
+                Text(verse.reference)
+                    .font(DesignTokens.Typography.caption)
+                    .foregroundColor(DesignTokens.Colors.primary)
+            }
+            .padding(DesignTokens.Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "F8F6F4"), Color(hex: "FFFFFF")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(DesignTokens.Radius.md)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+        }
+    }
+}
+
+// MARK: - Preview
+
+struct BibleView_Previews: PreviewProvider {
+    static var previews: some View {
+        BibleView()
+    }
+}

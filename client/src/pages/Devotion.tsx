@@ -1,22 +1,32 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/context/AuthContext";
-import { Heart, Sun, BookOpen, ChevronRight, Star, Bookmark, RefreshCw, Compass, PenLine } from "lucide-react";
+import { Heart, Sun, BookOpen, ChevronRight, ChevronDown, Check, Bookmark, Flame, Book, MessageCircle, PenLine } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StreakCelebration } from "@/components/devotional/StreakCelebration";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, startOfWeek, addDays, isToday, isSameDay } from "date-fns";
 import type { DevotionalGreeting, Devotional } from "@shared/schema";
 
 interface JourneyEntry {
   devotional: Devotional;
   completedAt: Date | string | null;
   rating: number | null;
+}
+
+interface JourneyTask {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: "sun" | "book" | "message" | "pen";
+  duration: string;
+  isCompleted: boolean;
+  action: () => void;
 }
 
 function getGreetingByTime(): string {
@@ -26,38 +36,164 @@ function getGreetingByTime(): string {
   return "Good evening";
 }
 
-function CalendarStrip() {
+function WeekCalendar({ completedDays }: { completedDays: string[] }) {
   const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
   const days = [];
   
-  for (let i = -2; i <= 2; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(weekStart, i);
+    const dayKey = format(date, "yyyy-MM-dd");
+    const isComplete = completedDays.includes(dayKey);
+    const isTodayDate = isToday(date);
+    
     days.push({
-      day: format(date, "EEE"),
+      dayLetter: format(date, "EEEEE"),
       date: date.getDate(),
-      isToday: i === 0,
+      isTodayDate,
+      isComplete,
     });
   }
   
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center justify-between gap-1 px-2">
       {days.map((d, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          className={cn(
-            "flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors",
-            d.isToday ? "bg-foreground text-background" : "text-muted-foreground"
-          )}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: i * 0.03 }}
+          className="flex flex-col items-center gap-1.5"
         >
-          <span className="text-xs font-medium">{d.day}</span>
-          <span className={cn("text-lg font-bold", d.isToday && "text-background")}>{d.date}</span>
+          <span className="text-xs text-muted-foreground font-medium">{d.dayLetter}</span>
+          <div
+            className={cn(
+              "w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+              d.isTodayDate && !d.isComplete && "bg-primary text-primary-foreground",
+              d.isComplete && "bg-primary/20 text-primary",
+              !d.isTodayDate && !d.isComplete && "text-muted-foreground"
+            )}
+          >
+            {d.isComplete ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              d.date
+            )}
+          </div>
         </motion.div>
       ))}
     </div>
+  );
+}
+
+function StreakBadge({ streak, className }: { streak: number; className?: string }) {
+  if (streak === 0) return null;
+  
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20",
+        className
+      )}
+    >
+      <Flame className="w-4 h-4 text-primary" />
+      <span className="text-sm font-semibold text-primary">{streak} day streak</span>
+    </motion.div>
+  );
+}
+
+function JourneyTaskCard({ task, index }: { task: JourneyTask; index: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const IconComponent = {
+    sun: Sun,
+    book: Book,
+    message: MessageCircle,
+    pen: PenLine,
+  }[task.icon];
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08 }}
+    >
+      <Card 
+        className={cn(
+          "border-0 shadow-sm overflow-hidden transition-all",
+          task.isCompleted && "opacity-60"
+        )}
+        data-testid={`card-journey-task-${task.id}`}
+      >
+        <CardContent className="p-0">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-full p-4 flex items-center gap-4 text-left"
+            data-testid={`button-toggle-task-${task.id}`}
+          >
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center",
+              task.isCompleted ? "bg-primary/10" : "bg-primary/10"
+            )}>
+              {task.isCompleted ? (
+                <Check className="w-6 h-6 text-primary" />
+              ) : (
+                <IconComponent className="w-6 h-6 text-primary" />
+              )}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <h3 className={cn(
+                "font-semibold text-base",
+                task.isCompleted && "line-through text-muted-foreground"
+              )}>
+                {task.title}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5">{task.subtitle}</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{task.duration}</span>
+              <ChevronDown className={cn(
+                "w-5 h-5 text-muted-foreground transition-transform",
+                isExpanded && "rotate-180"
+              )} />
+            </div>
+          </button>
+          
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4 pt-0">
+                  <div className="border-t pt-4">
+                    <Button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        task.action();
+                      }}
+                      className="w-full rounded-xl"
+                      disabled={task.isCompleted}
+                      data-testid={`button-start-task-${task.id}`}
+                    >
+                      {task.isCompleted ? "Completed" : "Begin"}
+                      {!task.isCompleted && <ChevronRight className="w-4 h-4 ml-2" />}
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -66,8 +202,6 @@ export default function Devotion() {
   const { user } = useAuth();
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationMilestone, setCelebrationMilestone] = useState(0);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [rating, setRating] = useState(0);
   const [startTime] = useState(() => Date.now());
 
   const greetingQuery = useQuery<{ success: boolean; data: DevotionalGreeting }>({
@@ -105,23 +239,6 @@ export default function Devotion() {
     },
   });
 
-  const bookmarkMutation = useMutation({
-    mutationFn: async (devotionalId: number) => {
-      const res = await apiRequest("POST", `/api/devotional/${devotionalId}/bookmark`);
-      return res.json();
-    },
-    onSuccess: (data: any) => {
-      setIsBookmarked(data?.data?.isBookmarked || false);
-    },
-  });
-
-  const rateMutation = useMutation({
-    mutationFn: async ({ devotionalId, rating }: { devotionalId: number; rating: number }) => {
-      const res = await apiRequest("POST", `/api/devotional/${devotionalId}/rate`, { rating });
-      return res.json();
-    },
-  });
-
   useEffect(() => {
     if (devotionalQuery.data?.data?.id) {
       startMutation.mutate(devotionalQuery.data.data.id);
@@ -138,31 +255,47 @@ export default function Devotion() {
     }
   };
 
-  const handleBookmark = () => {
-    if (devotionalQuery.data?.data?.id) {
-      bookmarkMutation.mutate(devotionalQuery.data.data.id);
-    }
-  };
-
-  const handleRate = (value: number) => {
-    setRating(value);
-    if (devotionalQuery.data?.data?.id) {
-      rateMutation.mutate({
-        devotionalId: devotionalQuery.data.data.id,
-        rating: value,
-      });
-    }
-  };
-
-  const handleBeginReflection = () => {
-    handleComplete();
-    setLocation("/chat");
-  };
-
   const greeting = greetingQuery.data?.data;
   const devotional = devotionalQuery.data?.data;
-  const journey = journeyQuery.data?.data || [];
   const userName = user?.name?.split(" ")[0] || "Friend";
+  const currentStreak = greeting?.currentStreak || 0;
+
+  const journeyTasks: JourneyTask[] = [
+    {
+      id: "devotional",
+      title: "Daily Devotional",
+      subtitle: devotional?.title || "Today's spiritual reading",
+      icon: "sun",
+      duration: "5 min",
+      isCompleted: false,
+      action: () => {
+        handleComplete();
+        setLocation("/chat");
+      },
+    },
+    {
+      id: "bible",
+      title: "Scripture Reading",
+      subtitle: devotional?.scriptureReference || "Explore God's Word",
+      icon: "book",
+      duration: "10 min",
+      isCompleted: false,
+      action: () => setLocation("/bible"),
+    },
+    {
+      id: "reflect",
+      title: "Reflect & Journal",
+      subtitle: "Share what's on your heart",
+      icon: "message",
+      duration: "5 min",
+      isCompleted: false,
+      action: () => setLocation("/chat"),
+    },
+  ];
+
+  const completedDays = journeyQuery.data?.data
+    ?.filter(e => e.completedAt)
+    .map(e => format(new Date(e.completedAt as string), "yyyy-MM-dd")) || [];
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -171,25 +304,29 @@ export default function Devotion() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex items-start justify-between"
+          className="space-y-2"
         >
-          <div>
-            <h1 className="font-serif text-2xl font-bold" data-testid="text-greeting">
-              Hi, {userName}
-            </h1>
-            <p className="text-muted-foreground" data-testid="text-greeting-subtext">
-              How are you feeling today?
-            </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="font-serif text-3xl font-bold" data-testid="text-greeting">
+                {getGreetingByTime()}, {userName}
+              </h1>
+              <p className="text-muted-foreground mt-1" data-testid="text-greeting-subtext">
+                {format(new Date(), "EEEE, MMMM d")}
+              </p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-muted"
+              data-testid="button-profile"
+              onClick={() => setLocation("/account")}
+            >
+              <span className="text-sm font-semibold">{userName[0]}</span>
+            </Button>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-full bg-muted"
-            data-testid="button-profile"
-            onClick={() => setLocation("/account")}
-          >
-            <span className="text-sm font-semibold">{userName[0]}</span>
-          </Button>
+          
+          <StreakBadge streak={currentStreak} className="mt-3" />
         </motion.div>
 
         <motion.div
@@ -197,196 +334,68 @@ export default function Devotion() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
         >
-          <CalendarStrip />
+          <Card className="border-0 shadow-sm" data-testid="card-week-calendar">
+            <CardContent className="py-4">
+              <WeekCalendar completedDays={completedDays} />
+            </CardContent>
+          </Card>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
+          className="space-y-1"
         >
-          <Card className="border-0 shadow-sm overflow-hidden gradient-amber-soft" data-testid="card-daily-affirmation">
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <h3 className="font-serif text-lg font-bold">Daily Affirmations</h3>
-                  {devotionalQuery.isLoading ? (
-                    <Skeleton className="h-4 w-48" />
-                  ) : (
-                    <p className="text-sm text-foreground/80">
-                      {devotional?.openingHook || "Begin with mindful morning reflections."}
-                    </p>
-                  )}
-                  {greeting && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {greeting.currentStreak} day streak
-                    </p>
-                  )}
-                </div>
-                <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-background/50 flex items-center justify-center">
-                  <Sun className="w-7 h-7 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="font-serif text-xl font-semibold">Today's Journey</h2>
+          <p className="text-sm text-muted-foreground">Your spiritual practices for today</p>
         </motion.div>
+
+        <div className="space-y-3">
+          {devotionalQuery.isLoading ? (
+            <>
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+            </>
+          ) : (
+            journeyTasks.map((task, index) => (
+              <JourneyTaskCard key={task.id} task={task} index={index} />
+            ))
+          )}
+        </div>
 
         {devotional && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <Card className="border-0 shadow-sm" data-testid="card-devotional">
-              <CardContent className="pt-5 pb-5 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">{format(new Date(), "MMMM d, yyyy")}</p>
-                    <h3 className="font-serif text-lg font-bold" data-testid="text-devotional-title">
-                      {devotional.title}
-                    </h3>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleBookmark}
-                    className={isBookmarked ? "text-primary" : "text-muted-foreground"}
-                    data-testid="button-bookmark"
-                  >
-                    <Bookmark className={cn("w-5 h-5", isBookmarked && "fill-current")} />
-                  </Button>
+            <Card className="border-0 shadow-sm overflow-hidden" data-testid="card-verse-of-day">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">Verse of the Day</span>
                 </div>
-
-                <div className="p-4 rounded-xl bg-muted/50">
-                  <p className="font-serif text-base leading-relaxed italic" data-testid="text-scripture">
+                
+                <div className="space-y-3">
+                  <p className="font-serif text-lg leading-relaxed italic" data-testid="text-scripture">
                     "{devotional.scriptureText}"
                   </p>
-                  <p className="text-sm text-muted-foreground mt-2" data-testid="text-scripture-reference">
+                  <p className="text-sm text-muted-foreground font-medium" data-testid="text-scripture-reference">
                     {devotional.scriptureReference}
                   </p>
                 </div>
 
-                <p className="text-sm text-foreground/80 leading-relaxed">
-                  {devotional.reflectionContent.split("\n\n")[0]}
-                </p>
-
                 <Button 
+                  variant="outline"
                   className="w-full rounded-xl"
-                  onClick={handleBeginReflection}
-                  data-testid="button-start-devotion"
+                  onClick={() => setLocation("/bible")}
+                  data-testid="button-read-in-context"
                 >
-                  Begin Reflection
+                  Read in Context
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
-
-                <div className="flex items-center justify-center gap-1 pt-2" data-testid="section-rating">
-                  <span className="text-xs text-muted-foreground mr-2">How was this?</span>
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <Button
-                      key={value}
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRate(value)}
-                      className="h-8 w-8"
-                      data-testid={`button-rate-${value}`}
-                    >
-                      <Star
-                        size={16}
-                        className={value <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/50"}
-                      />
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Quick Journal</h2>
-            <Button variant="ghost" className="text-sm text-primary p-0 h-auto hover:bg-transparent">
-              See all
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Card className="border-0 shadow-sm hover-elevate cursor-pointer" data-testid="card-quick-journal-reflect">
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <PenLine className="w-4 h-4 text-primary" />
-                  </div>
-                </div>
-                <h4 className="font-medium text-sm">Pause & reflect</h4>
-                <p className="text-xs text-muted-foreground mt-1">What are you grateful for?</p>
-                <div className="flex gap-2 mt-3">
-                  <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">Today</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded-full">Personal</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm hover-elevate cursor-pointer" data-testid="card-quick-journal-intentions">
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                    <Compass className="w-4 h-4 text-amber-600" />
-                  </div>
-                </div>
-                <h4 className="font-medium text-sm">Set Intentions</h4>
-                <p className="text-xs text-muted-foreground mt-1">How do you want to feel?</p>
-                <div className="flex gap-2 mt-3">
-                  <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">Today</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-
-        {journey.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold">Recent Entries</h2>
-              <Button 
-                variant="ghost" 
-                className="text-sm text-primary p-0 h-auto hover:bg-transparent"
-                onClick={() => setLocation("/bible")}
-              >
-                View all
-              </Button>
-            </div>
-            <Card className="border-0 shadow-sm" data-testid="card-recent-entries">
-              <CardContent className="pt-4 pb-4 space-y-3">
-                {journey.slice(0, 3).map((entry) => (
-                  <div 
-                    key={entry.devotional.id}
-                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                    data-testid={`entry-${entry.devotional.id}`}
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">{entry.devotional.title}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {entry.completedAt ? format(new Date(entry.completedAt), "MMM d, h:mm a") : "Today"}
-                      </p>
-                    </div>
-                    {entry.rating && (
-                      <div className="flex items-center gap-0.5">
-                        <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs text-muted-foreground">{entry.rating}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
               </CardContent>
             </Card>
           </motion.div>

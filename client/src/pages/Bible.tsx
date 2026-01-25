@@ -403,37 +403,26 @@ export default function Bible() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        {/* Chapter Title & Version with Bookmark on Right */}
-        <div className="flex items-center justify-between py-4 px-4">
-          <div className="w-10" /> {/* Spacer for balance */}
-          <div className="text-center flex-1">
-            <motion.h1 
-              className="font-serif text-2xl font-semibold text-foreground"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              key={currentChapter?.reference || "title"}
-            >
-              {currentChapter?.reference || "Bible"}
-            </motion.h1>
-            {currentVersion && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {currentVersion.name}
-              </p>
-            )}
-          </div>
-          {/* Bookmarks Icon - Right Side */}
-          <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-primary"
-                data-testid="button-open-bookmarks"
-              >
-                <Bookmark className={cn("w-7 h-7", bookmarkGroups.length > 0 && "fill-current")} />
-              </Button>
-            </SheetTrigger>
+      <header className="sticky top-0 z-40 bg-background">
+        {/* Living Word Header */}
+        <div className="px-5 pt-5 pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-serif text-2xl font-bold text-foreground" data-testid="text-bible-title">Living Word</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Explore Scripture</p>
+            </div>
+            <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
+
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-primary"
+                  data-testid="button-open-bookmarks"
+                >
+                  <Bookmark className={cn("w-6 h-6", bookmarkGroups.length > 0 && "fill-current")} />
+                </Button>
+              </SheetTrigger>
             <SheetContent side="right" className="w-80">
               <SheetHeader>
                 <SheetTitle className="font-serif">Bookmarks</SheetTitle>
@@ -513,8 +502,26 @@ export default function Bible() {
                 )}
               </ScrollArea>
             </SheetContent>
-          </Sheet>
+            </Sheet>
+          </div>
         </div>
+
+        {/* Current Reading Display */}
+        {currentChapter && (
+          <div className="px-5 pb-3">
+            <motion.div 
+              className="text-center py-2 px-4 bg-card rounded-xl border"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              key={currentChapter.reference}
+            >
+              <p className="font-serif text-lg font-semibold">{currentChapter.reference}</p>
+              {currentVersion && (
+                <p className="text-xs text-muted-foreground">{currentVersion.name}</p>
+              )}
+            </motion.div>
+          </div>
+        )}
 
         {/* Navigation Bar - hidden when search is open */}
         <AnimatePresence>

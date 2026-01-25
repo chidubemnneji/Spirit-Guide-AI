@@ -1,0 +1,564 @@
+// ============================================
+// SOULGUIDE - ONBOARDING FLOW PART 2
+// More onboarding steps
+// ============================================
+
+import SwiftUI
+
+// MARK: - Step 5: AI Demo
+
+struct AIDemoStep: View {
+    let userName: String
+    let onContinue: () -> Void
+    @State private var displayedText: String = ""
+    @State private var isTyping: Bool = true
+    
+    let fullText = "True faith is not just Sunday worship - it is living out Christ's love in every moment. It means choosing patience in traffic, showing grace to difficult people, and trusting God's plan when life feels uncertain. As James 2:17 reminds us, 'Faith by itself, if it is not accompanied by action, is dead.' Your daily choices are your testimony."
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("What Does True Faith")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Look Like?")
+                    .font(DesignTokens.Typography.displaySmall)
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            // Search bar mock
+            HStack {
+                Text("What does true faith look like in daily life?")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                Spacer()
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(DesignTokens.Colors.primary)
+            }
+            .padding(DesignTokens.Spacing.md)
+            .background(DesignTokens.Colors.surfaceSecondary)
+            .cornerRadius(DesignTokens.Radius.md)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            // AI Response
+            HStack(alignment: .top, spacing: DesignTokens.Spacing.sm) {
+                // AI icon
+                Image(systemName: "cross.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(DesignTokens.Colors.primary)
+                    .frame(width: 32, height: 32)
+                    .background(DesignTokens.Colors.primary.opacity(0.1))
+                    .cornerRadius(DesignTokens.Radius.full)
+                
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                    Text(displayedText)
+                        .font(DesignTokens.Typography.bodyMedium)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                        .lineSpacing(4)
+                    
+                    if !isTyping {
+                        Button(action: {}) {
+                            HStack(spacing: DesignTokens.Spacing.xxs) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("share")
+                            }
+                            .font(DesignTokens.Typography.caption)
+                            .foregroundColor(DesignTokens.Colors.textTertiary)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            Spacer()
+            
+            PrimaryButton(title: "Discover Your Personalized Guidance", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+        .onAppear {
+            typeText()
+        }
+    }
+    
+    private func typeText() {
+        displayedText = ""
+        var charIndex = 0
+        
+        Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { timer in
+            if charIndex < fullText.count {
+                let index = fullText.index(fullText.startIndex, offsetBy: charIndex)
+                displayedText += String(fullText[index])
+                charIndex += 1
+            } else {
+                timer.invalidate()
+                isTyping = false
+            }
+        }
+    }
+}
+
+// MARK: - Step 6: Tradition Selection
+
+struct TraditionStep: View {
+    let traditions: [String]
+    @Binding var selected: String?
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("We Honor Your")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Tradition")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("Your guidance will reflect the teachings and values of your faith background.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: DesignTokens.Spacing.sm) {
+                    ForEach(traditions, id: \.self) { tradition in
+                        OptionCard(
+                            title: tradition,
+                            isSelected: selected == tradition,
+                            action: { selected = tradition }
+                        )
+                    }
+                }
+                .padding(.horizontal, DesignTokens.Spacing.md)
+            }
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+// MARK: - Step 7: Translation Selection
+
+struct TranslationStep: View {
+    let translations: [BibleTranslation]
+    @Binding var selected: String?
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("Which Translation")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Speaks to Your Heart?")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("We will use your preferred version for all scripture references and daily verses.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: DesignTokens.Spacing.sm) {
+                    ForEach(translations) { translation in
+                        OptionCard(
+                            title: "\(translation.code) - \(translation.name)",
+                            subtitle: translation.subtitle,
+                            isSelected: selected == translation.code,
+                            action: { selected = translation.code }
+                        )
+                    }
+                }
+                .padding(.horizontal, DesignTokens.Spacing.md)
+            }
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+// MARK: - Step 8: Gender Selection
+
+struct GenderStep: View {
+    @Binding var selected: OnboardingViewModel.Gender?
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("God Created You With")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Purpose")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("Your journey is unique. We honor how God designed you.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            HStack(spacing: DesignTokens.Spacing.md) {
+                GenderCard(
+                    gender: .male,
+                    isSelected: selected == .male,
+                    action: { selected = .male }
+                )
+                
+                GenderCard(
+                    gender: .female,
+                    isSelected: selected == .female,
+                    action: { selected = .female }
+                )
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            Spacer()
+            
+            // Scripture quote
+            Text("\"I praise you because I am fearfully and wonderfully made\" - Psalm 139:14")
+                .font(DesignTokens.Typography.bodySmall)
+                .foregroundColor(DesignTokens.Colors.textTertiary)
+                .italic()
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, DesignTokens.Spacing.xl)
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+struct GenderCard: View {
+    let gender: OnboardingViewModel.Gender
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var icon: String {
+        gender == .male ? "figure.stand" : "figure.stand.dress"
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: DesignTokens.Spacing.md) {
+                Image(systemName: icon)
+                    .font(.system(size: 32))
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                
+                Text(gender.rawValue)
+                    .font(DesignTokens.Typography.labelLarge)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 140)
+            .background(isSelected ? DesignTokens.Colors.primary.opacity(0.08) : DesignTokens.Colors.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.md)
+                    .stroke(isSelected ? DesignTokens.Colors.primary : Color(hex: "E8E8E8"), lineWidth: isSelected ? 2 : 1)
+            )
+            .cornerRadius(DesignTokens.Radius.md)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Step 9: Premium Pitch
+
+struct PremiumPitchStep: View {
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("Most Believers")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Never Reach Their")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Full Potential")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("Here is the difference between those who grow and those who stay stuck")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            // Comparison cards
+            HStack(spacing: DesignTokens.Spacing.sm) {
+                ComparisonCard(
+                    title: "THE STRUGGLE ALONE",
+                    items: ["Inconsistent prayer", "Plateaus"],
+                    footer: "Average Growth",
+                    isNegative: true
+                )
+                
+                ComparisonCard(
+                    title: "WITH DIVINE GUIDANCE",
+                    items: ["Daily Intimacy", "Breakthroughs"],
+                    footer: "Accelerated Growth",
+                    isNegative: false
+                )
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            // Stats
+            VStack(spacing: DesignTokens.Spacing.sm) {
+                Text("PREMIUM MEMBERS EXPERIENCE")
+                    .font(DesignTokens.Typography.labelSmall)
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+                    .tracking(1.2)
+                
+                StatRow(label: "Daily prayer time increase", value: "3.7x")
+                StatRow(label: "Breakthrough in 30 days", value: "89%")
+                StatRow(label: "Likelihood to overcome", value: "5x")
+            }
+            .padding(DesignTokens.Spacing.md)
+            .background(DesignTokens.Colors.surfaceSecondary)
+            .cornerRadius(DesignTokens.Radius.md)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+struct ComparisonCard: View {
+    let title: String
+    let items: [String]
+    let footer: String
+    let isNegative: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            Text(title)
+                .font(DesignTokens.Typography.labelSmall)
+                .foregroundColor(DesignTokens.Colors.textTertiary)
+                .tracking(1)
+            
+            // Graph placeholder
+            Rectangle()
+                .fill(isNegative ? Color(hex: "E8E8E8") : DesignTokens.Colors.primary.opacity(0.2))
+                .frame(height: 60)
+                .cornerRadius(DesignTokens.Radius.sm)
+            
+            ForEach(items, id: \.self) { item in
+                HStack(spacing: DesignTokens.Spacing.xxs) {
+                    Image(systemName: isNegative ? "xmark.circle" : "checkmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(isNegative ? DesignTokens.Colors.textTertiary : DesignTokens.Colors.primary)
+                    Text(item)
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.textSecondary)
+                }
+            }
+            
+            Text(footer)
+                .font(DesignTokens.Typography.caption)
+                .foregroundColor(DesignTokens.Colors.textTertiary)
+        }
+        .padding(DesignTokens.Spacing.sm)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+    }
+}
+
+struct StatRow: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(DesignTokens.Colors.primary)
+                Text(label)
+                    .font(DesignTokens.Typography.bodySmall)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+            }
+            Spacer()
+            Text(value)
+                .font(DesignTokens.Typography.labelLarge)
+                .foregroundColor(DesignTokens.Colors.primary)
+        }
+    }
+}
+
+// MARK: - Step 10: Widget Promo
+
+struct WidgetPromoStep: View {
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("Transform Your Phone")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Into a Place of Faith")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("Keep scripture and inspiration always visible, turning every unlock into a moment of connection with God.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            // Widget preview
+            WidgetPreview()
+                .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+struct WidgetPreview: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            HStack {
+                Image(systemName: "cross.fill")
+                    .font(.system(size: 12))
+                Text("CROSS")
+                    .font(DesignTokens.Typography.labelSmall)
+            }
+            .foregroundColor(DesignTokens.Colors.textTertiary)
+            
+            Text("\"For I know the plans I have for you, declares the Lord, plans to prosper you...\"")
+                .font(DesignTokens.Typography.bodyMedium)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+            
+            Text("Jeremiah 29:11 NIV")
+                .font(DesignTokens.Typography.caption)
+                .foregroundColor(DesignTokens.Colors.primary)
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.lg)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+    }
+}
+
+// MARK: - Step 11: AI Intro (Final)
+
+struct AIIntroStep: View {
+    let userName: String
+    let onStart: () -> Void
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                // Chat icon
+                Image(systemName: "bubble.left.fill")
+                    .font(.system(size: 32))
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                    .padding(.bottom, DesignTokens.Spacing.sm)
+                
+                Text("Meet Your Personal")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Prayer Partner")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("I know your story. I know your struggles. I am here 24/7 to guide you closer to God.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            // Feature list
+            VStack(spacing: DesignTokens.Spacing.md) {
+                FeatureRow(
+                    icon: "brain.head.profile",
+                    title: "Knows Your Journey",
+                    description: "Every conversation builds on what I already know about your struggles with anxiety and your goals."
+                )
+                
+                FeatureRow(
+                    icon: "clock.fill",
+                    title: "Always Available",
+                    description: "3 AM and cannot sleep? Triggered and need help NOW? I am here. No judgment. No waiting."
+                )
+                
+                FeatureRow(
+                    icon: "book.fill",
+                    title: "Biblically Grounded",
+                    description: "Every answer is rooted in Scripture. I will guide you with God's truth, not my opinions."
+                )
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            Spacer()
+            
+            PrimaryButton(title: "Start Your First Conversation", action: onStart)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+struct FeatureRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.sm) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xxs) {
+                Text(title)
+                    .font(DesignTokens.Typography.labelLarge)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                
+                Text(description)
+                    .font(DesignTokens.Typography.bodySmall)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+            }
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+    }
+}
+
+// MARK: - Previews
+
+struct OnboardingView_Previews: PreviewProvider {
+    static var previews: some View {
+        OnboardingView()
+    }
+}

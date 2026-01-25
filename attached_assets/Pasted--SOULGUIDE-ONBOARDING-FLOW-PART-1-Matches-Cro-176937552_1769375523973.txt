@@ -1,0 +1,398 @@
+// ============================================
+// SOULGUIDE - ONBOARDING FLOW PART 1
+// Matches Cross app onboarding exactly
+// ============================================
+
+import SwiftUI
+
+// MARK: - Onboarding View Model
+
+@MainActor
+class OnboardingViewModel: ObservableObject {
+    @Published var currentStep: OnboardingStep = .welcome
+    @Published var userName: String = ""
+    @Published var selectedTradition: String?
+    @Published var selectedTranslation: String?
+    @Published var selectedGender: Gender?
+    @Published var isLoading: Bool = false
+    
+    enum OnboardingStep: Int, CaseIterable {
+        case welcome
+        case socialProof
+        case notifications
+        case nameEntry
+        case aiDemo
+        case tradition
+        case translation
+        case gender
+        case premiumPitch
+        case widgetPromo
+        case aiIntro
+    }
+    
+    enum Gender: String {
+        case male = "Male"
+        case female = "Female"
+    }
+    
+    let traditions = [
+        "Catholic",
+        "Protestant", 
+        "Baptist",
+        "Evangelical",
+        "Non-denominational",
+        "Pentecostal",
+        "Methodist",
+        "Lutheran",
+        "Anglican/Episcopal"
+    ]
+    
+    let translations = [
+        BibleTranslation(code: "NIV", name: "New International Version", subtitle: "Modern, readable, balanced translation"),
+        BibleTranslation(code: "ESV", name: "English Standard Version", subtitle: "Literal, precise, widely trusted for study"),
+        BibleTranslation(code: "NKJV", name: "New King James Version", subtitle: "Classic beauty with modern clarity"),
+        BibleTranslation(code: "NLT", name: "New Living Translation", subtitle: "Clear, contemporary, easy to understand"),
+        BibleTranslation(code: "KJV", name: "King James Version", subtitle: "Traditional, poetic, historically significant"),
+        BibleTranslation(code: "NASB", name: "New American Standard Bible", subtitle: "Highly accurate, word-for-word translation"),
+        BibleTranslation(code: "RSV", name: "RSV Catholic Edition", subtitle: "Catholic approved with deuterocanonical books")
+    ]
+    
+    func nextStep() {
+        guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
+              currentIndex < OnboardingStep.allCases.count - 1 else {
+            completeOnboarding()
+            return
+        }
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentStep = OnboardingStep.allCases[currentIndex + 1]
+        }
+    }
+    
+    func previousStep() {
+        guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
+              currentIndex > 0 else { return }
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentStep = OnboardingStep.allCases[currentIndex - 1]
+        }
+    }
+    
+    func completeOnboarding() {
+        isLoading = true
+        // Save to backend, create persona, etc.
+    }
+}
+
+struct BibleTranslation: Identifiable {
+    let id = UUID()
+    let code: String
+    let name: String
+    let subtitle: String
+}
+
+// MARK: - Main Onboarding View
+
+struct OnboardingView: View {
+    @StateObject private var viewModel = OnboardingViewModel()
+    
+    var body: some View {
+        ZStack {
+            DesignTokens.Colors.background
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Progress indicator
+                OnboardingProgress(
+                    currentStep: viewModel.currentStep.rawValue,
+                    totalSteps: OnboardingViewModel.OnboardingStep.allCases.count
+                )
+                
+                // Content
+                Group {
+                    switch viewModel.currentStep {
+                    case .welcome:
+                        WelcomeStep(onContinue: viewModel.nextStep)
+                    case .socialProof:
+                        SocialProofStep(onContinue: viewModel.nextStep)
+                    case .notifications:
+                        NotificationsStep(onContinue: viewModel.nextStep)
+                    case .nameEntry:
+                        NameEntryStep(name: $viewModel.userName, onContinue: viewModel.nextStep)
+                    case .aiDemo:
+                        AIDemoStep(userName: viewModel.userName, onContinue: viewModel.nextStep)
+                    case .tradition:
+                        TraditionStep(
+                            traditions: viewModel.traditions,
+                            selected: $viewModel.selectedTradition,
+                            onContinue: viewModel.nextStep
+                        )
+                    case .translation:
+                        TranslationStep(
+                            translations: viewModel.translations,
+                            selected: $viewModel.selectedTranslation,
+                            onContinue: viewModel.nextStep
+                        )
+                    case .gender:
+                        GenderStep(selected: $viewModel.selectedGender, onContinue: viewModel.nextStep)
+                    case .premiumPitch:
+                        PremiumPitchStep(onContinue: viewModel.nextStep)
+                    case .widgetPromo:
+                        WidgetPromoStep(onContinue: viewModel.nextStep)
+                    case .aiIntro:
+                        AIIntroStep(userName: viewModel.userName, onStart: viewModel.completeOnboarding)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Progress Indicator
+
+struct OnboardingProgress: View {
+    let currentStep: Int
+    let totalSteps: Int
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(DesignTokens.Colors.textPrimary)
+                .frame(width: geometry.size.width * (CGFloat(currentStep + 1) / CGFloat(totalSteps)), height: 3)
+        }
+        .frame(height: 3)
+        .background(Color(hex: "E8E8E8"))
+    }
+}
+
+// MARK: - Step 1: Welcome
+
+struct WelcomeStep: View {
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            VStack(spacing: DesignTokens.Spacing.lg) {
+                // Cross icon
+                Image(systemName: "cross")
+                    .font(.system(size: 48, weight: .light))
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                
+                VStack(spacing: DesignTokens.Spacing.sm) {
+                    Text("Your Faith,")
+                        .font(DesignTokens.Typography.displayLarge)
+                    Text("Always Visible")
+                        .font(DesignTokens.Typography.displayLarge)
+                }
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                
+                Text("Join millions finding clarity and purpose through personalized Biblical wisdom.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, DesignTokens.Spacing.xxl)
+            }
+            
+            Spacer()
+            
+            PrimaryButton(title: "Begin Your Transformation", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+// MARK: - Step 2: Social Proof
+
+struct SocialProofStep: View {
+    let onContinue: () -> Void
+    
+    let testimonials = [
+        Testimonial(name: "Sarah", rating: 5, text: "Cross gave me the breakthrough I had been praying for. The daily verses speak directly to my struggles."),
+        Testimonial(name: "Michael", rating: 5, text: "I have tried other devotional apps, but Cross truly understands my journey. Personalized guidance is transformative."),
+        Testimonial(name: "Rachel", rating: 5, text: "The moment I added the widget, everything changed. It is like having a spiritual mentor in my pocket.")
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("Believers Worldwide")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Are Discovering Their")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("Purpose")
+                    .font(DesignTokens.Typography.displaySmall)
+                
+                Text("Over 20 million faithful believers guided daily")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                    .padding(.top, DesignTokens.Spacing.xs)
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: DesignTokens.Spacing.md) {
+                    ForEach(testimonials) { testimonial in
+                        TestimonialCard(testimonial: testimonial)
+                    }
+                }
+                .padding(.horizontal, DesignTokens.Spacing.md)
+            }
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+struct Testimonial: Identifiable {
+    let id = UUID()
+    let name: String
+    let rating: Int
+    let text: String
+}
+
+struct TestimonialCard: View {
+    let testimonial: Testimonial
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            Text(testimonial.name)
+                .font(DesignTokens.Typography.labelLarge)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+            
+            HStack(spacing: 2) {
+                ForEach(0..<testimonial.rating, id: \.self) { _ in
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(DesignTokens.Colors.primary)
+                }
+            }
+            
+            Text(testimonial.text)
+                .font(DesignTokens.Typography.bodySmall)
+                .foregroundColor(DesignTokens.Colors.textSecondary)
+                .italic()
+        }
+        .padding(DesignTokens.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+    }
+}
+
+// MARK: - Step 3: Notifications
+
+struct NotificationsStep: View {
+    let onContinue: () -> Void
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            Spacer()
+            
+            VStack(spacing: DesignTokens.Spacing.lg) {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                    Text("Stay Connected to Your")
+                        .font(DesignTokens.Typography.displaySmall)
+                    Text("Spiritual Growth")
+                        .font(DesignTokens.Typography.displaySmall)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Text("Receive daily wisdom, prayer reminders, and encouragement exactly when you need it most.")
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textSecondary)
+                
+                // Mock notification
+                NotificationPreview()
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+        }
+    }
+}
+
+struct NotificationPreview: View {
+    var body: some View {
+        HStack(spacing: DesignTokens.Spacing.sm) {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(DesignTokens.Colors.textPrimary)
+                .frame(width: 40, height: 40)
+                .overlay(
+                    Image(systemName: "cross")
+                        .foregroundColor(.white)
+                        .font(.system(size: 16))
+                )
+            
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("CROSS")
+                        .font(DesignTokens.Typography.labelSmall)
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                    Spacer()
+                    Text("now")
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                }
+                
+                Text("Good morning! Today's verse: Be strong and courageous... - Joshua 1:9")
+                    .font(DesignTokens.Typography.bodySmall)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(DesignTokens.Spacing.sm)
+        .background(Color(hex: "2C2C2E"))
+        .cornerRadius(DesignTokens.Radius.lg)
+    }
+}
+
+// MARK: - Step 4: Name Entry
+
+struct NameEntryStep: View {
+    @Binding var name: String
+    let onContinue: () -> Void
+    @FocusState private var isFocused: Bool
+    
+    var body: some View {
+        VStack(spacing: DesignTokens.Spacing.lg) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Text("Hello, Im cross... what's")
+                    .font(DesignTokens.Typography.displaySmall)
+                Text("your name?")
+                    .font(DesignTokens.Typography.displaySmall)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.top, DesignTokens.Spacing.xl)
+            
+            TextField("Type in your name", text: $name)
+                .font(DesignTokens.Typography.bodyLarge)
+                .padding(DesignTokens.Spacing.md)
+                .background(DesignTokens.Colors.surfaceSecondary)
+                .cornerRadius(DesignTokens.Radius.md)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .focused($isFocused)
+            
+            Spacer()
+            
+            PrimaryButton(title: "Continue", action: onContinue)
+                .padding(.horizontal, DesignTokens.Spacing.md)
+                .padding(.bottom, DesignTokens.Spacing.xxl)
+                .opacity(name.isEmpty ? 0.5 : 1)
+                .disabled(name.isEmpty)
+        }
+        .onAppear { isFocused = true }
+    }
+}

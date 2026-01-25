@@ -1,0 +1,494 @@
+// ============================================
+// SOULGUIDE - AI CHAT VIEW
+// Matches Cross app chat + your GRACE persona advantages
+// ============================================
+
+import SwiftUI
+
+// MARK: - Chat View Model
+
+@MainActor
+class ChatViewModel: ObservableObject {
+    @Published var messages: [ChatMessage] = []
+    @Published var inputText: String = ""
+    @Published var isTyping: Bool = false
+    @Published var showEmotionPicker: Bool = false
+    @Published var userName: String = "Alex"
+    @Published var userStruggle: String = "anxiety"
+    @Published var userGoal: String = "breakthrough and peace"
+    
+    init() {
+        loadInitialMessage()
+    }
+    
+    func loadInitialMessage() {
+        messages = [
+            ChatMessage(
+                id: UUID(),
+                role: .assistant,
+                content: """
+                Hey \(userName) 👋
+                
+                I'm Cross AI, your personal prayer partner. But I'm not starting from scratch with you.
+                
+                I already know that you're dealing with \(userStruggle), and that you're seeking \(userGoal).
+                
+                I've read your prayer request from onboarding. So let me ask you straight up: how are you feeling RIGHT NOW in this very moment?
+                """,
+                timestamp: Date(),
+                emotionOptions: ["Struggling", "Just okay", "Pretty good"]
+            )
+        ]
+    }
+    
+    func sendMessage() {
+        guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        let userMessage = ChatMessage(
+            id: UUID(),
+            role: .user,
+            content: inputText,
+            timestamp: Date()
+        )
+        
+        messages.append(userMessage)
+        inputText = ""
+        isTyping = true
+        
+        // Simulate AI response
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.receiveAIResponse()
+        }
+    }
+    
+    func selectEmotion(_ emotion: String) {
+        let userMessage = ChatMessage(
+            id: UUID(),
+            role: .user,
+            content: emotion,
+            timestamp: Date()
+        )
+        
+        messages.append(userMessage)
+        isTyping = true
+        
+        // Simulate AI response based on emotion
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.receiveEmotionResponse(emotion)
+        }
+    }
+    
+    private func receiveAIResponse() {
+        isTyping = false
+        
+        let response = ChatMessage(
+            id: UUID(),
+            role: .assistant,
+            content: """
+            I hear you. That's a real feeling, and it's okay to name it.
+            
+            When anxiety feels heavy, sometimes it helps to remember that you're not carrying this alone. Philippians 4:6-7 says, "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God."
+            
+            Would you like to try a simple breath prayer together? It only takes 2 minutes and can help center your heart.
+            """,
+            timestamp: Date(),
+            actionButtons: [
+                ActionButton(title: "Yes, let's try it", style: .primary),
+                ActionButton(title: "Maybe later", style: .secondary)
+            ]
+        )
+        
+        messages.append(response)
+    }
+    
+    private func receiveEmotionResponse(_ emotion: String) {
+        isTyping = false
+        
+        var content: String
+        switch emotion {
+        case "Struggling":
+            content = """
+            Thank you for being honest with me. Struggling is hard, but you're not alone in this.
+            
+            The fact that you showed up here, even while struggling, says something about your heart. You're still reaching for God, even when it's hard.
+            
+            Can you tell me a little more about what's weighing on you right now?
+            """
+        case "Just okay":
+            content = """
+            "Just okay" is honest. Some days that's where we are, and that's okay.
+            
+            Is there something specific on your mind today, or would you like me to share a word of encouragement?
+            """
+        default:
+            content = """
+            That's wonderful to hear! I'm glad you're in a good place right now.
+            
+            Would you like to use this moment to give thanks, or is there something you'd like to talk through while you're feeling strong?
+            """
+        }
+        
+        let response = ChatMessage(
+            id: UUID(),
+            role: .assistant,
+            content: content,
+            timestamp: Date()
+        )
+        
+        messages.append(response)
+    }
+    
+    func startNewConversation() {
+        // Navigate to new chat or clear current
+    }
+}
+
+// MARK: - Chat Models
+
+struct ChatMessage: Identifiable {
+    let id: UUID
+    let role: MessageRole
+    let content: String
+    let timestamp: Date
+    var emotionOptions: [String]?
+    var actionButtons: [ActionButton]?
+    
+    enum MessageRole {
+        case user
+        case assistant
+    }
+}
+
+struct ActionButton: Identifiable {
+    let id = UUID()
+    let title: String
+    let style: ButtonStyle
+    
+    enum ButtonStyle {
+        case primary
+        case secondary
+    }
+}
+
+// MARK: - AI Chat View
+
+struct AIChatView: View {
+    @StateObject private var viewModel = ChatViewModel()
+    @FocusState private var isInputFocused: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            ChatHeader(onNewChat: viewModel.startNewConversation)
+            
+            // Messages
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: DesignTokens.Spacing.md) {
+                        ForEach(viewModel.messages) { message in
+                            MessageBubble(
+                                message: message,
+                                onEmotionSelect: viewModel.selectEmotion,
+                                onActionTap: { _ in }
+                            )
+                            .id(message.id)
+                        }
+                        
+                        if viewModel.isTyping {
+                            TypingIndicator()
+                        }
+                    }
+                    .padding(.horizontal, DesignTokens.Spacing.md)
+                    .padding(.vertical, DesignTokens.Spacing.md)
+                }
+                .onChange(of: viewModel.messages.count) { _ in
+                    if let lastMessage = viewModel.messages.last {
+                        withAnimation {
+                            proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                        }
+                    }
+                }
+            }
+            
+            // Input
+            ChatInputBar(
+                text: $viewModel.inputText,
+                isFocused: $isInputFocused,
+                onSend: viewModel.sendMessage
+            )
+        }
+        .background(DesignTokens.Colors.background)
+    }
+}
+
+// MARK: - Chat Header
+
+struct ChatHeader: View {
+    let onNewChat: () -> Void
+    
+    var body: some View {
+        HStack {
+            Button(action: {}) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+            }
+            
+            Spacer()
+            
+            Button(action: onNewChat) {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 32, height: 32)
+                    .background(DesignTokens.Colors.primary)
+                    .cornerRadius(DesignTokens.Radius.full)
+            }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+        .background(DesignTokens.Colors.surface)
+    }
+}
+
+// MARK: - Message Bubble
+
+struct MessageBubble: View {
+    let message: ChatMessage
+    let onEmotionSelect: (String) -> Void
+    let onActionTap: (ActionButton) -> Void
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.xs) {
+            if message.role == .assistant {
+                // AI Avatar
+                AIAvatar()
+                
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                    // Message content
+                    Text(message.content)
+                        .font(DesignTokens.Typography.bodyMedium)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                        .lineSpacing(4)
+                    
+                    // Emotion options
+                    if let emotions = message.emotionOptions {
+                        EmotionPicker(
+                            options: emotions,
+                            onSelect: onEmotionSelect
+                        )
+                    }
+                    
+                    // Action buttons
+                    if let actions = message.actionButtons {
+                        VStack(spacing: DesignTokens.Spacing.xs) {
+                            ForEach(actions) { action in
+                                if action.style == .primary {
+                                    PrimaryActionButton(title: action.title) {
+                                        onActionTap(action)
+                                    }
+                                } else {
+                                    SecondaryActionButton(title: action.title) {
+                                        onActionTap(action)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(minLength: 40)
+            } else {
+                Spacer(minLength: 40)
+                
+                // User message
+                Text(message.content)
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .foregroundColor(DesignTokens.Colors.textPrimary)
+                    .padding(.horizontal, DesignTokens.Spacing.md)
+                    .padding(.vertical, DesignTokens.Spacing.sm)
+                    .background(Color(hex: "FFF5E6"))
+                    .cornerRadius(DesignTokens.Radius.lg)
+                    .cornerRadius(DesignTokens.Radius.lg, corners: [.topLeft, .topRight, .bottomLeft])
+            }
+        }
+    }
+}
+
+// MARK: - AI Avatar
+
+struct AIAvatar: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(hex: "FFF5E6"))
+                .frame(width: 32, height: 32)
+            
+            Image(systemName: "bubble.left.fill")
+                .font(.system(size: 14))
+                .foregroundColor(DesignTokens.Colors.primary)
+        }
+    }
+}
+
+// MARK: - Emotion Picker
+
+struct EmotionPicker: View {
+    let options: [String]
+    let onSelect: (String) -> Void
+    
+    var body: some View {
+        HStack(spacing: DesignTokens.Spacing.xs) {
+            ForEach(options, id: \.self) { emotion in
+                Button(action: { onSelect(emotion) }) {
+                    Text(emotion)
+                        .font(DesignTokens.Typography.labelMedium)
+                        .foregroundColor(DesignTokens.Colors.primary)
+                        .padding(.horizontal, DesignTokens.Spacing.sm)
+                        .padding(.vertical, DesignTokens.Spacing.xs)
+                        .background(DesignTokens.Colors.primary.opacity(0.1))
+                        .cornerRadius(DesignTokens.Radius.full)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Action Buttons
+
+struct PrimaryActionButton: View {
+    let title: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(DesignTokens.Typography.labelMedium)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(DesignTokens.Colors.textPrimary)
+                .cornerRadius(DesignTokens.Radius.md)
+        }
+    }
+}
+
+struct SecondaryActionButton: View {
+    let title: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(DesignTokens.Typography.labelMedium)
+                .foregroundColor(DesignTokens.Colors.textSecondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+        }
+    }
+}
+
+// MARK: - Typing Indicator
+
+struct TypingIndicator: View {
+    @State private var dotAnimation: Bool = false
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: DesignTokens.Spacing.xs) {
+            AIAvatar()
+            
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { index in
+                    Circle()
+                        .fill(DesignTokens.Colors.textTertiary)
+                        .frame(width: 8, height: 8)
+                        .scaleEffect(dotAnimation ? 1 : 0.5)
+                        .animation(
+                            Animation.easeInOut(duration: 0.6)
+                                .repeatForever()
+                                .delay(Double(index) * 0.2),
+                            value: dotAnimation
+                        )
+                }
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.vertical, DesignTokens.Spacing.sm)
+            .background(DesignTokens.Colors.surfaceSecondary)
+            .cornerRadius(DesignTokens.Radius.lg)
+            .onAppear { dotAnimation = true }
+            
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Chat Input Bar
+
+struct ChatInputBar: View {
+    @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding
+    let onSend: () -> Void
+    
+    var body: some View {
+        HStack(spacing: DesignTokens.Spacing.sm) {
+            // Add attachment button
+            Button(action: {}) {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(DesignTokens.Colors.textTertiary)
+            }
+            
+            // Text field
+            HStack {
+                TextField("Chat with cross", text: $text)
+                    .font(DesignTokens.Typography.bodyMedium)
+                    .focused(isFocused)
+                
+                if !text.isEmpty {
+                    Button(action: onSend) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(DesignTokens.Colors.primary)
+                    }
+                }
+            }
+            .padding(.horizontal, DesignTokens.Spacing.md)
+            .padding(.vertical, DesignTokens.Spacing.sm)
+            .background(DesignTokens.Colors.surfaceSecondary)
+            .cornerRadius(DesignTokens.Radius.full)
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+        .background(DesignTokens.Colors.surface)
+    }
+}
+
+// MARK: - Corner Radius Extension
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
+// MARK: - Preview
+
+struct AIChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        AIChatView()
+    }
+}

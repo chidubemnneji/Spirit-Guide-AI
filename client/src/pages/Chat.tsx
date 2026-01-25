@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Heart, HelpCircle, Sunrise, Lightbulb } from "lucide-react";
+import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Heart, HelpCircle, Sunrise, Lightbulb, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
@@ -434,13 +434,11 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="max-w-4xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary" />
-            </div>
-            <span className="font-serif font-semibold text-lg">Soulguide</span>
+      <header className="sticky top-0 z-40 bg-background border-b border-border/50">
+        <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-2xl font-bold text-foreground">Soul Care</h1>
+            <p className="text-sm text-muted-foreground">Your AI companion</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -626,30 +624,30 @@ function EmptyChatState({
       transition={{ duration: 0.5 }}
     >
       <motion.div 
-        className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 shadow-primary"
+        className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6"
         initial={{ scale: 0.8 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
       >
-        <MessageCircle className="w-10 h-10 text-primary" />
+        <Heart className="w-10 h-10 text-primary" />
       </motion.div>
       
       <motion.h2 
-        className="font-serif text-2xl sm:text-3xl font-bold tracking-display mb-3 text-foreground"
+        className="font-serif text-2xl sm:text-3xl font-bold mb-3 text-foreground"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        {isInitializing ? "Starting your conversation..." : welcomeMessage}
+        {isInitializing ? "Starting your conversation..." : "How are you feeling?"}
       </motion.h2>
       
       <motion.p 
-        className="text-muted-foreground max-w-md tracking-refined"
+        className="text-muted-foreground max-w-md"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        {isInitializing ? "Just a moment..." : "This is a safe space to share your thoughts, ask questions, and explore your faith."}
+        {isInitializing ? "Just a moment..." : welcomeMessage}
       </motion.p>
 
       {!isInitializing && (
@@ -659,27 +657,25 @@ function EmptyChatState({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-premium mb-3">
-            Not sure where to start?
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            Start a conversation
           </p>
           {conversationStarters.map((starter, index) => (
             <motion.button
               key={starter.text}
               onClick={() => onStarterPress(starter.text)}
-              className="w-full flex items-center gap-3 p-4 rounded-xl glass-subtle glow-border shadow-subtle hover:shadow-elevated transition-all text-left group"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 + index * 0.1 }}
-              whileHover={{ scale: 1.02 }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl bg-card border border-border/50 transition-all text-left group hover-elevate"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 + index * 0.08 }}
               whileTap={{ scale: 0.98 }}
               data-testid={`button-starter-${index}`}
             >
-              <starter.icon className={cn("w-5 h-5", starter.color)} />
-              <span className="flex-1 text-sm font-medium tracking-refined text-foreground">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <starter.icon className="w-5 h-5 text-primary" />
+              </div>
+              <span className="flex-1 text-sm font-medium text-foreground">
                 {starter.text}
-              </span>
-              <span className="text-muted-foreground group-hover:text-primary transition-colors">
-                <Send className="w-4 h-4" />
               </span>
             </motion.button>
           ))}
@@ -712,31 +708,33 @@ function MessageBubble({
     >
       {isUser ? (
         <div className="max-w-[85%]">
-          <div className="rounded-2xl rounded-br-md px-3 py-2.5 gradient-primary text-white shadow-primary tracking-refined">
+          <div className="rounded-2xl rounded-br-md px-4 py-3 bg-primary text-primary-foreground">
             <p className="text-sm leading-relaxed whitespace-pre-wrap">
               {parseContentWithVerseLinks(message.content, navigate, isUser)}
             </p>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-start gap-1.5 max-w-[90%]">
+        <div className="flex flex-col items-start gap-2 max-w-[90%]">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-primary" />
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+              <Heart className="w-3.5 h-3.5 text-primary" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Soulguide</span>
+            <span className="text-xs font-medium text-muted-foreground">Soul Care</span>
           </div>
-          <div className="pl-8">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-              {parseContentWithVerseLinks(message.content, navigate, isUser)}
-              {isStreaming && (
-                <span className="inline-flex items-center gap-1 ml-2">
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                </span>
-              )}
-            </p>
+          <div className="pl-9">
+            <div className="bg-card rounded-2xl rounded-tl-md px-4 py-3 border border-border/50">
+              <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                {parseContentWithVerseLinks(message.content, navigate, isUser)}
+                {isStreaming && (
+                  <span className="inline-flex items-center gap-1 ml-2">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </span>
+                )}
+              </p>
+            </div>
             {message.recommendationCards && message.recommendationCards.length > 0 && (
               <RecommendationCards cards={message.recommendationCards} />
             )}

@@ -34,11 +34,11 @@ export function OptionCard({
       transition={{ duration: 0.3, delay: 0.05 * index }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "w-full p-4 text-left rounded-2xl transition-all duration-200",
+        "w-full p-4 text-left rounded-2xl transition-all duration-200 hover-elevate",
         "border-2 focus:outline-none focus:ring-2 focus:ring-primary/30",
         selected
           ? "bg-primary/5 border-primary shadow-sm"
-          : "bg-card border-transparent hover:bg-muted/50",
+          : "bg-card border-transparent",
         disabled && !selected && "opacity-50 cursor-not-allowed"
       )}
     >

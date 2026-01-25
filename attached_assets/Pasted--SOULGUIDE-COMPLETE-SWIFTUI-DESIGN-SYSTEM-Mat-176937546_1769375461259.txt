@@ -1,0 +1,533 @@
+// ============================================
+// SOULGUIDE - COMPLETE SWIFTUI DESIGN SYSTEM
+// Matching Cross app aesthetic + your AI advantages
+// ============================================
+
+import SwiftUI
+
+// MARK: - Design Tokens
+
+struct DesignTokens {
+    // Colors - Warm, clean palette like Cross
+    struct Colors {
+        // Primary brand
+        static let primary = Color(hex: "E07A3D") // Warm orange (like Cross)
+        static let primaryLight = Color(hex: "F5A66D")
+        static let primaryDark = Color(hex: "C55A2B")
+        
+        // Backgrounds
+        static let background = Color(hex: "FAF9F7") // Warm off-white
+        static let surface = Color.white
+        static let surfaceSecondary = Color(hex: "F5F4F2")
+        
+        // Text
+        static let textPrimary = Color(hex: "1A1A1A")
+        static let textSecondary = Color(hex: "6B6B6B")
+        static let textTertiary = Color(hex: "9B9B9B")
+        
+        // Accents
+        static let success = Color(hex: "4CAF50")
+        static let warning = Color(hex: "FF9800")
+        static let error = Color(hex: "E53935")
+        
+        // Streak fire gradient
+        static let streakGradient = LinearGradient(
+            colors: [Color(hex: "FF6B35"), Color(hex: "F7931E")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    
+    // Typography - Serif headers, clean body
+    struct Typography {
+        static let displayLarge = Font.custom("NewYorkMedium-Bold", size: 34)
+        static let displayMedium = Font.custom("NewYorkMedium-Bold", size: 28)
+        static let displaySmall = Font.custom("NewYorkMedium-Semibold", size: 24)
+        
+        static let headlineLarge = Font.custom("NewYorkMedium-Semibold", size: 20)
+        static let headlineMedium = Font.custom("NewYorkMedium-Medium", size: 18)
+        
+        static let bodyLarge = Font.system(size: 17, weight: .regular)
+        static let bodyMedium = Font.system(size: 15, weight: .regular)
+        static let bodySmall = Font.system(size: 13, weight: .regular)
+        
+        static let labelLarge = Font.system(size: 14, weight: .semibold)
+        static let labelMedium = Font.system(size: 12, weight: .semibold)
+        static let labelSmall = Font.system(size: 10, weight: .bold)
+        
+        static let caption = Font.system(size: 12, weight: .regular)
+    }
+    
+    // Spacing
+    struct Spacing {
+        static let xxxs: CGFloat = 2
+        static let xxs: CGFloat = 4
+        static let xs: CGFloat = 8
+        static let sm: CGFloat = 12
+        static let md: CGFloat = 16
+        static let lg: CGFloat = 20
+        static let xl: CGFloat = 24
+        static let xxl: CGFloat = 32
+        static let xxxl: CGFloat = 48
+    }
+    
+    // Corner Radius
+    struct Radius {
+        static let sm: CGFloat = 8
+        static let md: CGFloat = 12
+        static let lg: CGFloat = 16
+        static let xl: CGFloat = 20
+        static let full: CGFloat = 999
+    }
+}
+
+// MARK: - Color Extension
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3:
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6:
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
+// MARK: - Reusable Components
+
+// Primary Button (Black, rounded)
+struct PrimaryButton: View {
+    let title: String
+    let action: () -> Void
+    var isLoading: Bool = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
+                } else {
+                    Text(title)
+                        .font(DesignTokens.Typography.labelLarge)
+                        .fontWeight(.semibold)
+                }
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(DesignTokens.Colors.textPrimary)
+            .cornerRadius(DesignTokens.Radius.full)
+        }
+        .disabled(isLoading)
+    }
+}
+
+// Secondary Button (Outlined)
+struct SecondaryButton: View {
+    let title: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(DesignTokens.Typography.labelLarge)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(DesignTokens.Colors.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignTokens.Radius.full)
+                        .stroke(Color(hex: "E0E0E0"), lineWidth: 1)
+                )
+                .cornerRadius(DesignTokens.Radius.full)
+        }
+    }
+}
+
+// Option Card (for onboarding selections)
+struct OptionCard: View {
+    let title: String
+    let subtitle: String?
+    let isSelected: Bool
+    let action: () -> Void
+    
+    init(title: String, subtitle: String? = nil, isSelected: Bool = false, action: @escaping () -> Void) {
+        self.title = title
+        self.subtitle = subtitle
+        self.isSelected = isSelected
+        self.action = action
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xxs) {
+                    Text(title)
+                        .font(DesignTokens.Typography.bodyLarge)
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                    
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(DesignTokens.Typography.caption)
+                            .foregroundColor(DesignTokens.Colors.textTertiary)
+                    }
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(DesignTokens.Colors.primary)
+                        .font(.system(size: 24))
+                }
+            }
+            .padding(DesignTokens.Spacing.md)
+            .background(isSelected ? DesignTokens.Colors.primary.opacity(0.08) : DesignTokens.Colors.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.md)
+                    .stroke(isSelected ? DesignTokens.Colors.primary : Color(hex: "E8E8E8"), lineWidth: isSelected ? 2 : 1)
+            )
+            .cornerRadius(DesignTokens.Radius.md)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// Streak Badge
+struct StreakBadge: View {
+    let count: Int
+    
+    var body: some View {
+        HStack(spacing: DesignTokens.Spacing.xxs) {
+            Text("🔥")
+                .font(.system(size: 14))
+            Text("\(count)")
+                .font(DesignTokens.Typography.labelMedium)
+                .foregroundColor(DesignTokens.Colors.textPrimary)
+        }
+        .padding(.horizontal, DesignTokens.Spacing.sm)
+        .padding(.vertical, DesignTokens.Spacing.xs)
+        .background(DesignTokens.Colors.surfaceSecondary)
+        .cornerRadius(DesignTokens.Radius.full)
+    }
+}
+
+// Progress Bar
+struct ProgressBar: View {
+    let progress: Double // 0.0 to 1.0
+    var color: Color = DesignTokens.Colors.primary
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(Color(hex: "F0EFED"))
+                    .frame(height: 4)
+                    .cornerRadius(2)
+                
+                Rectangle()
+                    .fill(color)
+                    .frame(width: geometry.size.width * progress, height: 4)
+                    .cornerRadius(2)
+            }
+        }
+        .frame(height: 4)
+    }
+}
+
+// Week Calendar View
+struct WeekCalendarView: View {
+    let selectedDate: Date
+    
+    private let calendar = Calendar.current
+    private let days = ["S", "M", "T", "W", "T", "F", "S"]
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<7, id: \.self) { index in
+                let date = getDateForIndex(index)
+                let isToday = calendar.isDateInToday(date)
+                let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
+                
+                VStack(spacing: DesignTokens.Spacing.xs) {
+                    Text(days[index])
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                    
+                    Text("\(calendar.component(.day, from: date))")
+                        .font(DesignTokens.Typography.bodyMedium)
+                        .fontWeight(isToday ? .semibold : .regular)
+                        .foregroundColor(isToday ? .white : DesignTokens.Colors.textSecondary)
+                        .frame(width: 36, height: 36)
+                        .background(isToday ? DesignTokens.Colors.primary : Color.clear)
+                        .cornerRadius(DesignTokens.Radius.full)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+    
+    private func getDateForIndex(_ index: Int) -> Date {
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToSubtract = weekday - 1 // Sunday is 1
+        let startOfWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
+        return calendar.date(byAdding: .day, value: index, to: startOfWeek)!
+    }
+}
+
+// Expandable Task Card (like Soul Check-In, God's Message, etc.)
+struct TaskCard: View {
+    let duration: String
+    let title: String
+    let subtitle: String
+    let progress: Double?
+    let isExpanded: Bool
+    let onTap: () -> Void
+    let expandedContent: AnyView?
+    
+    init(
+        duration: String,
+        title: String,
+        subtitle: String,
+        progress: Double? = nil,
+        isExpanded: Bool = false,
+        onTap: @escaping () -> Void,
+        @ViewBuilder expandedContent: () -> some View = { EmptyView() }
+    ) {
+        self.duration = duration
+        self.title = title
+        self.subtitle = subtitle
+        self.progress = progress
+        self.isExpanded = isExpanded
+        self.onTap = onTap
+        self.expandedContent = AnyView(expandedContent())
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            // Header
+            Button(action: onTap) {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                    // Duration badge
+                    Text(duration)
+                        .font(DesignTokens.Typography.labelSmall)
+                        .foregroundColor(DesignTokens.Colors.textTertiary)
+                        .padding(.horizontal, DesignTokens.Spacing.xs)
+                        .padding(.vertical, DesignTokens.Spacing.xxxs)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignTokens.Radius.sm)
+                                .stroke(Color(hex: "E0E0E0"), lineWidth: 1)
+                        )
+                    
+                    HStack {
+                        // Checkbox
+                        Image(systemName: progress == 1.0 ? "checkmark.square.fill" : "square")
+                            .foregroundColor(progress == 1.0 ? DesignTokens.Colors.primary : DesignTokens.Colors.textTertiary)
+                            .font(.system(size: 20))
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title)
+                                .font(DesignTokens.Typography.headlineMedium)
+                                .foregroundColor(DesignTokens.Colors.textPrimary)
+                            
+                            Text(subtitle)
+                                .font(DesignTokens.Typography.bodySmall)
+                                .foregroundColor(DesignTokens.Colors.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundColor(DesignTokens.Colors.textTertiary)
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Expanded content
+            if isExpanded {
+                expandedContent
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            
+            // Progress bar (if applicable)
+            if let progress = progress, progress > 0 && progress < 1.0 {
+                HStack {
+                    ProgressBar(progress: progress)
+                    Text("\(Int(progress * 100))% Read")
+                        .font(DesignTokens.Typography.caption)
+                        .foregroundColor(DesignTokens.Colors.primary)
+                }
+            }
+        }
+        .padding(DesignTokens.Spacing.md)
+        .background(DesignTokens.Colors.surface)
+        .cornerRadius(DesignTokens.Radius.md)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+}
+
+// AI Action Button (like "Ask God for guidance")
+struct AIActionButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                Text(title)
+                    .font(DesignTokens.Typography.labelLarge)
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(DesignTokens.Colors.textPrimary)
+            .cornerRadius(DesignTokens.Radius.md)
+        }
+    }
+}
+
+// MARK: - Profile Avatar
+struct ProfileAvatar: View {
+    let imageURL: String?
+    let size: CGFloat
+    
+    init(imageURL: String? = nil, size: CGFloat = 40) {
+        self.imageURL = imageURL
+        self.size = size
+    }
+    
+    var body: some View {
+        Circle()
+            .fill(LinearGradient(
+                colors: [Color(hex: "5B9BD5"), Color(hex: "7EC8E3")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ))
+            .frame(width: size, height: size)
+            .overlay(
+                Image(systemName: "person.fill")
+                    .foregroundColor(.white)
+                    .font(.system(size: size * 0.4))
+            )
+    }
+}
+
+// MARK: - Header Components
+
+struct HomeHeader: View {
+    let streakCount: Int
+    let hasNotification: Bool
+    
+    var body: some View {
+        HStack {
+            ProfileAvatar(size: 40)
+            
+            Spacer()
+            
+            StreakBadge(count: streakCount)
+            
+            Spacer()
+            
+            Button(action: {}) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "bell")
+                        .font(.system(size: 22))
+                        .foregroundColor(DesignTokens.Colors.textPrimary)
+                    
+                    if hasNotification {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 2, y: -2)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, DesignTokens.Spacing.md)
+        .padding(.vertical, DesignTokens.Spacing.sm)
+    }
+}
+
+// MARK: - Bottom Navigation
+
+struct BottomNavigation: View {
+    @Binding var selectedTab: Tab
+    
+    enum Tab: String, CaseIterable {
+        case home = "Home"
+        case chat = "Chat"
+        case circle = "Circle"
+        case bible = "Bible"
+        case discover = "Discover"
+        
+        var icon: String {
+            switch self {
+            case .home: return "house"
+            case .chat: return "message"
+            case .circle: return "person.3"
+            case .bible: return "book"
+            case .discover: return "sparkle.magnifyingglass"
+            }
+        }
+        
+        var selectedIcon: String {
+            switch self {
+            case .home: return "house.fill"
+            case .chat: return "message.fill"
+            case .circle: return "person.3.fill"
+            case .bible: return "book.fill"
+            case .discover: return "sparkle.magnifyingglass"
+            }
+        }
+    }
+    
+    var body: some View {
+        HStack {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                Button(action: { selectedTab = tab }) {
+                    VStack(spacing: DesignTokens.Spacing.xxs) {
+                        Image(systemName: selectedTab == tab ? tab.selectedIcon : tab.icon)
+                            .font(.system(size: 22))
+                        Text(tab.rawValue)
+                            .font(DesignTokens.Typography.caption)
+                    }
+                    .foregroundColor(selectedTab == tab ? DesignTokens.Colors.primary : DesignTokens.Colors.textTertiary)
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(.top, DesignTokens.Spacing.sm)
+        .padding(.bottom, DesignTokens.Spacing.lg)
+        .background(DesignTokens.Colors.surface)
+        .overlay(
+            Rectangle()
+                .fill(Color(hex: "E8E8E8"))
+                .frame(height: 0.5),
+            alignment: .top
+        )
+    }
+}
