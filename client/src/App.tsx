@@ -19,9 +19,10 @@ import Bible from "@/pages/Bible";
 import Community from "@/pages/Community";
 import Devotion from "@/pages/Devotion";
 import Account from "@/pages/Account";
+import MeetPrayerPartner from "@/pages/MeetPrayerPartner";
 import NotFound from "@/pages/not-found";
 
-const ONBOARDING_ROUTES = ["/", "/signup", "/login", "/onboarding", "/transition"];
+const ONBOARDING_ROUTES = ["/", "/signup", "/login", "/onboarding", "/transition", "/meet-prayer-partner"];
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/transition" component={TransitionPage} />
+      <Route path="/meet-prayer-partner" component={MeetPrayerPartner} />
       <Route path="/chat" component={Chat} />
       <Route path="/bible" component={Bible} />
       <Route path="/community" component={Community} />

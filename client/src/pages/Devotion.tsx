@@ -4,7 +4,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/context/AuthContext";
-import { Heart, Sun, BookOpen, ChevronRight, ChevronDown, Check, Bookmark, Flame, Book, MessageCircle, PenLine } from "lucide-react";
+import { Sun, BookOpen, ChevronRight, ChevronDown, Check, Bookmark, Flame, Book, MessageCircle, PenLine, Bell } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,7 @@ interface JourneyTask {
   icon: "sun" | "book" | "message" | "pen";
   duration: string;
   isCompleted: boolean;
+  progress?: number;
   action: () => void;
 }
 
@@ -107,13 +109,6 @@ function StreakBadge({ streak, className }: { streak: number; className?: string
 function JourneyTaskCard({ task, index }: { task: JourneyTask; index: number }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const IconComponent = {
-    sun: Sun,
-    book: Book,
-    message: MessageCircle,
-    pen: PenLine,
-  }[task.icon];
-  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -130,18 +125,19 @@ function JourneyTaskCard({ task, index }: { task: JourneyTask; index: number }) 
         <CardContent className="p-0">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full p-4 flex items-center gap-4 text-left"
+            className="w-full p-4 flex items-start gap-4 text-left"
             data-testid={`button-toggle-task-${task.id}`}
           >
-            <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center",
-              task.isCompleted ? "bg-primary/10" : "bg-primary/10"
-            )}>
-              {task.isCompleted ? (
-                <Check className="w-6 h-6 text-primary" />
-              ) : (
-                <IconComponent className="w-6 h-6 text-primary" />
-              )}
+            <div className="flex flex-col items-center gap-2 pt-1">
+              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                {task.duration}
+              </span>
+              <div className={cn(
+                "w-5 h-5 rounded border-2 flex items-center justify-center",
+                task.isCompleted ? "bg-primary border-primary" : "border-muted-foreground/30"
+              )}>
+                {task.isCompleted && <Check className="w-3 h-3 text-primary-foreground" />}
+              </div>
             </div>
             
             <div className="flex-1 min-w-0">
@@ -152,15 +148,24 @@ function JourneyTaskCard({ task, index }: { task: JourneyTask; index: number }) 
                 {task.title}
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5">{task.subtitle}</p>
+              
+              {task.progress !== undefined && task.progress > 0 && !task.isCompleted && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary rounded-full transition-all" 
+                      style={{ width: `${task.progress}%` }} 
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-primary">{task.progress}% Read</span>
+                </div>
+              )}
             </div>
             
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{task.duration}</span>
-              <ChevronDown className={cn(
-                "w-5 h-5 text-muted-foreground transition-transform",
-                isExpanded && "rotate-180"
-              )} />
-            </div>
+            <ChevronDown className={cn(
+              "w-5 h-5 text-muted-foreground transition-transform flex-shrink-0 mt-1",
+              isExpanded && "rotate-180"
+            )} />
           </button>
           
           <AnimatePresence>
@@ -262,32 +267,43 @@ export default function Devotion() {
 
   const journeyTasks: JourneyTask[] = [
     {
-      id: "devotional",
-      title: "Daily Devotional",
-      subtitle: devotional?.title || "Today's spiritual reading",
+      id: "soul-checkin",
+      title: "Soul Check-In",
+      subtitle: "How close do you feel to God right now?",
       icon: "sun",
-      duration: "5 min",
+      duration: "1 MIN",
       isCompleted: false,
+      action: () => setLocation("/chat"),
+    },
+    {
+      id: "gods-message",
+      title: "God's Message",
+      subtitle: "A word of peace for your heart",
+      icon: "book",
+      duration: "2 MIN",
+      isCompleted: false,
+      progress: 17,
       action: () => {
         handleComplete();
         setLocation("/chat");
       },
     },
     {
-      id: "bible",
-      title: "Scripture Reading",
-      subtitle: devotional?.scriptureReference || "Explore God's Word",
+      id: "devotional",
+      title: "Daily Devotional",
+      subtitle: devotional?.title || "Today's spiritual reading",
       icon: "book",
-      duration: "10 min",
+      duration: "1 MIN",
       isCompleted: false,
+      progress: 17,
       action: () => setLocation("/bible"),
     },
     {
-      id: "reflect",
-      title: "Reflect & Journal",
-      subtitle: "Share what's on your heart",
+      id: "prayer",
+      title: "Today's Prayer",
+      subtitle: "Connect with God in prayer",
       icon: "message",
-      duration: "5 min",
+      duration: "2 MIN",
       isCompleted: false,
       action: () => setLocation("/chat"),
     },
@@ -306,27 +322,40 @@ export default function Devotion() {
           transition={{ duration: 0.4 }}
           className="space-y-2"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="font-serif text-3xl font-bold" data-testid="text-greeting">
-                {getGreetingByTime()}, {userName}
-              </h1>
-              <p className="text-muted-foreground mt-1" data-testid="text-greeting-subtext">
-                {format(new Date(), "EEEE, MMMM d")}
-              </p>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full bg-muted"
-              data-testid="button-profile"
+          <div className="flex items-center justify-between">
+            <Avatar 
+              className="w-10 h-10 cursor-pointer" 
               onClick={() => setLocation("/account")}
+              data-testid="button-profile-avatar"
             >
-              <span className="text-sm font-semibold">{userName[0]}</span>
+              <AvatarImage src="" />
+              <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                {userName[0]}
+              </AvatarFallback>
+            </Avatar>
+            
+            <StreakBadge streak={currentStreak} />
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              data-testid="button-notifications"
+            >
+              <Bell className="w-5 h-5 text-foreground" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
             </Button>
           </div>
           
-          <StreakBadge streak={currentStreak} className="mt-3" />
+          <div className="mt-4">
+            <h1 className="font-serif text-3xl font-bold" data-testid="text-greeting">
+              Today's Journey
+            </h1>
+            <p className="text-muted-foreground mt-1" data-testid="text-greeting-subtext">
+              Seeking God's Help
+            </p>
+          </div>
+          
         </motion.div>
 
         <motion.div
@@ -345,10 +374,19 @@ export default function Devotion() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="space-y-1"
+          className="flex items-center justify-between"
         >
-          <h2 className="font-serif text-xl font-semibold">Today's Journey</h2>
-          <p className="text-sm text-muted-foreground">Your spiritual practices for today</p>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">PROGRESS TODAY</span>
+          <span className="text-xs font-medium text-muted-foreground">25%</span>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.12 }}
+          className="w-full h-1.5 bg-muted rounded-full overflow-hidden"
+        >
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: "25%" }} />
         </motion.div>
 
         <div className="space-y-3">

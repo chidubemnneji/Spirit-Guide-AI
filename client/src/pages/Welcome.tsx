@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Heart, Sparkles, BookOpen } from "lucide-react";
+import { Cross, Sparkles, BookOpen } from "lucide-react";
 
 export default function Welcome() {
   const [, setLocation] = useLocation();
@@ -26,7 +26,7 @@ export default function Welcome() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
           >
-            <Heart className="w-12 h-12 text-primary" />
+            <Cross className="w-12 h-12 text-primary" />
           </motion.div>
 
           <div className="space-y-4">
@@ -94,9 +94,9 @@ export default function Welcome() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shadow-sm">
-                <Heart className="w-5 h-5 text-primary" />
+                <Cross className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-xs text-muted-foreground">Compassionate</span>
+              <span className="text-xs text-muted-foreground">Faith-Centered</span>
             </div>
           </motion.div>
         </motion.div>

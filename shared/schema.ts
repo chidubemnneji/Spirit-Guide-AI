@@ -272,6 +272,8 @@ export interface CrisisAssessment {
 
 // Onboarding data type for frontend
 export interface OnboardingData {
+  userName: string | null;
+  tradition: string | null;
   primaryStruggle: string | null;
   depthLayer: Record<string, unknown> | null;
   behavioralReality: {

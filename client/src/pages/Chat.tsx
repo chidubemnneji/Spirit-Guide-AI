@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Heart, HelpCircle, Sunrise, Lightbulb, ArrowRight } from "lucide-react";
+import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cross, HelpCircle, Sunrise, Lightbulb, ArrowRight, CloudRain, Minus, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
@@ -600,8 +600,14 @@ function parseContentWithVerseLinks(
   return parts.length > 0 ? parts : [content];
 }
 
+const quickResponseChips = [
+  { text: "Struggling", icon: CloudRain },
+  { text: "Just okay", icon: Minus },
+  { text: "Pretty good", icon: Sun },
+];
+
 const conversationStarters = [
-  { icon: Heart, text: "I'm feeling distant from God", color: "text-rose-500 dark:text-rose-400" },
+  { icon: Cross, text: "I'm feeling distant from God", color: "text-rose-500 dark:text-rose-400" },
   { icon: HelpCircle, text: "I have questions about prayer", color: "text-blue-500 dark:text-blue-400" },
   { icon: Sunrise, text: "I'm struggling with doubt", color: "text-amber-500 dark:text-amber-400" },
   { icon: Lightbulb, text: "I want to deepen my faith", color: "text-emerald-500 dark:text-emerald-400" },
@@ -629,7 +635,7 @@ function EmptyChatState({
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
       >
-        <Heart className="w-10 h-10 text-primary" />
+        <Cross className="w-10 h-10 text-primary" />
       </motion.div>
       
       <motion.h2 
@@ -652,33 +658,53 @@ function EmptyChatState({
 
       {!isInitializing && (
         <motion.div 
-          className="mt-8 w-full max-w-sm space-y-3"
+          className="mt-8 w-full max-w-sm space-y-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-            Start a conversation
-          </p>
-          {conversationStarters.map((starter, index) => (
-            <motion.button
-              key={starter.text}
-              onClick={() => onStarterPress(starter.text)}
-              className="w-full flex items-center gap-3 p-4 rounded-xl bg-card border border-border/50 transition-all text-left group hover-elevate"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 + index * 0.08 }}
-              whileTap={{ scale: 0.98 }}
-              data-testid={`button-starter-${index}`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <starter.icon className="w-5 h-5 text-primary" />
-              </div>
-              <span className="flex-1 text-sm font-medium text-foreground">
-                {starter.text}
-              </span>
-            </motion.button>
-          ))}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {quickResponseChips.map((chip, index) => (
+              <motion.button
+                key={chip.text}
+                onClick={() => onStarterPress(`I'm feeling ${chip.text.toLowerCase()}`)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border transition-all hover-elevate"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 + index * 0.08 }}
+                whileTap={{ scale: 0.95 }}
+                data-testid={`button-chip-${chip.text.toLowerCase().replace(' ', '-')}`}
+              >
+                <chip.icon className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">{chip.text}</span>
+              </motion.button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">
+              Or share what's on your mind
+            </p>
+            {conversationStarters.map((starter, index) => (
+              <motion.button
+                key={starter.text}
+                onClick={() => onStarterPress(starter.text)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 transition-all text-left group hover-elevate"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 + index * 0.08 }}
+                whileTap={{ scale: 0.98 }}
+                data-testid={`button-starter-${index}`}
+              >
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <starter.icon className="w-4 h-4 text-primary" />
+                </div>
+                <span className="flex-1 text-sm font-medium text-foreground">
+                  {starter.text}
+                </span>
+              </motion.button>
+            ))}
+          </div>
         </motion.div>
       )}
     </motion.div>
@@ -718,7 +744,7 @@ function MessageBubble({
         <div className="flex flex-col items-start gap-2 max-w-[90%]">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <Heart className="w-3.5 h-3.5 text-primary" />
+              <Cross className="w-3.5 h-3.5 text-primary" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">Soul Care</span>
           </div>

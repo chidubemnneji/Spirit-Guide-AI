@@ -11,6 +11,8 @@ interface OnboardingContextType {
 }
 
 const defaultOnboardingData: OnboardingData = {
+  userName: null,
+  tradition: null,
   primaryStruggle: null,
   depthLayer: null,
   behavioralReality: null,

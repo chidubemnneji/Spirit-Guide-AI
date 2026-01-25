@@ -2,6 +2,10 @@ import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { ProgressBar } from "@/components/onboarding/ProgressBar";
+import { Testimonials } from "@/components/onboarding/Testimonials";
+import { NameInput } from "@/components/onboarding/NameInput";
+import { TraditionSelection } from "@/components/onboarding/TraditionSelection";
+import { AIDemo } from "@/components/onboarding/AIDemo";
 import { Phase1 } from "@/components/onboarding/Phase1";
 import { Phase2DistantFromGod } from "@/components/onboarding/Phase2DistantFromGod";
 import { Phase2Doubts } from "@/components/onboarding/Phase2Doubts";
@@ -16,7 +20,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-const TOTAL_PHASES = 4;
+const TOTAL_PHASES = 8;
 
 const phase2Components: Record<string, React.ComponentType<{ onNext: () => void; onBack: () => void }>> = {
   distant_from_god: Phase2DistantFromGod,
@@ -49,21 +53,9 @@ export default function Onboarding() {
     },
   });
 
-  const handlePhase1Complete = useCallback((struggle: string) => {
-    setPhase(2);
-  }, [setPhase]);
-
-  const handlePhase2Complete = useCallback(() => {
-    setPhase(3);
-  }, [setPhase]);
-
-  const handlePhase3Complete = useCallback(() => {
-    setPhase(4);
-  }, [setPhase]);
-
-  const handlePhase4Complete = useCallback(() => {
-    submitMutation.mutate();
-  }, [submitMutation]);
+  const handleNext = useCallback(() => {
+    setPhase(currentPhase + 1);
+  }, [currentPhase, setPhase]);
 
   const handleBack = useCallback(() => {
     if (currentPhase > 1) {
@@ -73,20 +65,44 @@ export default function Onboarding() {
     }
   }, [currentPhase, setPhase, setLocation]);
 
+  const handlePhase1Complete = useCallback((struggle: string) => {
+    setPhase(6);
+  }, [setPhase]);
+
+  const handlePhase2Complete = useCallback(() => {
+    setPhase(7);
+  }, [setPhase]);
+
+  const handlePhase3Complete = useCallback(() => {
+    setPhase(8);
+  }, [setPhase]);
+
+  const handlePhase4Complete = useCallback(() => {
+    submitMutation.mutate();
+  }, [submitMutation]);
+
   const renderPhase = () => {
     switch (currentPhase) {
       case 0:
       case 1:
+        return <Testimonials onNext={handleNext} />;
+      case 2:
+        return <NameInput onNext={handleNext} onBack={handleBack} />;
+      case 3:
+        return <TraditionSelection onNext={handleNext} onBack={handleBack} />;
+      case 4:
+        return <AIDemo onNext={handleNext} onBack={handleBack} />;
+      case 5:
         return <Phase1 onNext={handlePhase1Complete} onBack={handleBack} />;
-      case 2: {
+      case 6: {
         const Phase2Component = data.primaryStruggle 
           ? phase2Components[data.primaryStruggle] 
           : Phase2DistantFromGod;
         return <Phase2Component onNext={handlePhase2Complete} onBack={handleBack} />;
       }
-      case 3:
+      case 7:
         return <Phase3 onNext={handlePhase3Complete} onBack={handleBack} />;
-      case 4:
+      case 8:
         return (
           <Phase4 
             onComplete={handlePhase4Complete} 
@@ -95,7 +111,7 @@ export default function Onboarding() {
           />
         );
       default:
-        return <Phase1 onNext={handlePhase1Complete} onBack={handleBack} />;
+        return <Testimonials onNext={handleNext} />;
     }
   };
 

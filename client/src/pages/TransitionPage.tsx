@@ -55,14 +55,14 @@ export default function TransitionPage() {
     setIsVisible(true);
     
     const timer = setTimeout(() => {
-      setLocation("/devotion");
+      setLocation("/meet-prayer-partner");
     }, 12000);
 
     return () => clearTimeout(timer);
   }, [setLocation]);
 
   const handleContinue = () => {
-    setLocation("/devotion");
+    setLocation("/meet-prayer-partner");
   };
 
   return (

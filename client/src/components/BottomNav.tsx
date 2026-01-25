@@ -1,12 +1,12 @@
 import { useLocation, Link } from "wouter";
-import { Home, Heart, BookOpen, User } from "lucide-react";
+import { Home, Cross, BookOpen, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 
 const navItems = [
   { path: "/devotion", icon: Home, label: "Home" },
-  { path: "/chat", icon: Heart, label: "Soul Care" },
+  { path: "/chat", icon: Cross, label: "Soul Care" },
   { path: "/bible", icon: BookOpen, label: "Word" },
   { path: "/account", icon: User, label: "Profile" },
 ];

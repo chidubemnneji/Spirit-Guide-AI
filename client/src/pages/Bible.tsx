@@ -708,7 +708,7 @@ export default function Bible() {
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Input
-                    placeholder="Search by feeling or keyword..."
+                    placeholder="Ask me anything about the Bible..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -727,9 +727,9 @@ export default function Bible() {
                   {searchLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
                 </Button>
               </div>
-              {/* Feeling suggestions */}
+              {/* AI prompt suggestions */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {["anxious", "fear", "hope", "peace", "strength", "comfort"].map((feeling) => (
+                {["anxious", "peace", "hope", "strength", "comfort", "faith"].map((feeling) => (
                   <Button
                     key={feeling}
                     variant="outline"
