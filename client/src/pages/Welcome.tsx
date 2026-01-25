@@ -34,32 +34,33 @@ export default function Welcome() {
           </p>
         </motion.div>
 
-        <motion.div 
-          className="flex items-center gap-6 mt-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center border border-border/50">
-              <Sparkles className="w-5 h-5 text-foreground" />
-            </div>
-            <span className="text-xs text-muted-foreground">Personalized</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center border border-border/50">
-              <BookOpen className="w-5 h-5 text-foreground" />
-            </div>
-            <span className="text-xs text-muted-foreground">Scripture</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center border border-border/50">
-              <Cross className="w-5 h-5 text-foreground" />
-            </div>
-            <span className="text-xs text-muted-foreground">Faith</span>
-          </div>
-        </motion.div>
       </main>
+
+      <motion.div 
+        className="flex items-center justify-center gap-8 px-6 pb-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-card flex items-center justify-center border border-border/50">
+            <Sparkles className="w-7 h-7 text-foreground" />
+          </div>
+          <span className="text-sm text-muted-foreground">Personalized</span>
+        </div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-card flex items-center justify-center border border-border/50">
+            <BookOpen className="w-7 h-7 text-foreground" />
+          </div>
+          <span className="text-sm text-muted-foreground">Scripture</span>
+        </div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-card flex items-center justify-center border border-border/50">
+            <Cross className="w-7 h-7 text-foreground" />
+          </div>
+          <span className="text-sm text-muted-foreground">Faith</span>
+        </div>
+      </motion.div>
 
       <footer className="p-6 pb-10">
         <motion.div
