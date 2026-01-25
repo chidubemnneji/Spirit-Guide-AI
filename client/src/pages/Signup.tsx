@@ -188,7 +188,7 @@ export default function Signup() {
             <div className="pt-2">
               <Button
                 type="submit"
-                className="w-full h-14 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
+                className="w-full h-14 rounded-2xl text-base font-semibold shadow-lg shadow-primary/25"
                 disabled={isLoading || !canSubmit}
                 data-testid="button-signup"
               >

@@ -133,7 +133,7 @@ export default function TransitionPage() {
             className="pt-4"
           >
             <Button 
-              className="w-full h-14 rounded-2xl text-base font-semibold bg-foreground text-background hover:bg-foreground/90"
+              className="w-full h-14 rounded-2xl text-base font-semibold bg-foreground text-background"
               onClick={handleContinue}
               data-testid="button-continue"
             >

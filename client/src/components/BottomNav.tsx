@@ -40,10 +40,8 @@ export function BottomNav() {
                 >
                   <motion.div
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[72px]",
-                      isActive
-                        ? "bg-primary/10"
-                        : "hover:bg-muted/50"
+                      "flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[72px] hover-elevate",
+                      isActive && "bg-primary/10"
                     )}
                     whileTap={{ scale: 0.95 }}
                   >

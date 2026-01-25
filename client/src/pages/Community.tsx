@@ -89,15 +89,15 @@ export default function Community() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6 + index * 0.1 }}
             >
-              <Card className="border-0 shadow-sm">
+              <Card className="border-0 shadow-sm" data-testid={`card-feature-${feature.title.toLowerCase().replace(/\s+/g, '-')}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl ${feature.bgColor} flex items-center justify-center`}>
                       <feature.icon className={`w-6 h-6 ${feature.color}`} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold">{feature.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-0.5">
+                      <h3 className="font-semibold" data-testid={`text-feature-title-${index}`}>{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground mt-0.5" data-testid={`text-feature-description-${index}`}>
                         {feature.description}
                       </p>
                     </div>
@@ -115,8 +115,9 @@ export default function Community() {
           transition={{ delay: 0.9 }}
         >
           <Button 
-            className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90"
+            className="rounded-xl"
             disabled
+            data-testid="button-coming-soon"
           >
             Coming Soon
           </Button>

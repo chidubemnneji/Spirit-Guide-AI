@@ -271,7 +271,7 @@ export default function Devotion() {
                 </p>
 
                 <Button 
-                  className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90"
+                  className="w-full rounded-xl"
                   onClick={handleBeginReflection}
                   data-testid="button-start-devotion"
                 >

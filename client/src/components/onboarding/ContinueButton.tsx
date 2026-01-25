@@ -32,7 +32,7 @@ export function ContinueButton({
         data-testid="button-continue"
         className={cn(
           "w-full h-14 text-base font-semibold rounded-2xl transition-all duration-300",
-          !disabled && "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25",
+          !disabled && "bg-primary shadow-lg shadow-primary/25",
           disabled && "bg-muted text-muted-foreground"
         )}
       >

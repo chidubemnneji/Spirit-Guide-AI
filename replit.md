@@ -22,7 +22,13 @@ Preferred communication style: Simple, everyday language.
 - **State Management**: React Context for onboarding state and theme management
 - **Data Fetching**: TanStack Query (React Query) for server state management
 - **Styling**: Tailwind CSS with custom CSS variables for theming, shadcn/ui component library
-- **Design System**: Warm wellness aesthetic with Inter (UI) and Crimson Pro (headings) fonts
+- **Design System**: Mobile-first journal-inspired aesthetic with warm cream/peach palette
+  - Primary: Warm peach (24 85% 60%)
+  - Accent: Coral (16 80% 58%)
+  - Background: Warm cream (40 25% 97%)
+  - 1rem border radius on cards, rounded-2xl buttons
+  - Inter for UI, Crimson Pro for headings/Scripture
+  - 4-tab bottom navigation: Home, Explore, Journey, Profile
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express
