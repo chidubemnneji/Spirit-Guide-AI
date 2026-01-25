@@ -20,6 +20,7 @@ import { recommendationEngine } from "./services/recommendationEngine";
 import { trustTrackingService } from "./services/trustTrackingService";
 import { modeTransitionService } from "./services/modeTransitionService";
 import { shameLoggingService } from "./services/shameLoggingService";
+import { registerVoiceRoutes } from "./voiceRoutes";
 
 // Rate limiters for API protection
 const chatLimiter = rateLimit({
@@ -1471,6 +1472,9 @@ I'm here to listen whenever you're ready to talk.`;
       res.status(500).json({ error: "Failed to get shame detections" });
     }
   });
+
+  // Register voice routes for speech-to-text and text-to-speech
+  registerVoiceRoutes(app);
 
   return httpServer;
 }

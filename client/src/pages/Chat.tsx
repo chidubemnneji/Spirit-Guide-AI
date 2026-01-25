@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cross, HelpCircle, Sunrise, Lightbulb, ArrowRight, CloudRain, Minus, Sun } from "lucide-react";
+import { Send, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cross, HelpCircle, Sunrise, Lightbulb, ArrowRight, CloudRain, Minus, Sun, Mic, MicOff, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
@@ -111,10 +111,16 @@ export default function Chat() {
   const [initError, setInitError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initRef = useRef(false);
   const reflectProcessedRef = useRef(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const { setHideNav } = useScroll();
@@ -135,6 +141,20 @@ export default function Chat() {
       navigate("/chat", { replace: true });
     }
   }, [searchString, navigate]);
+
+  // Cleanup audio resources on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -421,6 +441,128 @@ export default function Chat() {
     createConversation();
   };
 
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.start(100);
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      setSendError("Could not access microphone. Please check permissions.");
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== "recording") return;
+
+    return new Promise<Blob>((resolve) => {
+      const recorder = mediaRecorderRef.current!;
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        recorder.stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+        resolve(blob);
+      };
+      recorder.stop();
+    });
+  };
+
+  const handleMicClick = async () => {
+    if (isRecording) {
+      const audioBlob = await stopRecording();
+      if (audioBlob && audioBlob.size > 0) {
+        setIsTranscribing(true);
+        try {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64 = (reader.result as string).split(",")[1];
+              const response = await fetch("/api/voice/transcribe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ audio: base64, format: "webm" }),
+              });
+              if (response.ok) {
+                const { transcript } = await response.json();
+                if (transcript) {
+                  setInput((prev) => (prev ? prev + " " + transcript : transcript));
+                }
+              } else {
+                console.error("Transcription failed:", response.status);
+              }
+            } catch (fetchError) {
+              console.error("Transcription fetch error:", fetchError);
+            } finally {
+              setIsTranscribing(false);
+            }
+          };
+          reader.onerror = () => {
+            console.error("FileReader error");
+            setIsTranscribing(false);
+          };
+          reader.readAsDataURL(audioBlob);
+        } catch (error) {
+          console.error("Transcription error:", error);
+          setIsTranscribing(false);
+        }
+      }
+    } else {
+      await startRecording();
+    }
+  };
+
+  const playMessageAudio = async (messageId: number, text: string) => {
+    // Stop any currently playing audio first
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    if (playingMessageId === messageId) {
+      setPlayingMessageId(null);
+      return;
+    }
+
+    setPlayingMessageId(messageId);
+    try {
+      const response = await fetch("/api/voice/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice: "nova" }),
+      });
+      if (response.ok) {
+        const { audio } = await response.json();
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(audio), (c) => c.charCodeAt(0))],
+          { type: "audio/mp3" }
+        );
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audioElement = new Audio(audioUrl);
+        audioRef.current = audioElement;
+        audioElement.onended = () => {
+          setPlayingMessageId(null);
+          URL.revokeObjectURL(audioUrl);
+          audioRef.current = null;
+        };
+        await audioElement.play();
+      } else {
+        setPlayingMessageId(null);
+      }
+    } catch (error) {
+      console.error("Playback error:", error);
+      setPlayingMessageId(null);
+    }
+  };
+
   const getWelcomeMessage = () => {
     if (persona?.primaryPersona) {
       const personaMessages: Record<string, string> = {
@@ -501,7 +643,12 @@ export default function Chat() {
           ) : (
             <div className="space-y-3">
               {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  onPlayAudio={playMessageAudio}
+                  isPlaying={playingMessageId === message.id}
+                />
               ))}
               {streamingContent && (
                 <MessageBubble
@@ -534,6 +681,26 @@ export default function Chat() {
                 rows={1}
                 data-testid="input-message"
               />
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  onClick={handleMicClick}
+                  disabled={isStreaming || isTranscribing || !conversationId || isInitializing}
+                  size="icon"
+                  variant={isRecording ? "destructive" : "ghost"}
+                  data-testid="button-mic"
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                </Button>
+              </motion.div>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -731,9 +898,13 @@ function EmptyChatState({
 function MessageBubble({
   message,
   isStreaming = false,
+  onPlayAudio,
+  isPlaying = false,
 }: {
   message: ChatMessage;
   isStreaming?: boolean;
+  onPlayAudio?: (messageId: number, text: string) => void;
+  isPlaying?: boolean;
 }) {
   const [, navigate] = useLocation();
   const isUser = message.role === "user";
@@ -777,6 +948,18 @@ function MessageBubble({
                   </span>
                 )}
               </p>
+              {!isStreaming && onPlayAudio && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onPlayAudio(message.id, message.content)}
+                  className="mt-2"
+                  data-testid={`button-play-message-${message.id}`}
+                >
+                  <Volume2 className={cn("w-3.5 h-3.5 mr-1.5", isPlaying && "animate-pulse")} />
+                  <span className="text-xs">{isPlaying ? "Playing..." : "Listen"}</span>
+                </Button>
+              )}
             </div>
             {message.recommendationCards && message.recommendationCards.length > 0 && (
               <RecommendationCards cards={message.recommendationCards} />
