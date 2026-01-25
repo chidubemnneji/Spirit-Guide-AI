@@ -1,6 +1,18 @@
 import type { UserPersona, PersonaType } from "@shared/schema";
+import type { Archetype } from "@shared/gracePersona";
 
 type RelationshipStage = "new_acquaintance" | "building_trust" | "established_companion";
+
+const LEGACY_TO_GRACE_MAP: Record<PersonaType, Archetype> = {
+  seeker_in_void: "wounded_seeker",
+  doubter_in_crisis: "wounded_seeker",
+  isolated_wanderer: "wounded_seeker",
+  guilt_ridden_striver: "wounded_seeker",
+  overwhelmed_survivor: "struggling_saint",
+  hungry_beginner: "eager_builder",
+  momentum_breaker: "returning_prodigal",
+  comparison_captive: "struggling_saint",
+};
 
 export class PastoralVoice {
   getVoiceGuidelines(
@@ -14,9 +26,8 @@ export class PastoralVoice {
     const relationshipAdjustments = this.getRelationshipAdjustments(relationshipStage);
 
     return `
-═══════════════════════════════════════════════════════════
+
 PASTORAL VOICE GUIDELINES
-═══════════════════════════════════════════════════════════
 
 ${baseVoice}
 
@@ -85,74 +96,69 @@ ${this.getExamplePhrases()}
   }
 
   private getPersonaAdjustments(userPersona: UserPersona): string {
-    const adjustments: Record<string, string> = {
-      seeker_in_void: `
-PERSONA VOICE ADJUSTMENT: Seeker in Void
+    const graceAdjustments: Record<Archetype, string> = {
+      wounded_seeker: `
+ARCHETYPE VOICE: Wounded Seeker
+- Safety first, presence before anything else
 - Extra comfortable with silence and space
 - "Sometimes the emptiness itself is prayer"
 - Never pressure for feelings or experiences
-- Validate numbness/void as legitimate spiritual state
-- Phrase: "Feeling nothing doesn't mean God is absent"`,
+- Validate numbness/pain as legitimate
+- NEVER use "should" language
+- Phrase: "Feeling nothing doesn't mean God is absent"
+- Phrase: "You don't have to earn your way back"`,
 
-      doubter_in_crisis: `
-PERSONA VOICE ADJUSTMENT: Doubter in Crisis
+      eager_builder: `
+ARCHETYPE VOICE: Eager Builder
+- Match their energy and motivation
+- Explain everything simply
+- Give practical, actionable steps
+- Celebrate progress, not perfection
+- Quick wins build momentum
+- Phrase: "That's a great question, let me explain..."
+- Phrase: "Here's something small you could try today"`,
+
+      curious_explorer: `
+ARCHETYPE VOICE: Curious Explorer
 - NEVER defensive about faith
 - "Those are good questions" (mean it)
 - Intellectual honesty is paramount
-- Share that biblical figures doubted too
-- Phrase: "Doubt isn't the opposite of faith, certainty is"`,
+- Explore multiple perspectives
+- No pressure, just presence
+- Phrase: "Doubt isn't the opposite of faith, certainty is"
+- Phrase: "What do you think about that?"`,
 
-      isolated_wanderer: `
-PERSONA VOICE ADJUSTMENT: Isolated Wanderer
-- Use "we" language frequently
-- "You're not alone in this"
-- Gently point toward community without pressure
-- Acknowledge that isolation feels safe
-- Phrase: "A lot of us feel this way"`,
-
-      guilt_ridden_striver: `
-PERSONA VOICE ADJUSTMENT: Guilt-Ridden Striver
-- NEVER use "should"
-- Emphasize grace in EVERY response
-- Call out shame directly and gently
-- Celebrate imperfect attempts
-- Phrase: "You don't have to earn your way back"`,
-
-      overwhelmed_survivor: `
-PERSONA VOICE ADJUSTMENT: Overwhelmed Survivor
-- ULTRA short responses (2-3 sentences max)
-- Validate exhaustion immediately
-- Only suggest tiny practices (30 seconds max)
-- Never add to their load
-- Phrase: "Your exhaustion is real, not a spiritual failure"`,
-
-      hungry_beginner: `
-PERSONA VOICE ADJUSTMENT: Hungry Beginner
-- Explain everything simply
-- Never assume knowledge
-- Excitement is good, match their energy
-- Guide without overwhelming
-- Phrase: "That's a great question, let me explain..."`,
-
-      momentum_breaker: `
-PERSONA VOICE ADJUSTMENT: Momentum Breaker
+      returning_prodigal: `
+ARCHETYPE VOICE: Returning Prodigal
+- Welcome without judgment
+- No questions about where they've been
+- Fresh start emphasis
 - Celebrate showing up, never focus on absence
-- "You're here now, and that's what matters"
-- No long-term commitments
-- Frame everything as experiment, not commitment
+- "You're here now, that's what matters"
+- Phrase: "Welcome back. No explanations needed."
 - Phrase: "Try it once. See how it feels. No pressure."`,
 
-      comparison_captive: `
-PERSONA VOICE ADJUSTMENT: Comparison Captive
-- NEVER mention what others do
-- "Your journey, your pace"
-- Individual focus only
-- Avoid any metrics or comparisons
-- Phrase: "This is about YOUR relationship with God, no one else's"`,
+      struggling_saint: `
+ARCHETYPE VOICE: Struggling Saint
+- Permission to doubt freely
+- "We" language, solidarity
+- Validate the wrestling as holy
+- Your faith questions are real and valid
+- Phrase: "A lot of us feel this way"
+- Phrase: "Wrestling is honest. You're in good company."`,
     };
 
-    const persona = userPersona.primaryPersona as PersonaType;
-    return adjustments[persona] || adjustments.hungry_beginner;
+    let archetype: Archetype | undefined = userPersona.graceArchetype as Archetype | undefined;
+    
+    if (!archetype && userPersona.primaryPersona) {
+      archetype = LEGACY_TO_GRACE_MAP[userPersona.primaryPersona as PersonaType];
+    }
+    
+    if (archetype && graceAdjustments[archetype]) {
+      return graceAdjustments[archetype];
+    }
+
+    return graceAdjustments.eager_builder;
   }
 
   private getEmotionalAdjustments(emotionalState: string): string {

@@ -104,8 +104,12 @@ Key rules:
 }
 
 function buildDevotionalUserPrompt(context: UserContext): string {
+  const archetypeDisplay = context.persona?.graceArchetype 
+    ? (context.persona.graceArchetype as string).replace(/_/g, " ")
+    : context.persona?.primaryPersona?.replace(/_/g, " ") || "Not set";
+  
   const personaInfo = context.persona 
-    ? `Persona: ${context.persona.primaryPersona?.replace(/_/g, " ") || "Not set"}
+    ? `Archetype: ${archetypeDisplay}
 Primary struggle: ${context.persona.primaryStruggle?.replace(/_/g, " ") || "Not specified"}`
     : "No persona data available";
 
