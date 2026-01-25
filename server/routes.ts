@@ -462,6 +462,130 @@ export async function registerRoutes(
     }
   });
 
+  // Get personalized opening message based on chat mode
+  app.get("/api/chat/personalized-opening", async (req: Request, res: Response) => {
+    try {
+      const mode = req.query.mode as string;
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Get recent conversation history for context
+      let recentContext = "";
+      let recentTopics: string[] = [];
+      try {
+        const conversations = await storage.getConversationsByUser(userId);
+        if (conversations.length > 0) {
+          // Get messages from the most recent conversation
+          const recentConvo = conversations[0];
+          const messages = await storage.getMessages(recentConvo.id);
+          if (messages.length > 0) {
+            // Get last few user messages for context
+            const userMessages = messages
+              .filter(m => m.role === "user")
+              .slice(-3)
+              .map(m => m.content);
+            if (userMessages.length > 0) {
+              recentContext = userMessages.join(" ");
+              // Extract simple topics from recent messages
+              const topicKeywords = ["work", "family", "health", "anxiety", "worry", "prayer", "faith", "relationship", "stress", "peace", "hope", "fear", "job", "friend", "marriage", "child", "parent"];
+              const contextLower = recentContext.toLowerCase();
+              recentTopics = topicKeywords.filter(t => contextLower.includes(t));
+            }
+          }
+        }
+      } catch (e) {
+        console.log("Could not fetch recent context:", e);
+      }
+
+      let message = "";
+      
+      if (mode === "checkin") {
+        // Soul check-in: personalized question based on previous interactions
+        if (recentTopics.length > 0) {
+          const topic = recentTopics[0];
+          const personalizedQuestions: Record<string, string> = {
+            work: "Last time we talked, work seemed to be on your mind. How has that been going?",
+            family: "You mentioned family before. How are things with them today?",
+            health: "I remember you were dealing with some health concerns. How are you feeling?",
+            anxiety: "You shared about feeling anxious. How has your peace been lately?",
+            worry: "You had some worries on your heart. Have things settled a bit?",
+            prayer: "How has your prayer life been since we last talked?",
+            faith: "How is your faith journey going? Any new insights or struggles?",
+            relationship: "How are things going in your relationships?",
+            stress: "You mentioned feeling stressed. How are you managing things now?",
+            peace: "Have you been able to find moments of peace lately?",
+            hope: "How is your sense of hope today?",
+            fear: "You shared some fears before. How are you feeling about those now?",
+            job: "How are things going at work these days?",
+            friend: "How are your friendships going?",
+            marriage: "How is your marriage doing?",
+            child: "How are things with your children?",
+            parent: "How are things with your parents?",
+          };
+          message = personalizedQuestions[topic] || "How are you feeling today? I'm here to listen.";
+        } else {
+          message = "Welcome! How are you feeling today? Take a moment to reflect, and share whatever is on your heart.";
+        }
+      } else if (mode === "devotional") {
+        // Devotional mode: start with prayer/reflection prompt
+        const greetings = [
+          "Let's begin this time together with openness. What's weighing on your heart today that you'd like to bring before God?",
+          "I'm glad you're here. Before we dive in, would you like to share what's on your mind? Sometimes naming our thoughts helps us find peace.",
+          "This is your sacred space for reflection and prayer. What would you like to explore or bring to God today?",
+        ];
+        message = greetings[Math.floor(Math.random() * greetings.length)];
+      } else {
+        message = "I'm here for you. What would you like to talk about today?";
+      }
+      
+      res.json({ message });
+    } catch (error) {
+      console.error("Error getting personalized opening:", error);
+      res.status(500).json({ error: "Failed to get personalized opening" });
+    }
+  });
+
+  // Save a system/AI-generated message without triggering AI response
+  app.post("/api/conversations/:id/system-message", async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+      
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation || conversation.userId !== userId) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      const { content } = req.body;
+      if (!content || typeof content !== "string") {
+        return res.status(400).json({ error: "Content is required" });
+      }
+      
+      const message = await storage.createMessage({
+        conversationId,
+        role: "assistant",
+        content,
+      });
+      
+      res.json({ id: message.id, role: message.role, content: message.content, createdAt: message.createdAt });
+    } catch (error) {
+      console.error("Error saving system message:", error);
+      res.status(500).json({ error: "Failed to save message" });
+    }
+  });
+
   // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", chatLimiter, async (req: Request, res: Response) => {
     try {

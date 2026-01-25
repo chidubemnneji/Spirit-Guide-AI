@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StreakCelebration } from "@/components/devotional/StreakCelebration";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, addDays, isToday, isSameDay } from "date-fns";
+import { buildBibleLink } from "@/lib/bibleUtils";
 import type { DevotionalGreeting, Devotional } from "@shared/schema";
 
 interface JourneyEntry {
@@ -265,47 +266,44 @@ export default function Devotion() {
   const userName = user?.name?.split(" ")[0] || "Friend";
   const currentStreak = greeting?.currentStreak || 0;
 
+  // Build verse of the day link for Bible navigation using shared utility
+  const getVerseOfDayLink = () => {
+    if (!devotional?.scriptureReference) return "/bible";
+    return buildBibleLink(devotional.scriptureReference);
+  };
+
   const journeyTasks: JourneyTask[] = [
     {
       id: "soul-checkin",
       title: "Soul Check-In",
-      subtitle: "How close do you feel to God right now?",
+      subtitle: "A personalized reflection based on your journey",
       icon: "sun",
-      duration: "1 MIN",
+      duration: "2 MIN",
       isCompleted: false,
-      action: () => setLocation("/chat"),
+      action: () => setLocation("/chat?mode=checkin"),
     },
     {
       id: "gods-message",
       title: "God's Message",
-      subtitle: "A word of peace for your heart",
-      icon: "book",
-      duration: "2 MIN",
-      isCompleted: false,
-      progress: 17,
-      action: () => {
-        handleComplete();
-        setLocation("/chat");
-      },
-    },
-    {
-      id: "devotional",
-      title: "Daily Devotional",
-      subtitle: devotional?.title || "Today's spiritual reading",
+      subtitle: devotional?.scriptureReference || "Today's verse for you",
       icon: "book",
       duration: "1 MIN",
       isCompleted: false,
-      progress: 17,
-      action: () => setLocation("/bible"),
+      action: () => {
+        setLocation(getVerseOfDayLink());
+      },
     },
     {
-      id: "prayer",
-      title: "Today's Prayer",
-      subtitle: "Connect with God in prayer",
+      id: "devotional-prayer",
+      title: "Daily Devotional & Prayer",
+      subtitle: devotional?.title || "Reflection and connection with God",
       icon: "message",
-      duration: "2 MIN",
+      duration: "5 MIN",
       isCompleted: false,
-      action: () => setLocation("/chat"),
+      action: () => {
+        handleComplete();
+        setLocation("/chat?mode=devotional");
+      },
     },
   ];
 

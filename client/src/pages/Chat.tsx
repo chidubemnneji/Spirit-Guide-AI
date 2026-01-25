@@ -322,13 +322,53 @@ export default function Chat() {
     
     if (verse && text) {
       reflectProcessedRef.current = true;
-      // Clear the URL parameters without navigating
       navigate("/chat", { replace: true });
-      // Send the reflection message
       const reflectionMessage = `I want to reflect on ${verse}: "${text}"`;
       sendMessageDirect(reflectionMessage, conversationId);
     }
   }, [searchString, isInitializing, conversationId, navigate, sendMessageDirect]);
+
+  // Handle chat mode from Home page (checkin or devotional)
+  const [chatModeProcessed, setChatModeProcessed] = useState(false);
+  useEffect(() => {
+    if (chatModeProcessed || isInitializing || !conversationId || messages.length > 0) return;
+    
+    const params = new URLSearchParams(searchString);
+    const mode = params.get("mode");
+    
+    if (mode === "checkin" || mode === "devotional") {
+      setChatModeProcessed(true);
+      navigate("/chat", { replace: true });
+      
+      // Fetch personalized opening based on mode
+      fetch(`/api/chat/personalized-opening?mode=${mode}`)
+        .then(res => res.json())
+        .then(async (data) => {
+          if (data.message) {
+            // Save the message to the server
+            try {
+              const saveRes = await fetch(`/api/conversations/${conversationId}/system-message`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: data.message }),
+              });
+              if (saveRes.ok) {
+                // Refetch all messages from server to ensure consistency
+                const messagesRes = await fetch(`/api/conversations/${conversationId}/messages`);
+                if (messagesRes.ok) {
+                  const messagesData = await messagesRes.json();
+                  setMessages(messagesData.messages || []);
+                }
+                queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "messages"] });
+              }
+            } catch (err) {
+              console.error("Failed to save opening message:", err);
+            }
+          }
+        })
+        .catch(err => console.error("Failed to get personalized opening:", err));
+    }
+  }, [searchString, isInitializing, conversationId, messages.length, navigate, chatModeProcessed]);
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || isStreaming) return;

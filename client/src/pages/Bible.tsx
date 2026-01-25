@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
+import { BIBLE_VERSE_PATTERN } from "@/lib/bibleUtils";
 
 interface BookmarkGroup {
   id: string;
@@ -194,6 +195,16 @@ export default function Bible() {
   // Search results
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [activeFeeling, setActiveFeeling] = useState<string | null>(null);
+
+  const FEELINGS = [
+    { id: "anxious", label: "Anxious" },
+    { id: "sad", label: "Sad" },
+    { id: "stressed", label: "Stressed" },
+    { id: "hopeful", label: "Hopeful" },
+    { id: "confused", label: "Confused" },
+    { id: "joyful", label: "Joyful" },
+  ];
   const [showAllResults, setShowAllResults] = useState(false);
 
   const parseReference = (reference: string): { book: string; chapter: string; verse: string } | null => {
@@ -222,7 +233,70 @@ export default function Bible() {
     if (searchQuery.trim() && currentVersion) {
       setSearchLoading(true);
       setShowAllResults(false);
+      setActiveFeeling(null);
       try {
+        // Check if query contains a specific verse reference pattern using shared utility
+        const versePattern = new RegExp(BIBLE_VERSE_PATTERN.source, 'i');
+        const hasVerseReference = versePattern.test(searchQuery);
+
+        // Only use feeling detection if NO verse reference is present
+        if (!hasVerseReference) {
+          const emotionKeywords: Record<string, string> = {
+            anxious: "anxious",
+            anxiety: "anxious",
+            worried: "anxious",
+            worry: "anxious",
+            afraid: "anxious",
+            fear: "anxious",
+            scared: "anxious",
+            sad: "sad",
+            grief: "sad",
+            mourning: "sad",
+            crying: "sad",
+            depressed: "sad",
+            stressed: "stressed",
+            overwhelmed: "stressed",
+            tired: "stressed",
+            exhausted: "stressed",
+            hopeful: "hopeful",
+            hope: "hopeful",
+            encouraged: "hopeful",
+            confused: "confused",
+            lost: "confused",
+            uncertain: "confused",
+            joyful: "joyful",
+            happy: "joyful",
+            grateful: "joyful",
+            thankful: "joyful",
+          };
+
+          const queryLower = searchQuery.toLowerCase();
+          let detectedFeeling: string | null = null;
+          for (const [keyword, feeling] of Object.entries(emotionKeywords)) {
+            if (queryLower.includes(keyword)) {
+              detectedFeeling = feeling;
+              break;
+            }
+          }
+
+          if (detectedFeeling) {
+            // Use feeling-based scripture search
+            const res = await fetch(`/api/scripture/feeling?feeling=${detectedFeeling}&count=5`);
+            const data = await res.json();
+            if (data.selected_scriptures) {
+              setSearchResults(data.selected_scriptures.map((s: any) => ({
+                reference: s.citation,
+                text: s.text,
+              })));
+            } else {
+              setSearchResults([]);
+            }
+            setSearchLoading(false);
+            return;
+          }
+        }
+
+        // Regular bible search (including when verse reference is detected)
         const res = await fetch(`/api/bible/${currentVersion.id}/search?query=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
         setSearchResults(data || []);
@@ -234,6 +308,37 @@ export default function Bible() {
       }
     }
   }, [searchQuery, currentVersion]);
+
+  const handleFeelingSelect = useCallback(async (feeling: string) => {
+    if (activeFeeling === feeling) {
+      setActiveFeeling(null);
+      setSearchResults([]);
+      return;
+    }
+    
+    setActiveFeeling(feeling);
+    setSearchLoading(true);
+    setSearchQuery("");
+    setShowAllResults(false);
+    
+    try {
+      const res = await fetch(`/api/scripture/feeling?feeling=${feeling}&count=5`);
+      const data = await res.json();
+      if (data.selected_scriptures) {
+        setSearchResults(data.selected_scriptures.map((s: any) => ({
+          reference: s.citation,
+          text: s.text,
+        })));
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error("Feeling search error:", error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [activeFeeling]);
 
   const handleSelectBook = (book: Book) => {
     setCurrentBook(book);
@@ -425,20 +530,18 @@ export default function Bible() {
             </Button>
           </div>
           
-          {/* Prompt chips */}
+          {/* Feeling chips */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {["What does God say about my anxiety?", "Help me find peace"].map((prompt) => (
+            {FEELINGS.map((feeling) => (
               <Button
-                key={prompt}
-                variant="outline"
+                key={feeling.id}
+                variant={activeFeeling === feeling.id ? "default" : "outline"}
                 size="sm"
                 className="text-xs"
-                onClick={() => {
-                  setSearchQuery(prompt);
-                }}
-                data-testid={`button-prompt-${prompt.substring(0, 10)}`}
+                onClick={() => handleFeelingSelect(feeling.id)}
+                data-testid={`button-feeling-${feeling.id}`}
               >
-                {prompt}
+                {feeling.label}
               </Button>
             ))}
           </div>
