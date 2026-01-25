@@ -119,6 +119,23 @@ export default function Chat() {
   const searchString = useSearch();
   const { setHideNav } = useScroll();
 
+  // Check if first time visiting chat, redirect to intro page
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const isNewFromIntro = params.get("new") === "true";
+    const hasSeenIntro = localStorage.getItem("soulguide_seen_chat_intro");
+    
+    if (!hasSeenIntro && !isNewFromIntro) {
+      navigate("/meet-prayer-partner");
+      return;
+    }
+    
+    if (isNewFromIntro) {
+      localStorage.setItem("soulguide_seen_chat_intro", "true");
+      navigate("/chat", { replace: true });
+    }
+  }, [searchString, navigate]);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);

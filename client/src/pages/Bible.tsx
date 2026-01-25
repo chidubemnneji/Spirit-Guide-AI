@@ -5,15 +5,8 @@ import { useSearch, useLocation } from "wouter";
 import { useBible } from "@/context/BibleContext";
 import { useScroll } from "@/context/ScrollContext";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -22,15 +15,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
-
-interface BookmarkedVerse {
-  number: string;
-  text: string;
-  reference: string;
-}
 
 interface BookmarkGroup {
   id: string;
@@ -38,6 +25,11 @@ interface BookmarkGroup {
   reference: string;
   dateSaved: Date;
 }
+
+const VERSE_OF_THE_DAY = {
+  text: "Be still, and know that I am God.",
+  reference: "Psalm 46:10",
+};
 
 export default function Bible() {
   const {
@@ -52,12 +44,12 @@ export default function Bible() {
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
   const [highlightedVerses, setHighlightedVerses] = useState<Set<string>>(new Set());
   const [animateContent, setAnimateContent] = useState(false);
   const [bookmarkGroups, setBookmarkGroups] = useState<BookmarkGroup[]>([]);
   const [bookmarksSheetOpen, setBookmarksSheetOpen] = useState(false);
+  const [showReader, setShowReader] = useState(false);
   const urlProcessedRef = useRef(false);
   const lastScrollY = useRef(0);
   const [, navigate] = useLocation();
@@ -65,8 +57,10 @@ export default function Bible() {
   
   const searchString = useSearch();
 
-  // Hide bottom nav when scrolling down
+  // Hide bottom nav when scrolling down in reader mode
   useEffect(() => {
+    if (!showReader) return;
+    
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       const isScrollingDown = currentScrollY > lastScrollY.current && currentScrollY > 100;
@@ -79,7 +73,7 @@ export default function Bible() {
       window.removeEventListener("scroll", handleScroll);
       setHideNav(false);
     };
-  }, [setHideNav]);
+  }, [setHideNav, showReader]);
 
   // Fetch versions
   const { data: versions = [], isLoading: versionsLoading } = useQuery<BibleVersion[]>({
@@ -159,6 +153,7 @@ export default function Bible() {
     }
     
     setCurrentBook(targetBook);
+    setShowReader(true);
     
     if (verseParam) {
       setTargetVerse(verseParam.split("-")[0]);
@@ -201,15 +196,12 @@ export default function Bible() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [showAllResults, setShowAllResults] = useState(false);
 
-  // Parse a reference like "Joshua 1:9" or "1 John 3:16" into parts
   const parseReference = (reference: string): { book: string; chapter: string; verse: string } | null => {
-    // Clean up reference - remove translation tags like "(NIV)", "(KJV)", etc.
     let cleanRef = reference
-      .replace(/\s*\([^)]*\)\s*$/, '') // Remove trailing parentheses like (NIV)
-      .replace(/\s*-\s*[A-Z]+\s*$/, '') // Remove trailing translation codes like - NIV
+      .replace(/\s*\([^)]*\)\s*$/, '')
+      .replace(/\s*-\s*[A-Z]+\s*$/, '')
       .trim();
     
-    // Handle references like "Joshua 1:9", "1 John 3:16", "Song of Solomon 2:1"
     const match = cleanRef.match(/^(.+?)\s+(\d+):(\d+(?:-\d+)?)$/);
     if (match) {
       return { book: match[1].trim(), chapter: match[2], verse: match[3].split('-')[0] };
@@ -217,12 +209,10 @@ export default function Bible() {
     return null;
   };
 
-  // Navigate to a verse from search results
   const navigateToVerse = (reference: string) => {
     const parsed = parseReference(reference);
     if (parsed) {
       setSearchResults([]);
-      setSearchOpen(false);
       setShowAllResults(false);
       navigate(`/bible?book=${encodeURIComponent(parsed.book)}&chapter=${parsed.chapter}&verse=${parsed.verse}`);
     }
@@ -231,7 +221,7 @@ export default function Bible() {
   const handleSearch = useCallback(async () => {
     if (searchQuery.trim() && currentVersion) {
       setSearchLoading(true);
-      setShowAllResults(false); // Reset to show only 5 results for new searches
+      setShowAllResults(false);
       try {
         const res = await fetch(`/api/bible/${currentVersion.id}/search?query=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
@@ -256,7 +246,10 @@ export default function Bible() {
             const firstChapter = chs.find((c: any) => c.number === "1") || chs[0];
             fetch(`/api/bible/${currentVersion.id}/chapters/${firstChapter.id}`)
               .then((res) => res.json())
-              .then((ch) => setCurrentChapter(ch));
+              .then((ch) => {
+                setCurrentChapter(ch);
+                setShowReader(true);
+              });
           }
         });
     }
@@ -287,7 +280,6 @@ export default function Bible() {
     }
   };
 
-  // Toggle verse highlight on tap
   const handleVerseClick = (verseNum: string) => {
     const newHighlighted = new Set(highlightedVerses);
     if (newHighlighted.has(verseNum)) {
@@ -298,7 +290,6 @@ export default function Bible() {
     setHighlightedVerses(newHighlighted);
   };
 
-  // Save highlighted verses as a bookmark group
   const handleSaveHighlighted = (verses: { number: string; text: string }[]) => {
     if (highlightedVerses.size === 0 || !currentChapter) return;
     
@@ -323,7 +314,6 @@ export default function Bible() {
     setHighlightedVerses(new Set());
   };
 
-  // Reflect on highlighted verses
   const handleReflectHighlighted = (verses: { number: string; text: string }[]) => {
     if (highlightedVerses.size === 0 || !currentChapter) return;
     
@@ -345,7 +335,6 @@ export default function Bible() {
   const oldTestamentBooks = books.filter((b) => b.testament === "OT");
   const newTestamentBooks = books.filter((b) => b.testament === "NT");
 
-  // Parse verses from content
   const parseVerses = (content: string): { number: string; text: string }[] => {
     if (!content) return [];
     
@@ -364,33 +353,6 @@ export default function Bible() {
     return verses;
   };
 
-  // Group short verses together (max 4 lines estimated)
-  const groupShortVerses = (verses: { number: string; text: string }[]): { number: string; text: string }[][] => {
-    const result: { number: string; text: string }[][] = [];
-    let buffer: { number: string; text: string }[] = [];
-    const CHARS_PER_LINE = 50;
-    const MAX_LINES = 4;
-
-    for (const verse of verses) {
-      buffer.push(verse);
-      
-      // Estimate total lines in buffer
-      const totalChars = buffer.reduce((sum, v) => sum + v.text.length, 0);
-      const estimatedLines = Math.ceil(totalChars / CHARS_PER_LINE);
-      
-      if (estimatedLines >= MAX_LINES) {
-        result.push(buffer);
-        buffer = [];
-      }
-    }
-    
-    if (buffer.length > 0) {
-      result.push(buffer);
-    }
-    
-    return result;
-  };
-
   if (versionsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -401,151 +363,401 @@ export default function Bible() {
 
   const verses = currentChapter ? parseVerses(currentChapter.content) : [];
 
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 bg-background">
-        {/* Living Word Header */}
-        <div className="px-5 pt-5 pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-foreground" data-testid="text-bible-title">Living Word</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Explore Scripture</p>
-            </div>
-            <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
-
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-primary"
-                  data-testid="button-open-bookmarks"
-                >
-                  <Bookmark className={cn("w-6 h-6", bookmarkGroups.length > 0 && "fill-current")} />
-                </Button>
-              </SheetTrigger>
-            <SheetContent side="right" className="w-80">
-              <SheetHeader>
-                <SheetTitle className="font-serif">Bookmarks</SheetTitle>
-              </SheetHeader>
-              <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-                {bookmarkGroups.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Bookmark className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">No bookmarks yet</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      Tap verses to highlight, then save
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 pr-2">
-                    {bookmarkGroups.map((bookmark) => (
-                      <Card 
-                        key={bookmark.id} 
-                        className="p-3 shadow-sm cursor-pointer hover-elevate active-elevate-2 transition-all"
-                        onClick={() => {
-                          const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
-                          if (match) {
-                            const [, bookName, chapter, verse] = match;
-                            navigate(`/bible?book=${encodeURIComponent(bookName)}&chapter=${chapter}&verse=${verse}`);
-                          }
-                          setBookmarksSheetOpen(false);
-                        }}
-                        data-testid={`card-bookmark-${bookmark.id}`}
-                      >
-                        <p className="text-xs font-medium text-primary mb-2">
-                          {bookmark.reference}
-                        </p>
-                        <div className="line-clamp-4">
-                          {bookmark.verses.map((v) => (
-                            <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90">
-                              <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
-                              {v.text}
-                            </p>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(bookmark.dateSaved).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const combinedText = bookmark.verses.map(v => `${v.number}. ${v.text}`).join(" ");
-                                navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(combinedText)}`);
-                                setBookmarksSheetOpen(false);
-                              }}
-                              data-testid={`button-reflect-bookmark-${bookmark.id}`}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setBookmarkGroups(bookmarkGroups.filter(b => b.id !== bookmark.id));
-                              }}
-                              data-testid={`button-remove-bookmark-${bookmark.id}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </SheetContent>
-            </Sheet>
-          </div>
+  // Bible Home View
+  if (!showReader) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="px-5 pt-6 pb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <BookOpen className="w-10 h-10 text-primary mb-4" />
+          </motion.div>
+          
+          <motion.h1 
+            className="font-serif text-3xl font-bold text-foreground"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            data-testid="text-bible-title"
+          >
+            The Living Word
+          </motion.h1>
+          
+          <motion.p 
+            className="text-muted-foreground mt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            Every answer you need is already written. Let me help you find it.
+          </motion.p>
         </div>
 
-        {/* Current Reading Display */}
-        {currentChapter && (
-          <div className="px-5 pb-3">
-            <motion.div 
-              className="text-center py-2 px-4 bg-card rounded-xl border"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              key={currentChapter.reference}
+        {/* Search Bar */}
+        <motion.div 
+          className="px-5 py-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="Ask me anything about the Bible..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pr-10"
+                data-testid="input-search"
+              />
+            </div>
+            <Button 
+              onClick={handleSearch} 
+              disabled={searchLoading}
+              size="icon"
+              variant="ghost"
+              className="text-primary"
+              data-testid="button-do-search"
             >
-              <p className="font-serif text-lg font-semibold">{currentChapter.reference}</p>
-              {currentVersion && (
-                <p className="text-xs text-muted-foreground">{currentVersion.name}</p>
-              )}
-            </motion.div>
+              {searchLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+            </Button>
           </div>
-        )}
-
-        {/* Navigation Bar - hidden when search is open */}
-        <AnimatePresence>
-          {!searchOpen && (
-            <motion.div 
-              className="flex items-center justify-between px-4 py-2 border-t border-border/30"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
+          
+          {/* Prompt chips */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {["What does God say about my anxiety?", "Help me find peace"].map((prompt) => (
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={handlePrevChapter}
-                disabled={!currentChapter?.previous}
-                className="text-primary disabled:text-muted-foreground/30"
-                data-testid="button-prev-chapter"
+                key={prompt}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  setSearchQuery(prompt);
+                }}
+                data-testid={`button-prompt-${prompt.substring(0, 10)}`}
               >
-                <ChevronLeft className="w-6 h-6" />
+                {prompt}
               </Button>
+            ))}
+          </div>
+        </motion.div>
 
-              <div className="flex items-center gap-3">
-            {/* Book Selector */}
+        {/* Search Results */}
+        <AnimatePresence>
+          {searchResults.length > 0 && (
+            <motion.div
+              className="px-5 py-2"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
+                  <Card 
+                    key={index}
+                    className="p-3 cursor-pointer hover-elevate"
+                    onClick={() => navigateToVerse(result.reference)}
+                  >
+                    <p className="text-xs font-medium text-primary">{result.reference}</p>
+                    <p className="text-sm text-foreground/80 line-clamp-2 mt-1">{result.text}</p>
+                  </Card>
+                ))}
+                {searchResults.length > 5 && !showAllResults && (
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-sm"
+                    onClick={() => setShowAllResults(true)}
+                  >
+                    Show {searchResults.length - 5} more results
+                  </Button>
+                )}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="w-full mt-2 text-muted-foreground"
+                onClick={() => {
+                  setSearchResults([]);
+                  setSearchQuery("");
+                }}
+              >
+                Clear results
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Cards Section */}
+        <div className="px-5 py-4 space-y-4">
+          {/* Full Bible Reader Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card 
+              className="overflow-hidden cursor-pointer hover-elevate"
+              onClick={() => setBookSheetOpen(true)}
+              data-testid="card-bible-reader"
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {currentVersion?.abbreviation || "NIV"} Version
+                    </span>
+                    <h3 className="font-semibold text-xl mt-1">Full Bible Reader</h3>
+                    <p className="text-muted-foreground mt-1">
+                      Read scripture in your preferred translation
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Your Verse Collection Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Card 
+              className="overflow-hidden cursor-pointer hover-elevate"
+              onClick={() => setBookmarksSheetOpen(true)}
+              data-testid="card-verse-collection"
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {bookmarkGroups.length} Verses Saved
+                    </span>
+                    <h3 className="font-semibold text-xl mt-1">Your Verse Collection</h3>
+                    <p className="text-muted-foreground mt-1">
+                      Verses you've bookmarked and memorized
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Star className="w-6 h-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Verse of the Day Widget */}
+        <motion.div 
+          className="px-5 py-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Card className="overflow-hidden bg-gradient-to-br from-card to-muted/30">
+            <CardContent className="p-5">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Personalized Widget Preview
+              </span>
+              <p className="font-serif text-xl mt-3 text-foreground">
+                "{VERSE_OF_THE_DAY.text}"
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">{VERSE_OF_THE_DAY.reference}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Book Selection Sheet */}
+        <Sheet open={bookSheetOpen} onOpenChange={setBookSheetOpen}>
+          <SheetContent side="left" className="w-80">
+            <SheetHeader>
+              <SheetTitle className="font-serif">Select Book</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="h-[calc(100vh-80px)] mt-4">
+              {booksLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                      Old Testament
+                    </h3>
+                    <div className="space-y-0.5">
+                      {oldTestamentBooks.map((book) => (
+                        <Button
+                          key={book.id}
+                          variant={currentBook?.id === book.id ? "secondary" : "ghost"}
+                          className="w-full justify-start font-normal"
+                          onClick={() => handleSelectBook(book)}
+                          data-testid={`book-${book.abbreviation}`}
+                        >
+                          {book.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                      New Testament
+                    </h3>
+                    <div className="space-y-0.5">
+                      {newTestamentBooks.map((book) => (
+                        <Button
+                          key={book.id}
+                          variant={currentBook?.id === book.id ? "secondary" : "ghost"}
+                          className="w-full justify-start font-normal"
+                          onClick={() => handleSelectBook(book)}
+                          data-testid={`book-${book.abbreviation}`}
+                        >
+                          {book.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+
+        {/* Bookmarks Sheet */}
+        <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
+          <SheetContent side="right" className="w-80">
+            <SheetHeader>
+              <SheetTitle className="font-serif">Your Collection</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+              {bookmarkGroups.length === 0 ? (
+                <div className="text-center py-12">
+                  <Star className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No verses saved yet</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    Tap verses while reading to save them
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 pr-2">
+                  {bookmarkGroups.map((bookmark) => (
+                    <Card 
+                      key={bookmark.id} 
+                      className="p-3 shadow-sm cursor-pointer hover-elevate"
+                      onClick={() => {
+                        const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
+                        if (match) {
+                          const [, bookName, chapter, verse] = match;
+                          navigate(`/bible?book=${encodeURIComponent(bookName)}&chapter=${chapter}&verse=${verse}`);
+                        }
+                        setBookmarksSheetOpen(false);
+                      }}
+                      data-testid={`card-bookmark-${bookmark.id}`}
+                    >
+                      <p className="text-xs font-medium text-primary mb-2">
+                        {bookmark.reference}
+                      </p>
+                      <div className="line-clamp-4">
+                        {bookmark.verses.map((v) => (
+                          <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90">
+                            <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
+                            {v.text}
+                          </p>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(bookmark.dateSaved).toLocaleDateString()}
+                        </p>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const combinedText = bookmark.verses.map(v => `${v.number}. ${v.text}`).join(" ");
+                              navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(combinedText)}`);
+                              setBookmarksSheetOpen(false);
+                            }}
+                            data-testid={`button-reflect-bookmark-${bookmark.id}`}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBookmarkGroups(bookmarkGroups.filter(b => b.id !== bookmark.id));
+                            }}
+                            data-testid={`button-remove-bookmark-${bookmark.id}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+      </div>
+    );
+  }
+
+  // Bible Reader View
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <header className="sticky top-0 z-40 bg-background border-b">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowReader(false)}
+            data-testid="button-back-to-bible-home"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          
+          <div className="text-center flex-1">
+            <p className="font-serif text-lg font-semibold">{currentChapter?.reference || "Select Chapter"}</p>
+            {currentVersion && (
+              <p className="text-xs text-muted-foreground">{currentVersion.name}</p>
+            )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setBookmarksSheetOpen(true)}
+            data-testid="button-open-bookmarks"
+          >
+            <Bookmark className={cn("w-5 h-5", bookmarkGroups.length > 0 && "fill-current text-primary")} />
+          </Button>
+        </div>
+        
+        {/* Navigation */}
+        <div className="flex items-center justify-between px-4 py-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handlePrevChapter}
+            disabled={!currentChapter?.previous}
+            className="text-primary disabled:text-muted-foreground/30"
+            data-testid="button-prev-chapter"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </Button>
+
+          <div className="flex items-center gap-3">
             <Sheet open={bookSheetOpen} onOpenChange={setBookSheetOpen}>
               <SheetTrigger asChild>
                 <Button 
@@ -610,143 +822,48 @@ export default function Bible() {
               </SheetContent>
             </Sheet>
 
-            {/* Chapter Selector */}
             <Sheet open={chapterSheetOpen} onOpenChange={setChapterSheetOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="outline"
+                <Button 
+                  variant="outline" 
                   size="sm"
                   disabled={!currentBook}
-                  className="min-w-12 font-medium"
                   data-testid="button-select-chapter"
                 >
-                  {currentChapter?.number || "Ch"}
+                  Ch. {currentChapter?.number || "-"}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-72 rounded-t-3xl">
+              <SheetContent side="bottom" className="h-[50vh]">
                 <SheetHeader>
                   <SheetTitle className="font-serif">Select Chapter</SheetTitle>
                 </SheetHeader>
-                <ScrollArea className="h-52 mt-4">
-                  <div className="grid grid-cols-6 gap-2 px-2">
-                    {chapters.map((ch) => (
-                      <Button
-                        key={ch.id}
-                        variant={currentChapter?.number === ch.number ? "default" : "outline"}
-                        size="sm"
-                        className="font-medium"
-                        onClick={() => handleSelectChapter(ch.id)}
-                        data-testid={`chapter-${ch.number}`}
-                      >
-                        {ch.number}
-                      </Button>
-                    ))}
-                  </div>
-                </ScrollArea>
+                <div className="grid grid-cols-5 gap-2 mt-4 max-h-[35vh] overflow-y-auto p-2">
+                  {chapters.map((ch) => (
+                    <Button
+                      key={ch.id}
+                      variant={currentChapter?.id === ch.id ? "default" : "outline"}
+                      onClick={() => handleSelectChapter(ch.id)}
+                      data-testid={`chapter-${ch.number}`}
+                    >
+                      {ch.number}
+                    </Button>
+                  ))}
+                </div>
               </SheetContent>
             </Sheet>
-
-            {/* Version Selector */}
-            <Select
-              value={currentVersion?.id}
-              onValueChange={(id) => {
-                const version = versions.find((v) => v.id === id);
-                if (version) setCurrentVersion(version);
-              }}
-            >
-              <SelectTrigger className="w-20 h-8 text-xs" data-testid="select-version">
-                <SelectValue placeholder="Ver" />
-              </SelectTrigger>
-              <SelectContent>
-                {versions.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.abbreviation}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNextChapter}
-                disabled={!currentChapter?.next}
-                className="text-primary disabled:text-muted-foreground/30"
-                data-testid="button-next-chapter"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Search Toggle */}
-        <div className="flex justify-center pb-2">
           <Button
             variant="ghost"
-            size="sm"
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="text-muted-foreground"
-            data-testid="button-search"
+            size="icon"
+            onClick={handleNextChapter}
+            disabled={!currentChapter?.next}
+            className="text-primary disabled:text-muted-foreground/30"
+            data-testid="button-next-chapter"
           >
-            {searchOpen ? <X className="w-4 h-4 mr-2" /> : <Search className="w-4 h-4 mr-2" />}
-            {searchOpen ? "Close" : "Search"}
+            <ChevronRight className="w-6 h-6" />
           </Button>
         </div>
-
-        {/* Search Bar */}
-        <AnimatePresence>
-          {searchOpen && (
-            <motion.div 
-              className="px-4 py-3 border-t border-border/30"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Input
-                    placeholder="Ask me anything about the Bible..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="pr-10"
-                    data-testid="input-search"
-                  />
-                </div>
-                <Button 
-                  onClick={handleSearch} 
-                  disabled={searchLoading}
-                  size="icon"
-                  variant="ghost"
-                  className="text-primary"
-                  data-testid="button-do-search"
-                >
-                  {searchLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-                </Button>
-              </div>
-              {/* AI prompt suggestions */}
-              <div className="flex flex-wrap gap-2 mt-3">
-                {["anxious", "peace", "hope", "strength", "comfort", "faith"].map((feeling) => (
-                  <Button
-                    key={feeling}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs capitalize"
-                    onClick={() => {
-                      setSearchQuery(feeling);
-                    }}
-                    data-testid={`button-feeling-${feeling}`}
-                  >
-                    {feeling}
-                  </Button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       {/* Main Content */}
@@ -756,21 +873,20 @@ export default function Bible() {
             className="text-center py-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
           >
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <BookOpen className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="font-serif text-2xl font-semibold mb-3">Welcome to the Bible</h2>
+            <h2 className="font-serif text-2xl font-semibold mb-3">Select a Book</h2>
             <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
-              Begin your journey through Scripture by selecting a book
+              Choose a book to begin reading
             </p>
             <Button 
               onClick={() => setBookSheetOpen(true)} 
-              className="px-8"
-              data-testid="button-get-started"
+              className="rounded-xl"
+              data-testid="button-browse-books"
             >
-              Choose a Book
+              Browse Books
             </Button>
           </motion.div>
         )}
@@ -781,193 +897,133 @@ export default function Bible() {
           </div>
         )}
 
-        {currentChapter && !chapterLoading && verses.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: animateContent ? 1 : 0, y: animateContent ? 0 : 12 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="space-y-4"
-          >
-            {/* Grouped verses (max 4 lines) - plain view, no cards */}
-            <div className="space-y-4">
-              {groupShortVerses(verses).map((verseGroup, groupIndex) => (
-                <div key={groupIndex} className="space-y-1" data-testid={`verse-group-${groupIndex}`}>
-                  {verseGroup.map((verse) => {
-                    const isHighlighted = highlightedVerses.has(verse.number);
-                    return (
-                      <motion.div 
-                        key={verse.number}
-                        className="flex gap-3 cursor-pointer py-1.5 transition-all relative"
-                        onClick={() => handleVerseClick(verse.number)}
-                        data-verse={verse.number}
-                        whileTap={{ scale: 0.99 }}
-                      >
-                        <span className={cn(
-                          "text-xs font-medium pt-0.5 w-6 text-right shrink-0 transition-colors",
-                          isHighlighted ? "text-primary" : "text-muted-foreground"
-                        )}>
-                          {verse.number}
-                        </span>
-                        <span className={cn(
-                          "font-serif text-base leading-relaxed text-foreground/90 transition-all",
-                          isHighlighted && "underline decoration-dashed decoration-primary decoration-2 underline-offset-4"
-                        )}>
-                          {verse.text}
-                        </span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {currentChapter && verses.length > 0 && (
+          <>
+            {/* Action bar for highlighted verses */}
+            <AnimatePresence>
+              {highlightedVerses.size > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="sticky top-[105px] z-30 mb-4"
+                >
+                  <Card className="p-2 shadow-lg">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-muted-foreground px-2">
+                        {highlightedVerses.size} verse{highlightedVerses.size > 1 ? "s" : ""} selected
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSaveHighlighted(verses)}
+                          data-testid="button-save-verses"
+                        >
+                          <Bookmark className="w-4 h-4 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleReflectHighlighted(verses)}
+                          data-testid="button-reflect-verses"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-1" />
+                          Reflect
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setHighlightedVerses(new Set())}
+                          data-testid="button-clear-selection"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: animateContent ? 1 : 0 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-1"
+            >
+              {verses.map((verse, index) => (
+                <motion.p
+                  key={verse.number}
+                  data-verse={verse.number}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.01 }}
+                  onClick={() => handleVerseClick(verse.number)}
+                  className={cn(
+                    "font-serif text-lg leading-relaxed py-1 px-2 -mx-2 rounded-lg cursor-pointer transition-colors",
+                    highlightedVerses.has(verse.number) && "bg-primary/20"
+                  )}
+                >
+                  <span className="text-primary font-bold text-sm mr-2">{verse.number}</span>
+                  {verse.text}
+                </motion.p>
+              ))}
+            </motion.div>
+          </>
+        )}
       </main>
 
-      {/* Search Results Overlay - floats above Bible content */}
-      <AnimatePresence>
-        {searchOpen && searchResults.length > 0 && (
-          <motion.div 
-            className="fixed inset-x-0 top-[180px] bottom-20 z-[100] pointer-events-none overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="max-w-lg mx-auto px-4 pointer-events-auto h-full">
-              <div className="bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 max-h-full overflow-y-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm text-muted-foreground">
-                    {showAllResults ? searchResults.length : Math.min(searchResults.length, 5)} of {searchResults.length} results
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
+      {/* Bookmarks Sheet */}
+      <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
+        <SheetContent side="right" className="w-80">
+          <SheetHeader>
+            <SheetTitle className="font-serif">Your Collection</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+            {bookmarkGroups.length === 0 ? (
+              <div className="text-center py-12">
+                <Bookmark className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No verses saved yet</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Tap verses to highlight, then save
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 pr-2">
+                {bookmarkGroups.map((bookmark) => (
+                  <Card 
+                    key={bookmark.id} 
+                    className="p-3 shadow-sm cursor-pointer hover-elevate"
                     onClick={() => {
-                      setSearchResults([]);
-                      setShowAllResults(false);
+                      const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
+                      if (match) {
+                        const [, bookName, chapter, verse] = match;
+                        navigate(`/bible?book=${encodeURIComponent(bookName)}&chapter=${chapter}&verse=${verse}`);
+                      }
+                      setBookmarksSheetOpen(false);
                     }}
-                    data-testid="button-close-search-results"
+                    data-testid={`card-bookmark-${bookmark.id}`}
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(index, 5) * 0.05, duration: 0.2 }}
-                    >
-                      <Card 
-                        className="p-3 shadow-sm border bg-card/80 cursor-pointer hover-elevate active-elevate-2 transition-all"
-                        onClick={() => navigateToVerse(result.reference)}
-                        data-testid={`card-search-result-${index}`}
-                      >
-                        <p className="font-serif text-sm leading-relaxed text-foreground/90 mb-2 line-clamp-2">
-                          {result.text}
+                    <p className="text-xs font-medium text-primary mb-2">
+                      {bookmark.reference}
+                    </p>
+                    <div className="line-clamp-4">
+                      {bookmark.verses.map((v) => (
+                        <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90">
+                          <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
+                          {v.text}
                         </p>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-medium text-primary">
-                            {result.reference}
-                          </p>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs text-muted-foreground gap-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const newBookmark: BookmarkGroup = {
-                                  id: `${result.reference}-${Date.now()}`,
-                                  verses: [{ number: "1", text: result.text }],
-                                  reference: result.reference,
-                                  dateSaved: new Date(),
-                                };
-                                setBookmarkGroups([...bookmarkGroups, newBookmark]);
-                              }}
-                              data-testid={`button-bookmark-search-${index}`}
-                            >
-                              <Bookmark className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs text-muted-foreground gap-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSearchResults([]);
-                                setShowAllResults(false);
-                                navigate(`/chat?verse=${encodeURIComponent(result.reference)}&text=${encodeURIComponent(result.text)}`);
-                              }}
-                              data-testid={`button-reflect-search-${index}`}
-                            >
-                              <MessageCircle className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-                {/* See All / Show Less button */}
-                {searchResults.length > 5 && (
-                  <div className="mt-3 pt-3 border-t border-border/50">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full text-primary"
-                      onClick={() => setShowAllResults(!showAllResults)}
-                      data-testid="button-see-all-results"
-                    >
-                      {showAllResults ? "Show Less" : `See All ${searchResults.length} Results`}
-                    </Button>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  </Card>
+                ))}
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Action Bar - appears when verses are highlighted */}
-      <AnimatePresence>
-        {highlightedVerses.size > 0 && (
-          <motion.div
-            className="fixed bottom-24 left-4 right-4 z-50"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          >
-            <div className="max-w-md mx-auto">
-              <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl p-3 flex items-center justify-center gap-3">
-                <Button
-                  variant="ghost"
-                  className="flex-1 gap-2 text-primary bg-primary/10 hover:bg-primary/20"
-                  onClick={() => handleSaveHighlighted(verses)}
-                  data-testid="button-bookmark-floating"
-                >
-                  <Bookmark className="w-5 h-5" />
-                  Bookmark
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="flex-1 gap-2 text-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
-                  onClick={() => handleReflectHighlighted(verses)}
-                  data-testid="button-reflect-floating"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  Reflect
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
-

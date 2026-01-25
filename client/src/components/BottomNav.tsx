@@ -6,7 +6,7 @@ import { useScroll } from "@/context/ScrollContext";
 
 const navItems = [
   { path: "/devotion", icon: Home, label: "Home" },
-  { path: "/chat", icon: Cross, label: "Soul Care" },
+  { path: "/chat", icon: Cross, label: "Chat" },
   { path: "/bible", icon: BookOpen, label: "Word" },
   { path: "/account", icon: User, label: "Profile" },
 ];
