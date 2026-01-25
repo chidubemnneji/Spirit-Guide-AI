@@ -169,6 +169,13 @@ export default function Chat() {
     setHideNav(isInputFocused || input.length > 0);
   }, [isInputFocused, input, setHideNav]);
 
+  // Reset hideNav when leaving the chat page
+  useEffect(() => {
+    return () => {
+      setHideNav(false);
+    };
+  }, [setHideNav]);
+
   const { data: persona, isLoading: personaLoading } = useQuery<{ primaryPersona?: string }>({
     queryKey: ["/api/persona"],
   });
