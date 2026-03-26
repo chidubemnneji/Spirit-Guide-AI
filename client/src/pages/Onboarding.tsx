@@ -15,11 +15,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
-// 4 real steps the user experiences
-// 1: Struggle  2: Depth (per struggle)  3: Goals  4: Name + signup
 const TOTAL_STEPS = 4;
-
 const phase2Components: Record<string, React.ComponentType<{ onNext: () => void; onBack: () => void }>> = {
   distant_from_god: Phase2DistantFromGod,
   wrestling_doubts: Phase2Doubts,
@@ -33,12 +31,14 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const { data, currentPhase, setPhase } = useOnboarding();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       return apiRequest("POST", "/api/onboarding", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refreshUser();
       setLocation("/transition");
     },
     onError: (error: Error) => {
@@ -60,19 +60,15 @@ export default function Onboarding() {
 
   const renderStep = () => {
     switch (currentPhase) {
-      // Step 1 — primary struggle
       case 1:
         return (
           <Phase1
             onNext={(struggle: string) => {
-              // struggle is saved inside Phase1 via updateOnboarding
               setPhase(2);
             }}
             onBack={handleBack}
           />
         );
-
-      // Step 2 — depth layer, varies by struggle
       case 2: {
         const DepthComponent = data.primaryStruggle
           ? phase2Components[data.primaryStruggle]
@@ -84,8 +80,6 @@ export default function Onboarding() {
           />
         );
       }
-
-      // Step 3 — transformation goals
       case 3:
         return (
           <GoalsStep
@@ -93,8 +87,6 @@ export default function Onboarding() {
             onBack={handleBack}
           />
         );
-
-      // Step 4 — name + signup
       case 4:
         return (
           <SignupStep
@@ -103,7 +95,6 @@ export default function Onboarding() {
             isSubmitting={submitMutation.isPending}
           />
         );
-
       default:
         return null;
     }
@@ -112,11 +103,9 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen gradient-onboarding">
       <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
-
       <div className="fixed top-3 right-4 z-50">
         <ThemeToggle />
       </div>
-
       <main className="pt-24 pb-12">
         <div className="max-w-lg mx-auto px-5">
           {renderStep()}
