@@ -1,19 +1,23 @@
-import { anthropic } from "./anthropicClient";
-import { openai } from "./openaiClient";
+import { anthropic } from "../anthropicClient";
+import { openai } from "../openaiClient";
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
+
 export interface StreamChunk {
   provider: "claude" | "openai";
   content: string;
   done: boolean;
 }
+
 export interface HybridStreamOptions {
   systemPrompt: string;
   messages: ChatMessage[];
   maxTokens?: number;
 }
+
 function isAnthropicTransientError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const err = error as any;
@@ -28,9 +32,11 @@ function isAnthropicTransientError(error: unknown): boolean {
   if (errorMessage.includes("credit balance") || errorMessage.includes("too low")) return true;
   return false;
 }
+
 function sanitizeText(text: string): string {
   return text.replace(/—/g, ", ").replace(/–/g, ", ");
 }
+
 async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<StreamChunk> {
   const { systemPrompt, messages, maxTokens = 1024 } = options;
   const stream = anthropic.messages.stream({
@@ -52,6 +58,7 @@ async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<S
   }
   yield { provider: "claude", content: "", done: true };
 }
+
 async function* streamFromOpenAI(options: HybridStreamOptions): AsyncGenerator<StreamChunk> {
   const { systemPrompt, messages, maxTokens = 1024 } = options;
   const openaiMessages = [
@@ -75,11 +82,11 @@ async function* streamFromOpenAI(options: HybridStreamOptions): AsyncGenerator<S
   }
   yield { provider: "openai", content: "", done: true };
 }
+
 export async function* hybridStreamChat(
   options: HybridStreamOptions
 ): AsyncGenerator<StreamChunk> {
   let hasYieldedContent = false;
-  
   try {
     console.log("[HybridAI] Attempting Claude...");
     for await (const chunk of streamFromClaude(options)) {
@@ -88,4 +95,30 @@ export async function* hybridStreamChat(
       }
       yield chunk;
     }
-    co
+    console.log("[HybridAI] Claude completed successfully");
+  } catch (error) {
+    if (isAnthropicTransientError(error)) {
+      if (hasYieldedContent) {
+        console.warn("[HybridAI] Claude failed mid-stream after yielding content.");
+      }
+      console.log("[HybridAI] Claude unavailable, falling back to GPT-4o-mini...");
+      try {
+        for await (const chunk of streamFromOpenAI(options)) {
+          yield chunk;
+        }
+        console.log("[HybridAI] OpenAI fallback completed successfully");
+      } catch (openaiError) {
+        console.error("[HybridAI] OpenAI fallback failed:", openaiError);
+        throw openaiError;
+      }
+    } else {
+      console.error("[HybridAI] Claude failed with non-transient error:", error);
+      throw error;
+    }
+  }
+}
+
+export const hybridAIClient = {
+  streamChat: hybridStreamChat,
+  isTransientError: isAnthropicTransientError,
+};
