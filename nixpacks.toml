@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs-20_x"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["NODE_ENV=development npm ci"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["NODE_ENV=development npm run build"]
 
 [start]
 cmd = "npm run db:push && npm start"
