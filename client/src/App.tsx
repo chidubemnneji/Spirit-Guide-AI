@@ -9,6 +9,8 @@ import { BibleProvider } from "@/context/BibleContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ScrollProvider } from "@/context/ScrollContext";
 import { BottomNav } from "@/components/BottomNav";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useAuth } from "@/context/AuthContext";
 import Welcome from "@/pages/Welcome";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
@@ -21,8 +23,17 @@ import Devotion from "@/pages/Devotion";
 import Account from "@/pages/Account";
 import MeetPrayerPartner from "@/pages/MeetPrayerPartner";
 import NotFound from "@/pages/not-found";
+import Journal from "@/pages/Journal";
 
 const ONBOARDING_ROUTES = ["/", "/signup", "/login", "/onboarding", "/transition", "/meet-prayer-partner"];
+
+// Wraps any route that requires auth — shows nothing while redirecting
+function Protected({ component: Component }: { component: React.ComponentType }) {
+  const { isLoading } = useAuth();
+  useAuthGuard();
+  if (isLoading) return null;
+  return <Component />;
+}
 
 function Router() {
   return (
@@ -33,11 +44,12 @@ function Router() {
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/transition" component={TransitionPage} />
       <Route path="/meet-prayer-partner" component={MeetPrayerPartner} />
-      <Route path="/chat" component={Chat} />
       <Route path="/bible" component={Bible} />
-      <Route path="/community" component={Community} />
-      <Route path="/devotion" component={Devotion} />
-      <Route path="/account" component={Account} />
+      <Route path="/chat" component={() => <Protected component={Chat} />} />
+      <Route path="/community" component={() => <Protected component={Community} />} />
+      <Route path="/devotion" component={() => <Protected component={Devotion} />} />
+      <Route path="/account" component={() => <Protected component={Account} />} />
+      <Route path="/journal" component={() => <Protected component={Journal} />} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -46,7 +58,7 @@ function Router() {
 function AppContent() {
   const [location] = useLocation();
   const showBottomNav = !ONBOARDING_ROUTES.includes(location);
-  
+
   return (
     <>
       <Router />

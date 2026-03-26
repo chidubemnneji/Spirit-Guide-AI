@@ -411,3 +411,26 @@ export interface DevotionalGreeting {
   currentStreak: number;
   streakTarget: number;
 }
+
+// Prayer Journal
+export const prayerJournalEntries = pgTable("prayer_journal_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 200 }),
+  content: text("content").notNull(),
+  mood: varchar("mood", { length: 50 }),
+  tags: text("tags").array(),
+  verseReference: varchar("verse_reference", { length: 100 }),
+  verseText: text("verse_text"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertPrayerJournalSchema = createInsertSchema(prayerJournalEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PrayerJournalEntry = typeof prayerJournalEntries.$inferSelect;
+export type InsertPrayerJournalEntry = z.infer<typeof insertPrayerJournalSchema>;

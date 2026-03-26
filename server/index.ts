@@ -26,9 +26,14 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 
 // Session middleware
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("SESSION_SECRET environment variable must be set in production.");
+}
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "soulguide-dev-secret",
+    secret: SESSION_SECRET || "soulguide-dev-secret-do-not-use-in-prod",
     resave: false,
     saveUninitialized: false,
     store: new SessionStore({

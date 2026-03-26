@@ -46,25 +46,21 @@ const options = [
 
 export function Phase1({ onNext, onBack }: Phase1Props) {
   const { updateOnboarding } = useOnboarding();
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const handleSelect = (optionId: string) => {
-    setSelected((prev) =>
-      prev.includes(optionId)
-        ? prev.filter((id) => id !== optionId)
-        : [...prev, optionId]
-    );
+    setSelected(optionId);
   };
 
   const handleNext = () => {
-    if (selected.length > 0) {
-      updateOnboarding({ primaryStruggle: selected[0] });
-      onNext(selected[0]);
+    if (selected) {
+      updateOnboarding({ primaryStruggle: selected });
+      onNext(selected);
     }
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -72,7 +68,7 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
     >
       <BackButton onClick={onBack} />
 
-      <motion.div 
+      <motion.div
         className="space-y-3"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -82,7 +78,7 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
           What brings you here today?
         </h1>
         <p className="text-muted-foreground">
-          Select all that feel true for you
+          Pick the one that feels most true right now
         </p>
       </motion.div>
 
@@ -93,14 +89,14 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
             id={option.id}
             text={option.text}
             icon={option.icon}
-            selected={selected.includes(option.id)}
+            selected={selected === option.id}
             onClick={() => handleSelect(option.id)}
             index={index}
           />
         ))}
       </div>
 
-      <ContinueButton onClick={handleNext} disabled={selected.length === 0} />
+      <ContinueButton onClick={handleNext} disabled={!selected} />
     </motion.div>
   );
 }

@@ -76,6 +76,7 @@ const onboardingSchema = z.object({
 
 const messageSchema = z.object({
   content: z.string().min(1, "Message content is required"),
+  mood: z.string().optional().nullable(),
 });
 
 const conversationSchema = z.object({
@@ -276,6 +277,8 @@ export async function registerRoutes(
       } : null;
       
       const personaAssignment = assignPersona({
+        userName: null,
+        tradition: null,
         primaryStruggle: onboardingData.primaryStruggle ?? null,
         depthLayer: onboardingData.depthLayer ?? null,
         behavioralReality,
@@ -335,7 +338,9 @@ export async function registerRoutes(
   // Get current persona
   app.get("/api/persona", async (req: Request, res: Response) => {
     try {
-      const persona = await storage.getPersona();
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
+      const persona = await storage.getPersona(userId);
       if (!persona) {
         return res.status(404).json({
           success: false,
@@ -352,10 +357,15 @@ export async function registerRoutes(
     }
   });
 
-  // Get all conversations
+  // Get all conversations for the logged-in user
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
-      const conversations = await storage.getAllConversations();
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
+      if (!userId) {
+        return res.json([]);
+      }
+      const conversations = await storage.getConversationsByUser(userId);
       res.json(conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -406,8 +416,10 @@ export async function registerRoutes(
       }
 
       const { title } = parseResult.data;
+      const sessionUserId = (req.session as SessionWithUser).userId ?? null;
       const conversation = await storage.createConversation({
         title: title || "New Conversation",
+        userId: sessionUserId,
       });
       res.status(201).json(conversation);
     } catch (error) {
@@ -602,7 +614,7 @@ export async function registerRoutes(
         });
       }
 
-      const { content } = parseResult.data;
+      const { content, mood } = parseResult.data;
 
       // Verify conversation exists
       const conversation = await storage.getConversation(conversationId);
@@ -698,6 +710,24 @@ export async function registerRoutes(
       let systemPrompt = persona
         ? buildAISystemPrompt(persona, userTurnCount, user?.name, emotionalState, crisisProtocol, memoryContext)
         : "You are a warm, empathetic spiritual companion. Help the user explore their faith journey with kindness and without judgment.";
+
+      // Inject mood-based RAG scriptures when user has shared their mood
+      if (mood) {
+        try {
+          const { getScripturesByFeeling, isValidFeeling } = await import("./services/feelingScriptureService");
+          if (isValidFeeling(mood)) {
+            const scriptureResult = getScripturesByFeeling(mood, undefined, 2);
+            if (scriptureResult.selected_scriptures.length > 0) {
+              const scriptureContext = scriptureResult.selected_scriptures
+                .map(s => `"${s.text}" — ${s.citation}`)
+                .join("\n");
+              systemPrompt += `\n\nUSER'S CURRENT MOOD: ${mood}\n\nRELEVANT SCRIPTURES FOR THIS MOMENT:\n${scriptureContext}\n\nWeave these scriptures naturally into your response if appropriate — don't force them, let them serve the moment.`;
+            }
+          }
+        } catch (moodErr) {
+          console.error("Mood RAG error (continuing):", moodErr);
+        }
+      }
 
       // Enhance with shame detection (GRACE System v2.0)
       try {
@@ -880,6 +910,31 @@ I'm here to listen whenever you're ready to talk.`;
           } catch (trustError) {
             console.error("Trust tracking error (continuing):", trustError);
           }
+        }
+
+        // Extract memory insights every 6 user turns (non-blocking)
+        if (userId && userTurnCount >= 4 && userTurnCount % 6 === 0) {
+          setImmediate(async () => {
+            try {
+              const insights = await memoryExtractor.extractInsights(chatMessages);
+              if (insights) {
+                for (const topic of insights.topics) {
+                  await storage.upsertTopic(userId, topic);
+                }
+                for (const moment of insights.memorableMoments) {
+                  await storage.saveMoment(
+                    userId,
+                    conversationId,
+                    moment.type,
+                    moment.summary,
+                    moment.emotionalImpact
+                  );
+                }
+              }
+            } catch (memErr) {
+              console.error("Memory extraction error (non-blocking):", memErr);
+            }
+          });
         }
 
         res.write(`data: ${JSON.stringify({ 
@@ -1148,7 +1203,28 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(401).json({ success: false, error: "Not authenticated" });
       }
       const devotional = await devotionalService.getTodaysDevotional(session.userId);
-      res.json({ success: true, data: devotional });
+
+      // Also return which tasks the user has completed today
+      const { db } = await import("./db");
+      const { dailyDevotionalAssignments } = await import("@shared/schema");
+      const { eq, and } = await import("drizzle-orm");
+      const today = new Date().toISOString().split("T")[0];
+      const assignment = await db
+        .select()
+        .from(dailyDevotionalAssignments)
+        .where(and(
+          eq(dailyDevotionalAssignments.userId, session.userId),
+          eq(dailyDevotionalAssignments.assignedDate, today)
+        ))
+        .limit(1);
+
+      const completedTaskIds: string[] = [];
+      if (assignment[0]?.isCompleted === 1) {
+        completedTaskIds.push("devotional-prayer");
+      }
+      // Store checkin/bible completion in localStorage on client — only devotional completion is server-tracked
+
+      res.json({ success: true, data: devotional, completedTaskIds });
     } catch (error) {
       console.error("Error fetching today's devotional:", error);
       res.status(500).json({ success: false, error: "Failed to fetch devotional" });
@@ -1598,6 +1674,296 @@ I'm here to listen whenever you're ready to talk.`;
   });
 
   // Register voice routes for speech-to-text and text-to-speech
+  // Cold start — personalised first message for brand new users
+  // Called once after onboarding completes, uses Claude to generate a warm opener
+  app.post("/api/chat/cold-start", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      const userId = session.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { conversationId } = req.body;
+      if (!conversationId || isNaN(parseInt(conversationId))) {
+        return res.status(400).json({ error: "conversationId is required" });
+      }
+
+      const convId = parseInt(conversationId);
+
+      // Verify conversation belongs to this user
+      const conversation = await storage.getConversation(convId);
+      if (!conversation || conversation.userId !== userId) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Only send cold start if conversation is truly empty
+      const existingMessages = await storage.getMessages(convId);
+      if (existingMessages.length > 0) {
+        return res.json({ message: null, skipped: true });
+      }
+
+      // Get user and persona
+      const user = await storage.getUser(userId);
+      const persona = await storage.getPersona(userId);
+
+      const userName = user?.name?.split(" ")[0] || "friend";
+
+      // Build a rich prompt from persona data
+      const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || null;
+      const goals = ((persona?.transformationGoals || []) as string[])
+        .slice(0, 2)
+        .map((g: string) => g.replace(/_/g, " "))
+        .join(" and ");
+      const archetype = persona?.graceArchetype?.replace(/_/g, " ") || null;
+      const depthLayer = persona?.depthLayerResponses as Record<string, unknown> | null;
+
+      let contextLines = `User's name: ${userName}`;
+      if (struggle) contextLines += `\nPrimary struggle: ${struggle}`;
+      if (goals) contextLines += `\nWhat they hope for: ${goals}`;
+      if (archetype) contextLines += `\nPersona archetype: ${archetype}`;
+      if (depthLayer) contextLines += `\nDepth layer responses: ${JSON.stringify(depthLayer)}`;
+
+      // Generate with Claude
+      let fullMessage = "";
+      try {
+        for await (const chunk of hybridAIClient.streamChat({
+          systemPrompt: `You are a warm, pastoral AI spiritual companion. 
+          
+Write a single opening message to a user who has just completed onboarding. 
+
+RULES:
+- Use their first name once, naturally
+- Reference their specific struggle directly — don't be vague
+- Acknowledge how real and hard that struggle is
+- End with ONE gentle open question that invites them to share more
+- Tone: like a wise friend, not a therapist or preacher
+- Length: 3-4 sentences maximum
+- NEVER use em dashes or en dashes
+- Do NOT introduce yourself or explain what you are
+- Do NOT say "Welcome to SoulGuide" or anything app-like
+- This is the very first thing they will read — make it feel like it was written just for them`,
+          messages: [
+            {
+              role: "user",
+              content: `Generate the opening message for this user:\n\n${contextLines}`,
+            },
+          ],
+          maxTokens: 200,
+        })) {
+          if (!chunk.done && chunk.content) {
+            fullMessage += chunk.content;
+          }
+          if (chunk.done) break;
+        }
+      } catch (aiErr) {
+        console.error("Cold start AI error:", aiErr);
+      }
+
+      if (!fullMessage.trim()) {
+        // Fallback if AI fails
+        fullMessage = struggle
+          ? `${userName}, I know that feeling of ${struggle} is real, and it's not small. You showed up today anyway, and that matters more than you might think. What's been weighing on you most lately?`
+          : `${userName}, I'm glad you're here. Whatever brought you to this moment, I want you to know you don't have to figure it out alone. What's been on your heart?`;
+      }
+
+      // Save as assistant message
+      const savedMessage = await storage.createMessage({
+        conversationId: convId,
+        role: "assistant",
+        content: fullMessage.trim(),
+      });
+
+      res.json({
+        message: {
+          id: savedMessage.id,
+          role: savedMessage.role,
+          content: savedMessage.content,
+          createdAt: savedMessage.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error("Cold start error:", error);
+      res.status(500).json({ error: "Failed to generate opening message" });
+    }
+  });
+
+  // Update persona (edit journey)
+  app.patch("/api/persona", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { primaryStruggle, transformationGoals } = req.body;
+      if (!primaryStruggle || !transformationGoals?.length) {
+        return res.status(400).json({ error: "primaryStruggle and transformationGoals are required" });
+      }
+
+      const persona = await storage.getPersona(session.userId);
+      if (!persona) return res.status(404).json({ error: "Persona not found" });
+
+      // Re-run persona assignment with updated answers
+      const updatedData = {
+        userName: null,
+        tradition: null,
+        primaryStruggle,
+        depthLayer: persona.depthLayerResponses as Record<string, unknown> | null,
+        behavioralReality: {
+          dailyRhythm: (persona.dailyRhythm as string[]) || [],
+          pastConnectionMoment: persona.pastConnectionMoment,
+          connectionRecency: persona.connectionRecency,
+          peakEnergyTime: persona.peakEnergyTime,
+          obstacles: (persona.obstacles as string[]) || [],
+        },
+        transformationGoals,
+      };
+
+      const assignment = assignPersona(updatedData);
+      const graceProfile = assignment.graceProfile;
+
+      // Preserve existing trust — don't reset because they updated their goals
+      const existingTrust = persona.graceTrust;
+
+      await storage.updatePersona(persona.id, {
+        primaryStruggle,
+        transformationGoals,
+        primaryPersona: assignment.primary,
+        personaModifiers: assignment.modifiers,
+        graceArchetype: graceProfile?.archetype || null,
+        graceMode: graceProfile?.mode || null,
+        graceEvolution: graceProfile?.evolution || null,
+        graceScores: graceProfile?.scores || null,
+        graceSensitivity: graceProfile?.sensitivity || null,
+        graceSafetyProfile: graceProfile?.safety || null,
+        graceTrust: existingTrust as any, // preserve existing trust score
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Persona update error:", error);
+      res.status(500).json({ error: "Failed to update journey" });
+    }
+  });
+
+  // Auto-generate conversation title after enough turns
+  app.post("/api/conversations/:id/title", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const convId = parseInt(req.params.id);
+      if (isNaN(convId)) return res.status(400).json({ error: "Invalid ID" });
+
+      const conversation = await storage.getConversation(convId);
+      if (!conversation || conversation.userId !== session.userId) {
+        return res.status(404).json({ error: "Not found" });
+      }
+
+      // Only auto-title if still default
+      if (conversation.title !== "New Conversation") {
+        return res.json({ title: conversation.title, skipped: true });
+      }
+
+      const messages = await storage.getMessages(convId);
+      const userMessages = messages.filter(m => m.role === "user").slice(0, 4);
+      if (userMessages.length < 2) {
+        return res.json({ title: conversation.title, skipped: true });
+      }
+
+      const excerpt = userMessages.map(m => m.content.slice(0, 120)).join(" / ");
+
+      let title = "";
+      for await (const chunk of hybridAIClient.streamChat({
+        systemPrompt: `Generate a 3-5 word title for this spiritual conversation. Return ONLY the title, nothing else. No quotes, no punctuation at the end. Sentence case.`,
+        messages: [{ role: "user", content: excerpt }],
+        maxTokens: 20,
+      })) {
+        if (!chunk.done && chunk.content) title += chunk.content;
+        if (chunk.done) break;
+      }
+
+      title = title.trim().replace(/["'.]+$/, "").slice(0, 60) || "Soul Care conversation";
+
+      const { db } = await import("./db");
+      const { conversations } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      await db.update(conversations).set({ title }).where(eq(conversations.id, convId));
+
+      res.json({ title });
+    } catch (error) {
+      console.error("Auto-title error:", error);
+      res.status(500).json({ error: "Failed to generate title" });
+    }
+  });
+
+  // ── Prayer Journal ─────────────────────────────────────────────────────────
+
+  app.get("/api/journal", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+      const { db } = await import("./db");
+      const { prayerJournalEntries } = await import("@shared/schema");
+      const { eq, desc } = await import("drizzle-orm");
+      const entries = await db
+        .select()
+        .from(prayerJournalEntries)
+        .where(eq(prayerJournalEntries.userId, session.userId))
+        .orderBy(desc(prayerJournalEntries.createdAt));
+      res.json({ entries });
+    } catch (error) {
+      console.error("Journal fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch journal entries" });
+    }
+  });
+
+  app.post("/api/journal", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+      const { content, title, mood, tags, verseReference, verseText } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "Content is required" });
+      const { db } = await import("./db");
+      const { prayerJournalEntries } = await import("@shared/schema");
+      const [entry] = await db
+        .insert(prayerJournalEntries)
+        .values({
+          userId: session.userId,
+          content: content.trim(),
+          title: title?.trim() || null,
+          mood: mood || null,
+          tags: tags || [],
+          verseReference: verseReference || null,
+          verseText: verseText || null,
+        })
+        .returning();
+      res.status(201).json({ entry });
+    } catch (error) {
+      console.error("Journal create error:", error);
+      res.status(500).json({ error: "Failed to create journal entry" });
+    }
+  });
+
+  app.delete("/api/journal/:id", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const { db } = await import("./db");
+      const { prayerJournalEntries } = await import("@shared/schema");
+      const { and, eq } = await import("drizzle-orm");
+      await db
+        .delete(prayerJournalEntries)
+        .where(and(eq(prayerJournalEntries.id, id), eq(prayerJournalEntries.userId, session.userId)));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Journal delete error:", error);
+      res.status(500).json({ error: "Failed to delete journal entry" });
+    }
+  });
+
   registerVoiceRoutes(app);
 
   return httpServer;

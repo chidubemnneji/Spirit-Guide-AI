@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { useOnboarding } from "@/context/OnboardingContext";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthIndicator, isPasswordStrong } from "@/components/PasswordStrengthIndicator";
@@ -12,6 +13,7 @@ import { PasswordStrengthIndicator, isPasswordStrong } from "@/components/Passwo
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { signup } = useAuth();
+  const { setPhase, resetOnboarding } = useOnboarding();
   const { toast } = useToast();
   
   const [name, setName] = useState("");
@@ -61,6 +63,8 @@ export default function Signup() {
     setIsLoading(false);
     
     if (result.success) {
+      resetOnboarding();
+      setPhase(1);
       setLocation("/onboarding");
     } else {
       toast({

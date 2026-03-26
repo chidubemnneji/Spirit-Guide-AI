@@ -11,6 +11,8 @@ import { ArrowUp, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cr
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
+import { ConversationSidebar } from "@/components/ConversationSidebar";
+import { MoodCheckIn, type Mood } from "@/components/MoodCheckIn";
 import type { Message, Conversation, RecommendationCard } from "@shared/schema";
 
 // Bible verse pattern: Book Chapter:Verse or Book Chapter:Verse-Verse
@@ -114,6 +116,8 @@ export default function Chat() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<number | null>(null);
+  const [pendingMood, setPendingMood] = useState<Mood | null>(null);
+  const [showMoodCheckIn, setShowMoodCheckIn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initRef = useRef(false);
@@ -125,22 +129,7 @@ export default function Chat() {
   const searchString = useSearch();
   const { setHideNav } = useScroll();
 
-  // Check if first time visiting chat, redirect to intro page
-  useEffect(() => {
-    const params = new URLSearchParams(searchString);
-    const isNewFromIntro = params.get("new") === "true";
-    const hasSeenIntro = localStorage.getItem("soulguide_seen_chat_intro");
-    
-    if (!hasSeenIntro && !isNewFromIntro) {
-      navigate("/meet-prayer-partner");
-      return;
-    }
-    
-    if (isNewFromIntro) {
-      localStorage.setItem("soulguide_seen_chat_intro", "true");
-      navigate("/chat", { replace: true });
-    }
-  }, [searchString, navigate]);
+  // No intro gate needed - MeetPrayerPartner is shown post-onboarding via transition flow
 
   // Cleanup audio resources on unmount
   useEffect(() => {
@@ -196,7 +185,7 @@ export default function Chat() {
     return false;
   }, []);
 
-  const createConversation = useCallback(async () => {
+  const createConversation = useCallback(async (isColdStart = false) => {
     setIsInitializing(true);
     setInitError(null);
     
@@ -205,12 +194,33 @@ export default function Chat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "New Conversation" }),
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
         setConversationId(data.id);
         setMessages([]);
         localStorage.setItem("soulguide_conversation_id", String(data.id));
+
+        // Fire cold-start opening message for brand new users
+        if (isColdStart) {
+          try {
+            const csRes = await fetch("/api/chat/cold-start", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ conversationId: data.id }),
+              credentials: "include",
+            });
+            if (csRes.ok) {
+              const csData = await csRes.json();
+              if (csData.message) {
+                setMessages([csData.message]);
+              }
+            }
+          } catch (csError) {
+            console.error("Cold start error (non-blocking):", csError);
+          }
+        }
       } else {
         setInitError("Could not start a conversation. Please try again.");
       }
@@ -239,9 +249,21 @@ export default function Chat() {
           return;
         }
       }
+
+      // Check if user has any conversations at all (first time user)
+      let isFirstEver = false;
+      try {
+        const convRes = await fetch("/api/conversations", { credentials: "include" });
+        if (convRes.ok) {
+          const convData = await convRes.json();
+          isFirstEver = Array.isArray(convData) && convData.length === 0;
+        }
+      } catch {
+        // can't determine — treat as returning user
+      }
       
-      // No existing conversation, create new one
-      await createConversation();
+      // Create conversation, trigger cold start for brand new users
+      await createConversation(isFirstEver);
     };
     
     initChat();
@@ -380,7 +402,14 @@ export default function Chat() {
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || isStreaming) return;
     
+    // Show mood check-in before first user message if not yet set
+    if (messages.filter(m => m.role === "user").length === 0 && !pendingMood && !showMoodCheckIn) {
+      setShowMoodCheckIn(true);
+      return;
+    }
+
     setSendError(null);
+    setShowMoodCheckIn(false);
 
     const userMessage: ChatMessage = {
       id: Date.now(),
@@ -391,7 +420,9 @@ export default function Chat() {
 
     setMessages((prev) => [...prev, userMessage]);
     const messageContent = input.trim();
+    const moodToSend = pendingMood;
     setInput("");
+    setPendingMood(null);
     setIsStreaming(true);
     setStreamingContent("");
 
@@ -399,7 +430,8 @@ export default function Chat() {
       const response = await fetch(`/api/conversations/${conversationId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: messageContent }),
+        body: JSON.stringify({ content: messageContent, mood: moodToSend }),
+        credentials: "include",
       });
 
       if (!response.ok) throw new Error("Failed to send message");
@@ -446,7 +478,15 @@ export default function Chat() {
                     }
                   }
                   
-                  setMessages((prev) => [...prev, assistantMessage]);
+                  setMessages((prev) => {
+                    const updated = [...prev, assistantMessage];
+                    const userCount = updated.filter(m => m.role === "user").length;
+                    if (userCount === 4 && conversationId) {
+                      fetch(`/api/conversations/${conversationId}/title`, { method: "POST", credentials: "include" })
+                        .then(r => r.json()).then(d => { if (d.title && !d.skipped) queryClient.invalidateQueries({ queryKey: ["/api/conversations"] }); }).catch(() => {});
+                    }
+                    return updated;
+                  });
                   setStreamingContent("");
                 }
               } catch {
@@ -485,7 +525,7 @@ export default function Chat() {
     setConversationId(null);
     setMessages([]);
     localStorage.removeItem("soulguide_conversation_id");
-    createConversation();
+    createConversation(false);
   };
 
   // Voice recording functions
@@ -642,9 +682,22 @@ export default function Chat() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-40 bg-background border-b border-border/50">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="font-serif text-2xl font-bold text-foreground">Soul Care</h1>
-            <p className="text-sm text-muted-foreground">Your AI companion</p>
+          <div className="flex items-center gap-2">
+            <ConversationSidebar
+              currentConversationId={conversationId}
+              onSelect={async (id) => {
+                const loaded = await loadExistingConversation(id);
+                if (loaded) {
+                  setPendingMood(null);
+                  setShowMoodCheckIn(false);
+                }
+              }}
+              onNewChat={handleNewChat}
+            />
+            <div>
+              <h1 className="font-serif text-2xl font-bold text-foreground">Soul Care</h1>
+              <p className="text-sm text-muted-foreground">Your AI companion</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -715,6 +768,19 @@ export default function Chat() {
 
         <div className="border-t border-border/50 glass p-3">
           <div className="w-full">
+            <MoodCheckIn
+              visible={showMoodCheckIn}
+              onSelect={(mood) => {
+                setPendingMood(mood);
+                setShowMoodCheckIn(false);
+                // Now actually send the message that triggered the check-in
+                setTimeout(() => sendMessage(), 50);
+              }}
+              onSkip={() => {
+                setShowMoodCheckIn(false);
+                setTimeout(() => sendMessage(), 50);
+              }}
+            />
             <Card className="flex items-end gap-2 p-2 glass-subtle glow-border shadow-subtle">
               <Textarea
                 ref={textareaRef}

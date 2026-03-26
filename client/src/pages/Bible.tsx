@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 import { BIBLE_VERSE_PATTERN } from "@/lib/bibleUtils";
@@ -395,31 +395,48 @@ export default function Bible() {
     setHighlightedVerses(newHighlighted);
   };
 
-  const handleSaveHighlighted = (verses: { number: string; text: string }[]) => {
+  const handleSaveHighlighted = async (verses: { number: string; text: string }[]) => {
     if (highlightedVerses.size === 0 || !currentChapter) return;
-    
+
     const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
     if (selectedVerses.length === 0) return;
-    
+
     const sortedVerses = selectedVerses.sort((a, b) => parseInt(a.number) - parseInt(b.number));
     const firstVerse = sortedVerses[0].number;
     const lastVerse = sortedVerses[sortedVerses.length - 1].number;
-    const reference = firstVerse === lastVerse 
+    const reference = firstVerse === lastVerse
       ? `${currentChapter.reference}:${firstVerse}`
       : `${currentChapter.reference}:${firstVerse}-${lastVerse}`;
-    
+    const verseText = sortedVerses.map(v => v.text).join(" ");
+
+    // Also keep local bookmark state for the session
     const newBookmark: BookmarkGroup = {
       id: `${reference}-${Date.now()}`,
       verses: sortedVerses,
       reference,
       dateSaved: new Date(),
     };
-    
     setBookmarkGroups([...bookmarkGroups, newBookmark]);
     setHighlightedVerses(new Set());
+
+    // Save to prayer journal
+    try {
+      await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content: `Saved from Bible reading:\n\n"${verseText}"`,
+          verseReference: reference,
+          verseText,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to save verse to journal:", e);
+    }
   };
 
-  const handleReflectHighlighted = (verses: { number: string; text: string }[]) => {
+  const handleReflectHighlighted = async (verses: { number: string; text: string }[]) => {
     if (highlightedVerses.size === 0 || !currentChapter) return;
     
     const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
@@ -433,8 +450,25 @@ export default function Bible() {
       : `${currentChapter.reference}:${firstVerse}-${lastVerse}`;
     const combinedText = sortedVerses.map(v => `${v.number}. ${v.text}`).join(" ");
     
-    navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(combinedText)}`);
+    // Create a fresh conversation for this reflection
+    try {
+      localStorage.removeItem("soulguide_conversation_id");
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: `Reflecting on ${reference}` }),
+        credentials: "include",
+      });
+      if (res.ok) {
+        const conv = await res.json();
+        localStorage.setItem("soulguide_conversation_id", String(conv.id));
+      }
+    } catch (e) {
+      console.error("Failed to create reflection conversation:", e);
+    }
+
     setHighlightedVerses(new Set());
+    navigate(`/chat?verse=${encodeURIComponent(reference)}&text=${encodeURIComponent(combinedText)}`);
   };
 
   const oldTestamentBooks = books.filter((b) => b.testament === "OT");
@@ -1034,6 +1068,31 @@ export default function Bible() {
                         >
                           <MessageCircle className="w-4 h-4 mr-1" />
                           Reflect
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
+                            if (selectedVerses.length === 0 || !currentChapter) return;
+                            const sorted = selectedVerses.sort((a, b) => parseInt(a.number) - parseInt(b.number));
+                            const first = sorted[0].number;
+                            const last = sorted[sorted.length - 1].number;
+                            const ref = first === last
+                              ? `${currentChapter.reference}:${first}`
+                              : `${currentChapter.reference}:${first}-${last}`;
+                            const text = sorted.map(v => v.text).join(" ");
+                            const shareText = `"${text}" — ${ref}`;
+                            if (navigator.share) {
+                              navigator.share({ text: shareText });
+                            } else {
+                              navigator.clipboard.writeText(shareText);
+                            }
+                          }}
+                          data-testid="button-share-verses"
+                        >
+                          <Share2 className="w-4 h-4 mr-1" />
+                          Share
                         </Button>
                         <Button
                           variant="ghost"

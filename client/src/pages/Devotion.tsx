@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -209,12 +209,19 @@ export default function Devotion() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationMilestone, setCelebrationMilestone] = useState(0);
   const [startTime] = useState(() => Date.now());
+  const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => {
+    // Restore today's local completions from localStorage
+    const today = new Date().toISOString().split("T")[0];
+    const stored = localStorage.getItem(`soulguide_tasks_${today}`);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
+  const startedRef = useRef(false);
 
   const greetingQuery = useQuery<{ success: boolean; data: DevotionalGreeting }>({
     queryKey: ["/api/devotional/greeting"],
   });
 
-  const devotionalQuery = useQuery<{ success: boolean; data: Devotional }>({
+  const devotionalQuery = useQuery<{ success: boolean; data: Devotional; completedTaskIds: string[] }>({
     queryKey: ["/api/devotional/today"],
   });
 
@@ -224,8 +231,7 @@ export default function Devotion() {
 
   const startMutation = useMutation({
     mutationFn: async (devotionalId: number) => {
-      const res = await apiRequest("POST", `/api/devotional/${devotionalId}/start`);
-      return res.json();
+      await apiRequest("POST", `/api/devotional/${devotionalId}/start`);
     },
   });
 
@@ -246,10 +252,19 @@ export default function Devotion() {
   });
 
   useEffect(() => {
-    if (devotionalQuery.data?.data?.id) {
+    if (devotionalQuery.data?.data?.id && !startedRef.current) {
+      startedRef.current = true;
       startMutation.mutate(devotionalQuery.data.data.id);
     }
-  }, [devotionalQuery.data?.data?.id]);
+    // Merge server-tracked completions (devotional-prayer) into state
+    if (devotionalQuery.data?.completedTaskIds?.length) {
+      setCompletedTaskIds(prev => {
+        const next = new Set(prev);
+        devotionalQuery.data.completedTaskIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  }, [devotionalQuery.data?.data?.id, devotionalQuery.data?.completedTaskIds]);
 
   const handleComplete = () => {
     if (devotionalQuery.data?.data?.id) {
@@ -259,6 +274,15 @@ export default function Devotion() {
         timeSpentSeconds: timeSpent,
       });
     }
+  };
+
+  const handleTaskComplete = (taskId: string) => {
+    setCompletedTaskIds(prev => {
+      const next = new Set(prev).add(taskId);
+      const today = new Date().toISOString().split("T")[0];
+      localStorage.setItem(`soulguide_tasks_${today}`, JSON.stringify(Array.from(next)));
+      return next;
+    });
   };
 
   const greeting = greetingQuery.data?.data;
@@ -279,8 +303,11 @@ export default function Devotion() {
       subtitle: "A personalized reflection based on your journey",
       icon: "sun",
       duration: "2 MIN",
-      isCompleted: false,
-      action: () => setLocation("/chat?mode=checkin"),
+      isCompleted: completedTaskIds.has("soul-checkin"),
+      action: () => {
+        handleTaskComplete("soul-checkin");
+        setLocation("/chat?mode=checkin");
+      },
     },
     {
       id: "gods-message",
@@ -288,8 +315,9 @@ export default function Devotion() {
       subtitle: devotional?.scriptureReference || "Today's verse for you",
       icon: "book",
       duration: "1 MIN",
-      isCompleted: false,
+      isCompleted: completedTaskIds.has("gods-message"),
       action: () => {
+        handleTaskComplete("gods-message");
         setLocation(getVerseOfDayLink());
       },
     },
@@ -299,13 +327,16 @@ export default function Devotion() {
       subtitle: devotional?.title || "Reflection and connection with God",
       icon: "message",
       duration: "5 MIN",
-      isCompleted: false,
+      isCompleted: completedTaskIds.has("devotional-prayer"),
       action: () => {
+        handleTaskComplete("devotional-prayer");
         handleComplete();
         setLocation("/chat?mode=devotional");
       },
     },
   ];
+
+  const progressPercent = Math.round((completedTaskIds.size / journeyTasks.length) * 100);
 
   const completedDays = journeyQuery.data?.data
     ?.filter(e => e.completedAt)
@@ -375,7 +406,7 @@ export default function Devotion() {
           className="flex items-center justify-between"
         >
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">PROGRESS TODAY</span>
-          <span className="text-xs font-medium text-muted-foreground">25%</span>
+          <span className="text-xs font-medium text-muted-foreground">{progressPercent}%</span>
         </motion.div>
         
         <motion.div
@@ -384,7 +415,7 @@ export default function Devotion() {
           transition={{ duration: 0.4, delay: 0.12 }}
           className="w-full h-1.5 bg-muted rounded-full overflow-hidden"
         >
-          <div className="h-full bg-primary rounded-full transition-all" style={{ width: "25%" }} />
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
         </motion.div>
 
         <div className="space-y-3">

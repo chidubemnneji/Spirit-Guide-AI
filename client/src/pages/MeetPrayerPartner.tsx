@@ -86,7 +86,7 @@ export default function MeetPrayerPartner() {
         >
           <Button
             size="lg"
-            onClick={() => setLocation("/chat?new=true")}
+            onClick={() => setLocation("/chat")}
             className="w-full rounded-2xl bg-foreground text-background"
             data-testid="button-start-conversation"
           >

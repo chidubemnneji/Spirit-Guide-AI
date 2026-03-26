@@ -1,11 +1,7 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useLocation } from "wouter";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { ProgressBar } from "@/components/onboarding/ProgressBar";
-import { Testimonials } from "@/components/onboarding/Testimonials";
-import { NameInput } from "@/components/onboarding/NameInput";
-import { TraditionSelection } from "@/components/onboarding/TraditionSelection";
-import { AIDemo } from "@/components/onboarding/AIDemo";
 import { Phase1 } from "@/components/onboarding/Phase1";
 import { Phase2DistantFromGod } from "@/components/onboarding/Phase2DistantFromGod";
 import { Phase2Doubts } from "@/components/onboarding/Phase2Doubts";
@@ -13,14 +9,16 @@ import { Phase2Alone } from "@/components/onboarding/Phase2Alone";
 import { Phase2Guilt } from "@/components/onboarding/Phase2Guilt";
 import { Phase2Overwhelmed } from "@/components/onboarding/Phase2Overwhelmed";
 import { Phase2NewToFaith } from "@/components/onboarding/Phase2NewToFaith";
-import { Phase3 } from "@/components/onboarding/Phase3";
-import { Phase4 } from "@/components/onboarding/Phase4";
+import { GoalsStep } from "@/components/onboarding/GoalsStep";
+import { SignupStep } from "@/components/onboarding/SignupStep";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-const TOTAL_PHASES = 8;
+// 4 real steps the user experiences
+// 1: Struggle  2: Depth (per struggle)  3: Goals  4: Name + signup
+const TOTAL_STEPS = 4;
 
 const phase2Components: Record<string, React.ComponentType<{ onNext: () => void; onBack: () => void }>> = {
   distant_from_god: Phase2DistantFromGod,
@@ -38,8 +36,7 @@ export default function Onboarding() {
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/onboarding", data);
-      return response;
+      return apiRequest("POST", "/api/onboarding", data);
     },
     onSuccess: () => {
       setLocation("/transition");
@@ -53,10 +50,6 @@ export default function Onboarding() {
     },
   });
 
-  const handleNext = useCallback(() => {
-    setPhase(currentPhase + 1);
-  }, [currentPhase, setPhase]);
-
   const handleBack = useCallback(() => {
     if (currentPhase > 1) {
       setPhase(currentPhase - 1);
@@ -65,69 +58,68 @@ export default function Onboarding() {
     }
   }, [currentPhase, setPhase, setLocation]);
 
-  const handlePhase1Complete = useCallback((struggle: string) => {
-    setPhase(6);
-  }, [setPhase]);
-
-  const handlePhase2Complete = useCallback(() => {
-    setPhase(7);
-  }, [setPhase]);
-
-  const handlePhase3Complete = useCallback(() => {
-    setPhase(8);
-  }, [setPhase]);
-
-  const handlePhase4Complete = useCallback(() => {
-    submitMutation.mutate();
-  }, [submitMutation]);
-
-  const renderPhase = () => {
+  const renderStep = () => {
     switch (currentPhase) {
-      case 0:
+      // Step 1 — primary struggle
       case 1:
-        return <Testimonials onNext={handleNext} />;
-      case 2:
-        return <NameInput onNext={handleNext} onBack={handleBack} />;
-      case 3:
-        return <TraditionSelection onNext={handleNext} onBack={handleBack} />;
-      case 4:
-        return <AIDemo onNext={handleNext} onBack={handleBack} />;
-      case 5:
-        return <Phase1 onNext={handlePhase1Complete} onBack={handleBack} />;
-      case 6: {
-        const Phase2Component = data.primaryStruggle 
-          ? phase2Components[data.primaryStruggle] 
-          : Phase2DistantFromGod;
-        return <Phase2Component onNext={handlePhase2Complete} onBack={handleBack} />;
-      }
-      case 7:
-        return <Phase3 onNext={handlePhase3Complete} onBack={handleBack} />;
-      case 8:
         return (
-          <Phase4 
-            onComplete={handlePhase4Complete} 
-            onBack={handleBack} 
-            isSubmitting={submitMutation.isPending} 
+          <Phase1
+            onNext={(struggle: string) => {
+              // struggle is saved inside Phase1 via updateOnboarding
+              setPhase(2);
+            }}
+            onBack={handleBack}
           />
         );
+
+      // Step 2 — depth layer, varies by struggle
+      case 2: {
+        const DepthComponent = data.primaryStruggle
+          ? phase2Components[data.primaryStruggle]
+          : Phase2DistantFromGod;
+        return (
+          <DepthComponent
+            onNext={() => setPhase(3)}
+            onBack={handleBack}
+          />
+        );
+      }
+
+      // Step 3 — transformation goals
+      case 3:
+        return (
+          <GoalsStep
+            onNext={() => setPhase(4)}
+            onBack={handleBack}
+          />
+        );
+
+      // Step 4 — name + signup
+      case 4:
+        return (
+          <SignupStep
+            onComplete={() => submitMutation.mutate()}
+            onBack={handleBack}
+            isSubmitting={submitMutation.isPending}
+          />
+        );
+
       default:
-        return <Testimonials onNext={handleNext} />;
+        return null;
     }
   };
 
-  const displayPhase = currentPhase === 0 ? 1 : currentPhase;
-
   return (
     <div className="min-h-screen gradient-onboarding">
-      <ProgressBar currentPhase={displayPhase} totalPhases={TOTAL_PHASES} />
-      
+      <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
+
       <div className="fixed top-3 right-4 z-50">
         <ThemeToggle />
       </div>
 
       <main className="pt-24 pb-12">
         <div className="max-w-lg mx-auto px-5">
-          {renderPhase()}
+          {renderStep()}
         </div>
       </main>
     </div>

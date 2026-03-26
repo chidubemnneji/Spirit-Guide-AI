@@ -1,11 +1,21 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Mail, LogOut, Settings, Bell, Shield, HelpCircle, ChevronRight, Flame } from "lucide-react";
+import { OptionCard } from "@/components/onboarding/OptionCard";
+import { useToast } from "@/hooks/use-toast";
+import {
+  LogOut, ChevronRight, Flame, BookOpen,
+  Bell, Moon, Sun, X, Loader2,
+  MessageCircle, Zap, Cloud, Heart, HelpCircle, Sprout,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { UserPersona } from "@shared/schema";
 
 interface UserStats {
   conversationCount: number;
@@ -15,12 +25,271 @@ interface UserStats {
   longestStreak: number;
 }
 
+// ── Archetype display map ────────────────────────────────────────────────────
+const ARCHETYPE_DISPLAY: Record<string, { name: string; description: string }> = {
+  wounded_seeker:    { name: "Wounded Seeker",    description: "Finding God through the pain" },
+  eager_builder:     { name: "Eager Builder",     description: "Growing deliberately, day by day" },
+  curious_explorer:  { name: "Curious Explorer",  description: "Following questions toward faith" },
+  returning_prodigal:{ name: "Returning Prodigal",description: "Coming home after time away" },
+  struggling_saint:  { name: "Struggling Saint",  description: "Faithful despite the doubts" },
+};
+
+// ── Relational description based on conversations ───────────────────────────
+function getRelationalDescription(conversationCount: number): string {
+  if (conversationCount === 0) return "Your journey together is just beginning.";
+  if (conversationCount < 3)   return "You've just started getting to know each other.";
+  if (conversationCount < 8)   return "Your companion is learning your story.";
+  if (conversationCount < 20)  return "Your companion knows where you've been.";
+  return "Your companion has walked a real road with you.";
+}
+
+const STRUGGLE_OPTIONS = [
+  { id: "distant_from_god",  icon: <Cloud className="w-5 h-5 text-primary" />,       text: "I feel distant from God" },
+  { id: "wrestling_doubts",  icon: <HelpCircle className="w-5 h-5 text-primary" />,  text: "I'm wrestling with doubts" },
+  { id: "feel_alone",        icon: <MessageCircle className="w-5 h-5 text-primary" />,text: "I feel alone in my faith" },
+  { id: "guilt_shame",       icon: <Heart className="w-5 h-5 text-primary" />,       text: "Carrying guilt or shame" },
+  { id: "life_overwhelming", icon: <Zap className="w-5 h-5 text-primary" />,         text: "Life is overwhelming" },
+  { id: "new_to_faith",      icon: <Sprout className="w-5 h-5 text-primary" />,      text: "New to faith" },
+];
+
+const GOAL_OPTIONS = [
+  { id: "gods_presence",    text: "Feel God's presence daily" },
+  { id: "doubts_controlled",text: "My doubts don't control me" },
+  { id: "prayer_meaningful",text: "Prayer means something to me" },
+  { id: "free_from_guilt",  text: "Free from guilt I'm carrying" },
+  { id: "faith_steady",     text: "Faith is steady, not up and down" },
+  { id: "understand_bible", text: "Understand the Bible better" },
+  { id: "peace_not_anxiety",text: "Peace instead of anxiety" },
+  { id: "friends_understand",text: "Friends who get my journey" },
+];
+
+// ── Edit Journey sheet ───────────────────────────────────────────────────────
+function EditJourneySheet({
+  open,
+  persona,
+  onClose,
+}: {
+  open: boolean;
+  persona: UserPersona | null;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const [step, setStep] = useState<1 | 2>(1);
+  const [struggle, setStruggle] = useState<string>(persona?.primaryStruggle || "");
+  const [goals, setGoals] = useState<string[]>(
+    (persona?.transformationGoals as string[]) || []
+  );
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PATCH", "/api/persona", {
+        primaryStruggle: struggle,
+        transformationGoals: goals,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/persona"] });
+      toast({ title: "Journey updated", description: "Your companion will adapt to where you are now." });
+      onClose();
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Couldn't save", description: "Please try again." });
+    },
+  });
+
+  const toggleGoal = (id: string) => {
+    setGoals(prev =>
+      prev.includes(id) ? prev.filter(g => g !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 max-h-[92vh] flex flex-col"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+          >
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border">
+              <div>
+                <h2 className="font-serif text-lg font-semibold">
+                  {step === 1 ? "Where are you right now?" : "What would feel like a win?"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {step === 1
+                    ? "Your companion adapts as you grow"
+                    : "Pick up to 3 — your goals can change any time"}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full w-8 h-8">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+              {step === 1 ? (
+                STRUGGLE_OPTIONS.map((opt, i) => (
+                  <OptionCard
+                    key={opt.id}
+                    id={opt.id}
+                    text={opt.text}
+                    icon={opt.icon}
+                    selected={struggle === opt.id}
+                    onClick={() => setStruggle(opt.id)}
+                    index={i}
+                  />
+                ))
+              ) : (
+                GOAL_OPTIONS.map((opt, i) => (
+                  <OptionCard
+                    key={opt.id}
+                    id={opt.id}
+                    text={opt.text}
+                    selected={goals.includes(opt.id)}
+                    disabled={!goals.includes(opt.id) && goals.length >= 3}
+                    onClick={() => toggleGoal(opt.id)}
+                    index={i}
+                  />
+                ))
+              )}
+            </div>
+
+            <div className="px-5 py-4 border-t border-border flex gap-3">
+              {step === 2 && (
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-2xl h-12"
+                  onClick={() => setStep(1)}
+                >
+                  Back
+                </Button>
+              )}
+              <Button
+                className="flex-1 rounded-2xl h-12"
+                disabled={step === 1 ? !struggle : goals.length === 0 || updateMutation.isPending}
+                onClick={() => {
+                  if (step === 1) setStep(2);
+                  else updateMutation.mutate();
+                }}
+              >
+                {updateMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : step === 1 ? (
+                  "Next"
+                ) : (
+                  "Save journey"
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ── Section label ─────────────────────────────────────────────────────────────
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest px-1 mb-2 mt-5 first:mt-0">
+      {children}
+    </p>
+  );
+}
+
+// ── Pref row ──────────────────────────────────────────────────────────────────
+function PrefRow({
+  icon: Icon,
+  label,
+  value,
+  onClick,
+  disabled = false,
+  right,
+  testId,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  right?: React.ReactNode;
+  testId?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || !onClick}
+      className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-muted/50 transition-colors text-left disabled:opacity-60"
+      data-testid={testId}
+    >
+      <div className="w-9 h-9 rounded-xl bg-primary/8 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 text-primary" />
+      </div>
+      <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
+      {right ?? (
+        value
+          ? <span className="text-sm text-muted-foreground">{value}</span>
+          : onClick && <ChevronRight className="w-4 h-4 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
+// ── Stat cell ─────────────────────────────────────────────────────────────────
+function StatCell({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="bg-muted/50 rounded-2xl p-3.5 flex flex-col gap-1">
+      <span className="text-2xl font-semibold text-foreground">{value}</span>
+      <span className="text-[11px] text-muted-foreground leading-tight">{label}</span>
+    </div>
+  );
+}
+
+// ── Toggle ────────────────────────────────────────────────────────────────────
+function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); onToggle(); }}
+      className={cn(
+        "w-11 h-6 rounded-full transition-colors duration-200 relative flex-shrink-0",
+        on ? "bg-primary" : "bg-border"
+      )}
+    >
+      <motion.div
+        className="w-5 h-5 rounded-full bg-white absolute top-0.5"
+        animate={{ left: on ? "calc(100% - 22px)" : "2px" }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      />
+    </button>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function Account() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
+  const [editJourneyOpen, setEditJourneyOpen] = useState(false);
 
   const { data: stats } = useQuery<UserStats>({
     queryKey: ["/api/user/stats"],
+    enabled: !!user,
+  });
+
+  const { data: personaData } = useQuery<UserPersona>({
+    queryKey: ["/api/persona"],
     enabled: !!user,
   });
 
@@ -29,108 +298,194 @@ export default function Account() {
     setLocation("/");
   };
 
+  const userName = user?.name || "Friend";
+  const firstName = userName.split(" ")[0];
+  const userInitials = userName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
   const currentStreak = stats?.currentStreak ?? 0;
-  const userName = user?.name || "Guest";
-  const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
-  const settingsItems = [
-    { icon: Bell, label: "Daily Reminder", value: "8:25 AM", disabled: true },
-    { icon: Shield, label: "Privacy Policy", disabled: false },
-    { icon: HelpCircle, label: "Help & Support", disabled: false },
-  ];
+  const archetypeKey = personaData?.graceArchetype || "";
+  const archetype = ARCHETYPE_DISPLAY[archetypeKey];
+  const goals = ((personaData?.transformationGoals as string[]) || [])
+    .map(g => g.replace(/_/g, " "));
+  const struggle = personaData?.primaryStruggle?.replace(/_/g, " ") || null;
+  const conversationCount = stats?.conversationCount ?? 0;
+  const relationalDescription = getRelationalDescription(conversationCount);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="bg-card border-b border-border">
+    <div className="min-h-screen bg-background pb-28">
+      <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="flex items-center justify-between px-5 h-14">
-          <span className="font-serif text-lg font-semibold" data-testid="text-page-title">Profile</span>
-          <Settings className="w-5 h-5 text-muted-foreground" />
+          <span className="font-serif text-lg font-semibold">Profile</span>
         </div>
       </header>
 
-      <main className="px-5 py-6 max-w-lg mx-auto space-y-6">
+      <main className="px-4 py-5 max-w-lg mx-auto">
+
+        {/* ── Identity card ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          className="bg-card border border-border/50 rounded-2xl p-4 flex items-center gap-3 mb-1"
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.35 }}
         >
-          <Card className="border-0 shadow-sm" data-testid="card-profile">
-            <CardContent className="pt-6 pb-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16" data-testid="avatar-user">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="font-semibold text-lg" data-testid="text-user-name">
-                    {userName}
-                  </h2>
-                  <p className="text-sm text-muted-foreground" data-testid="text-user-email">
-                    {user?.email || "guest@soulguide.app"}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center gap-1 px-4 py-2 bg-primary/5 rounded-xl">
-                  <Flame className="w-5 h-5 text-primary" />
-                  <span className="text-lg font-bold text-primary">{currentStreak}</span>
-                  <span className="text-[10px] text-muted-foreground">day streak</span>
+          <Avatar className="w-14 h-14" data-testid="avatar-user">
+            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-base text-foreground truncate" data-testid="text-user-name">
+              {userName}
+            </p>
+            <p className="text-xs text-muted-foreground truncate" data-testid="text-user-email">
+              {user?.email}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 bg-primary/8 rounded-xl px-3 py-2 flex-shrink-0">
+            <Flame className="w-4 h-4 text-primary" />
+            <span className="text-base font-bold text-primary leading-none">{currentStreak}</span>
+            <span className="text-[10px] text-muted-foreground">days</span>
+          </div>
+        </motion.div>
+
+        {/* ── Your Journey ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.06 }}
+        >
+          <SectionLabel>Your journey</SectionLabel>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+            {archetype && (
+              <div className="px-4 pt-4 pb-3 border-b border-border/50">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Archetype</p>
+                <p className="text-sm font-semibold text-foreground">{archetype.name}</p>
+                <p className="text-xs text-muted-foreground">{archetype.description}</p>
+              </div>
+            )}
+            {struggle && (
+              <div className="px-4 py-3 border-b border-border/50">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Current focus</p>
+                <p className="text-sm text-foreground capitalize">{struggle}</p>
+              </div>
+            )}
+            {goals.length > 0 && (
+              <div className="px-4 py-3 border-b border-border/50">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Goals</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {goals.map(g => (
+                    <span
+                      key={g}
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary/8 text-primary capitalize"
+                    >
+                      {g}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
+            <div className="px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground italic flex-1 pr-4">
+                {relationalDescription}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditJourneyOpen(true)}
+                className="text-primary text-xs font-medium h-8 rounded-xl hover:bg-primary/8 flex-shrink-0"
+                data-testid="button-edit-journey"
+              >
+                Edit →
+              </Button>
+            </div>
+          </div>
         </motion.div>
 
+        {/* ── Progress ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ duration: 0.35, delay: 0.12 }}
         >
-          <Card className="border-0 shadow-sm" data-testid="card-settings">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {settingsItems.map((item, index) => (
-                <motion.button
-                  key={item.label}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
-                  disabled={item.disabled}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 + index * 0.05 }}
-                  data-testid={`button-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                    <item.icon className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <span className="flex-1 font-medium">{item.label}</span>
-                  {item.value ? (
-                    <span className="text-sm text-muted-foreground">{item.value}</span>
-                  ) : (
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </motion.button>
-              ))}
-            </CardContent>
-          </Card>
+          <SectionLabel>Progress</SectionLabel>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCell value={stats?.conversationCount ?? 0} label="Conversations" />
+            <StatCell value={stats?.messageCount ?? 0} label="Messages sent" />
+            <StatCell value={stats?.practicesCompleted ?? 0} label="Practices done" />
+            <StatCell value={stats?.longestStreak ?? 0} label="Longest streak" />
+          </div>
         </motion.div>
 
+        {/* ── Preferences ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={{ duration: 0.35, delay: 0.18 }}
         >
-          <Button
-            variant="ghost"
-            className="w-full h-14 gap-2 text-destructive hover:text-destructive hover:bg-destructive/5 rounded-xl"
-            onClick={handleLogout}
-            data-testid="button-logout"
-          >
-            <LogOut className="w-5 h-5" />
-            Log Out
-          </Button>
+          <SectionLabel>Preferences</SectionLabel>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden divide-y divide-border/50">
+            <PrefRow
+              icon={BookOpen}
+              label="Prayer Journal"
+              onClick={() => setLocation("/journal")}
+              testId="button-prayer-journal"
+            />
+            <PrefRow
+              icon={Bell}
+              label="Daily reminder"
+              value="8:25 AM"
+              disabled
+              testId="button-daily-reminder"
+            />
+            <PrefRow
+              icon={theme === "dark" ? Moon : Sun}
+              label="Dark mode"
+              right={
+                <Toggle
+                  on={theme === "dark"}
+                  onToggle={toggleTheme}
+                />
+              }
+              testId="button-dark-mode"
+            />
+          </div>
         </motion.div>
+
+        {/* ── Log out ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.22 }}
+          className="mt-5"
+        >
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-4 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors"
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </button>
+          </div>
+        </motion.div>
+
+        {/* ── Legal footer ── */}
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</button>
+          <span className="w-1 h-1 rounded-full bg-border" />
+          <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</button>
+          <span className="w-1 h-1 rounded-full bg-border" />
+          <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">Help</button>
+        </div>
+
       </main>
+
+      <EditJourneySheet
+        open={editJourneyOpen}
+        persona={personaData ?? null}
+        onClose={() => setEditJourneyOpen(false)}
+      />
     </div>
   );
 }
