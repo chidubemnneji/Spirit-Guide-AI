@@ -34,6 +34,34 @@ const ARCHETYPE_DISPLAY: Record<string, { name: string; description: string }> =
   struggling_saint:  { name: "Struggling Saint",  description: "Faithful despite the doubts" },
 };
 
+const ARCHETYPE_EXPLAINER: Record<string, string> = {
+  wounded_seeker:    "You're carrying pain — maybe loss, betrayal, or years of unanswered prayer. Your faith hasn't disappeared but it's bruised. Your companion meets you in that honesty rather than rushing you past it.",
+  eager_builder:     "You show up consistently and want to grow. You're less interested in feelings and more in formation — building habits, understanding scripture, becoming someone different. Your companion helps you build with intention.",
+  curious_explorer:  "Questions don't scare you — they drive you. You follow threads, challenge assumptions, and want a faith that can hold up to scrutiny. Your companion engages your mind, not just your heart.",
+  returning_prodigal:"You've been away — maybe a long time. You're finding your way back, carrying some shame about the distance. Your companion doesn't make you earn trust back. You start where you are.",
+  struggling_saint:  "You've been faithful for a long time, but right now it's hard. The gap between what you know and what you feel is wide. Your companion sits with you in that tension without offering easy answers.",
+};
+
+const STRUGGLE_DISPLAY: Record<string, string> = {
+  distant_from_god:  "Feeling distant from God",
+  wrestling_doubts:  "Wrestling with doubts",
+  feel_alone:        "Feeling alone in faith",
+  guilt_shame:       "Carrying guilt or shame",
+  life_overwhelming: "Life feeling overwhelming",
+  new_to_faith:      "New to faith",
+};
+
+const GOAL_DISPLAY: Record<string, string> = {
+  gods_presence:     "Feel God's presence daily",
+  doubts_controlled: "My doubts don't control me",
+  prayer_meaningful: "Prayer means something to me",
+  free_from_guilt:   "Free from guilt I'm carrying",
+  faith_steady:      "Faith is steady, not up and down",
+  understand_bible:  "Understand the Bible better",
+  peace_not_anxiety: "Peace instead of anxiety",
+  friends_understand:"Friends who get my journey",
+};
+
 // ── Relational description based on conversations ───────────────────────────
 function getRelationalDescription(conversationCount: number): string {
   if (conversationCount === 0) return "Your journey together is just beginning.";
@@ -282,6 +310,7 @@ export default function Account() {
   const { theme, toggleTheme, isManualOverride, resetToSystem } = useTheme();
   const { toast } = useToast();
   const [editJourneyOpen, setEditJourneyOpen] = useState(false);
+  const [showArchetypeInfo, setShowArchetypeInfo] = useState(false);
 
   const { data: stats } = useQuery<UserStats>({
     queryKey: ["/api/user/stats"],
@@ -306,8 +335,10 @@ export default function Account() {
   const archetypeKey = personaData?.graceArchetype || "";
   const archetype = ARCHETYPE_DISPLAY[archetypeKey];
   const goals = ((personaData?.transformationGoals as string[]) || [])
-    .map(g => g.replace(/_/g, " "));
-  const struggle = personaData?.primaryStruggle?.replace(/_/g, " ") || null;
+    .map(g => GOAL_DISPLAY[g] || g.replace(/_/g, " "));
+  const struggle = personaData?.primaryStruggle
+    ? STRUGGLE_DISPLAY[personaData.primaryStruggle] || personaData.primaryStruggle.replace(/_/g, " ")
+    : null;
   const conversationCount = stats?.conversationCount ?? 0;
   const relationalDescription = getRelationalDescription(conversationCount);
 
@@ -358,9 +389,29 @@ export default function Account() {
           <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
             {archetype && (
               <div className="px-4 pt-4 pb-3 border-b border-border/50">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Archetype</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Archetype</p>
+                  <button
+                    onClick={() => setShowArchetypeInfo(!showArchetypeInfo)}
+                    className="text-[10px] text-primary font-medium mb-1"
+                  >
+                    {showArchetypeInfo ? "Less" : "What's this?"}
+                  </button>
+                </div>
                 <p className="text-sm font-semibold text-foreground">{archetype.name}</p>
                 <p className="text-xs text-muted-foreground">{archetype.description}</p>
+                <AnimatePresence>
+                  {showArchetypeInfo && ARCHETYPE_EXPLAINER[archetypeKey] && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50 leading-relaxed overflow-hidden"
+                    >
+                      {ARCHETYPE_EXPLAINER[archetypeKey]}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
             )}
             {struggle && (
