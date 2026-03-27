@@ -118,6 +118,9 @@ export default function Chat() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<number | null>(null);
   const [pendingMood, setPendingMood] = useState<Mood | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(
+    () => !localStorage.getItem("soulguide_disclaimer_seen")
+  );
   const pendingMoodRef = useRef<Mood | null>(null);
   const [showMoodCheckIn, setShowMoodCheckIn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -903,9 +906,17 @@ export default function Chat() {
                 </Button>
               </motion.div>
             </Card>
-            <p className="text-xs text-muted-foreground text-center mt-2 tracking-refined">
-              Your conversations are private and meant to support, not replace, spiritual community.
-            </p>
+            {showDisclaimer && (
+              <p
+                className="text-xs text-muted-foreground text-center mt-2 tracking-refined cursor-pointer"
+                onClick={() => {
+                  localStorage.setItem("soulguide_disclaimer_seen", "1");
+                  setShowDisclaimer(false);
+                }}
+              >
+                Your conversations are private and meant to support, not replace, spiritual community.
+              </p>
+            )}
           </div>
         </div>
       </main>
