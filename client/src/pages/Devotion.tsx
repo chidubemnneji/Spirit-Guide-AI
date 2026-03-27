@@ -354,7 +354,7 @@ export default function Devotion() {
       action: () => {
         handleTaskComplete("devotional-prayer");
         handleComplete();
-        setLocation("/chat?mode=devotional");
+        setLocation("/devotional");
       },
     },
   ];

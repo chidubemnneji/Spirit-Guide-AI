@@ -24,6 +24,7 @@ import Account from "@/pages/Account";
 import MeetPrayerPartner from "@/pages/MeetPrayerPartner";
 import NotFound from "@/pages/not-found";
 import Journal from "@/pages/Journal";
+import DevotionalReading from "@/pages/DevotionalReading";
 
 const ONBOARDING_ROUTES = ["/", "/signup", "/login", "/onboarding", "/transition", "/meet-prayer-partner"];
 
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/devotion" component={() => <Protected component={Devotion} />} />
       <Route path="/account" component={() => <Protected component={Account} />} />
       <Route path="/journal" component={() => <Protected component={Journal} />} />
+      <Route path="/devotional" component={() => <Protected component={DevotionalReading} />} />
       <Route component={NotFound} />
     </Switch>
   );
