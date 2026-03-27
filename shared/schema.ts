@@ -61,6 +61,7 @@ export const conversations = pgTable("conversations", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
   personaId: integer("persona_id"),
   title: text("title").default("New Conversation"),
+  channel: varchar("channel", { length: 50 }).default("general"), // general | devotional | checkin
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

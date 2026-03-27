@@ -357,47 +357,101 @@ export default function Chat() {
     }
   }, [searchString, isInitializing, conversationId, navigate, sendMessageDirect]);
 
-  // Handle chat mode from Home page (checkin or devotional)
+  // Handle chat mode from Devotion page — load persistent channel conversation
   const [chatModeProcessed, setChatModeProcessed] = useState(false);
   useEffect(() => {
-    if (chatModeProcessed || isInitializing || !conversationId || messages.length > 0) return;
-    
+    if (chatModeProcessed || isInitializing) return;
+
     const params = new URLSearchParams(searchString);
     const mode = params.get("mode");
-    
-    if (mode === "checkin" || mode === "devotional") {
-      setChatModeProcessed(true);
-      navigate("/chat", { replace: true });
-      
-      // Fetch personalized opening based on mode
-      fetch(`/api/chat/personalized-opening?mode=${mode}`)
-        .then(res => res.json())
-        .then(async (data) => {
-          if (data.message) {
-            // Save the message to the server
+
+    if (mode !== "checkin" && mode !== "devotional") return;
+    setChatModeProcessed(true);
+    navigate("/chat", { replace: true });
+
+    const loadChannel = async () => {
+      setIsInitializing(true);
+      try {
+        // Fetch or create the persistent channel conversation
+        const res = await fetch(`/api/conversations/channel/${mode}`, {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const { conversation, isNew } = await res.json();
+
+        setConversationId(conversation.id);
+        localStorage.setItem("soulguide_conversation_id", String(conversation.id));
+
+        // Load existing messages
+        const msgRes = await fetch(`/api/conversations/${conversation.id}/messages`, {
+          credentials: "include",
+        });
+        if (msgRes.ok) {
+          const msgData = await msgRes.json();
+          const existing = msgData.messages || [];
+          setMessages(existing);
+
+          // Only fire AI opener if this is a fresh session today
+          // (no messages today yet, or brand new conversation)
+          const today = new Date().toISOString().split("T")[0];
+          const hasMessageToday = existing.some((m: ChatMessage) =>
+            m.createdAt && m.createdAt.startsWith(today)
+          );
+
+          if (!hasMessageToday) {
+            // Get today's devotional for context
+            let devotionalContext = "";
             try {
-              const saveRes = await fetch(`/api/conversations/${conversationId}/system-message`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: data.message }),
-              });
-              if (saveRes.ok) {
-                // Refetch all messages from server to ensure consistency
-                const messagesRes = await fetch(`/api/conversations/${conversationId}/messages`);
-                if (messagesRes.ok) {
-                  const messagesData = await messagesRes.json();
-                  setMessages(messagesData.messages || []);
+              const devRes = await fetch("/api/devotional/today", { credentials: "include" });
+              if (devRes.ok) {
+                const devData = await devRes.json();
+                if (devData.data?.scriptureReference) {
+                  devotionalContext = `Today's verse: ${devData.data.scriptureReference} — "${devData.data.scriptureText}"`;
                 }
-                queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "messages"] });
               }
-            } catch (err) {
-              console.error("Failed to save opening message:", err);
+            } catch {}
+
+            const openerMode = mode === "devotional" ? "devotional" : "checkin";
+            const openerRes = await fetch(
+              `/api/chat/personalized-opening?mode=${openerMode}&context=${encodeURIComponent(devotionalContext)}`,
+              { credentials: "include" }
+            );
+            if (openerRes.ok) {
+              const openerData = await openerRes.json();
+              if (openerData.message) {
+                // Save opener as assistant message
+                const saveRes = await fetch(
+                  `/api/conversations/${conversation.id}/system-message`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ content: openerData.message }),
+                  }
+                );
+                if (saveRes.ok) {
+                  const refreshRes = await fetch(
+                    `/api/conversations/${conversation.id}/messages`,
+                    { credentials: "include" }
+                  );
+                  if (refreshRes.ok) {
+                    const refreshData = await refreshRes.json();
+                    setMessages(refreshData.messages || []);
+                  }
+                }
+              }
             }
           }
-        })
-        .catch(err => console.error("Failed to get personalized opening:", err));
-    }
-  }, [searchString, isInitializing, conversationId, messages.length, navigate, chatModeProcessed]);
+        }
+      } catch (err) {
+        console.error("Channel load error:", err);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    loadChannel();
+  }, [searchString, isInitializing, chatModeProcessed, navigate]);
 
   const sendMessage = async () => {
     if (!input.trim() || !conversationId || isStreaming) return;

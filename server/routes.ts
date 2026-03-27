@@ -357,6 +357,49 @@ export async function registerRoutes(
     }
   });
 
+  // Get or create a named channel conversation (devotional / checkin)
+  app.get("/api/conversations/channel/:channel", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const channel = req.params.channel;
+      if (!["devotional", "checkin"].includes(channel)) {
+        return res.status(400).json({ error: "Invalid channel" });
+      }
+
+      const { db } = await import("./db");
+      const { conversations } = await import("@shared/schema");
+      const { eq, and } = await import("drizzle-orm");
+
+      // Look for existing channel conversation
+      const existing = await db
+        .select()
+        .from(conversations)
+        .where(and(
+          eq(conversations.userId, session.userId),
+          eq(conversations.channel, channel)
+        ))
+        .limit(1);
+
+      if (existing[0]) {
+        return res.json({ conversation: existing[0], isNew: false });
+      }
+
+      // Create new channel conversation
+      const title = channel === "devotional" ? "Daily Devotional" : "Soul Check-In";
+      const [created] = await db
+        .insert(conversations)
+        .values({ userId: session.userId, title, channel })
+        .returning();
+
+      res.json({ conversation: created, isNew: true });
+    } catch (error) {
+      console.error("Channel conversation error:", error);
+      res.status(500).json({ error: "Failed to get channel conversation" });
+    }
+  });
+
   // Get all conversations for the logged-in user
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
@@ -478,83 +521,82 @@ export async function registerRoutes(
   app.get("/api/chat/personalized-opening", async (req: Request, res: Response) => {
     try {
       const mode = req.query.mode as string;
+      const devotionalContext = (req.query.context as string) || "";
       const session = req.session as SessionWithUser;
       const userId = session.userId;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      
-      // Get recent conversation history for context
-      let recentContext = "";
-      let recentTopics: string[] = [];
-      try {
-        const conversations = await storage.getConversationsByUser(userId);
-        if (conversations.length > 0) {
-          // Get messages from the most recent conversation
-          const recentConvo = conversations[0];
-          const messages = await storage.getMessages(recentConvo.id);
-          if (messages.length > 0) {
-            // Get last few user messages for context
-            const userMessages = messages
-              .filter(m => m.role === "user")
-              .slice(-3)
-              .map(m => m.content);
-            if (userMessages.length > 0) {
-              recentContext = userMessages.join(" ");
-              // Extract simple topics from recent messages
-              const topicKeywords = ["work", "family", "health", "anxiety", "worry", "prayer", "faith", "relationship", "stress", "peace", "hope", "fear", "job", "friend", "marriage", "child", "parent"];
-              const contextLower = recentContext.toLowerCase();
-              recentTopics = topicKeywords.filter(t => contextLower.includes(t));
-            }
-          }
-        }
-      } catch (e) {
-        console.log("Could not fetch recent context:", e);
+
+      const user = await storage.getUser(userId);
+      const persona = await storage.getPersona(userId);
+      const userName = user?.name?.split(" ")[0] || "friend";
+      const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || null;
+
+      let systemPrompt = "";
+      let userPrompt = "";
+
+      if (mode === "devotional") {
+        systemPrompt = `You are a warm pastoral AI companion opening a daily devotional session.
+Write a single opening message (3-4 sentences max) that:
+- References today's scripture naturally if provided
+- Connects it gently to the user's known struggle
+- Ends with one open reflective question to anchor the session
+- Feels like a spiritual director, not a chatbot
+- NEVER uses em dashes or en dashes
+- Do NOT say "Welcome" or anything generic`;
+
+        userPrompt = `User's name: ${userName}
+${struggle ? `Known struggle: ${struggle}` : ""}
+${devotionalContext ? devotionalContext : "No specific verse today"}
+
+Write the devotional opening.`;
+
+      } else {
+        // checkin mode
+        systemPrompt = `You are a warm AI companion doing a brief soul check-in.
+Write a single opening question (2-3 sentences max) that:
+- Uses their name once
+- References their known struggle briefly if relevant
+- Asks one simple honest question about how they're doing right now
+- Feels human and warm, not clinical
+- NEVER uses em dashes or en dashes`;
+
+        userPrompt = `User's name: ${userName}
+${struggle ? `Known struggle: ${struggle}` : ""}
+
+Write the check-in opening.`;
       }
 
       let message = "";
-      
-      if (mode === "checkin") {
-        // Soul check-in: personalized question based on previous interactions
-        if (recentTopics.length > 0) {
-          const topic = recentTopics[0];
-          const personalizedQuestions: Record<string, string> = {
-            work: "Last time we talked, work seemed to be on your mind. How has that been going?",
-            family: "You mentioned family before. How are things with them today?",
-            health: "I remember you were dealing with some health concerns. How are you feeling?",
-            anxiety: "You shared about feeling anxious. How has your peace been lately?",
-            worry: "You had some worries on your heart. Have things settled a bit?",
-            prayer: "How has your prayer life been since we last talked?",
-            faith: "How is your faith journey going? Any new insights or struggles?",
-            relationship: "How are things going in your relationships?",
-            stress: "You mentioned feeling stressed. How are you managing things now?",
-            peace: "Have you been able to find moments of peace lately?",
-            hope: "How is your sense of hope today?",
-            fear: "You shared some fears before. How are you feeling about those now?",
-            job: "How are things going at work these days?",
-            friend: "How are your friendships going?",
-            marriage: "How is your marriage doing?",
-            child: "How are things with your children?",
-            parent: "How are things with your parents?",
-          };
-          message = personalizedQuestions[topic] || "How are you feeling today? I'm here to listen.";
-        } else {
-          message = "Welcome! How are you feeling today? Take a moment to reflect, and share whatever is on your heart.";
+      try {
+        for await (const chunk of hybridAIClient.streamChat({
+          systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+          maxTokens: 150,
+        })) {
+          if (!chunk.done && chunk.content) message += chunk.content;
+          if (chunk.done) break;
         }
-      } else if (mode === "devotional") {
-        // Devotional mode: start with prayer/reflection prompt
-        const greetings = [
-          "Let's begin this time together with openness. What's weighing on your heart today that you'd like to bring before God?",
-          "I'm glad you're here. Before we dive in, would you like to share what's on your mind? Sometimes naming our thoughts helps us find peace.",
-          "This is your sacred space for reflection and prayer. What would you like to explore or bring to God today?",
-        ];
-        message = greetings[Math.floor(Math.random() * greetings.length)];
-      } else {
-        message = "I'm here for you. What would you like to talk about today?";
+      } catch (aiErr) {
+        console.error("Opener AI error:", aiErr);
       }
-      
-      res.json({ message });
+
+      // Fallback
+      if (!message.trim()) {
+        if (mode === "devotional") {
+          message = devotionalContext
+            ? `${devotionalContext.split("—")[0].trim()} is our anchor today. What's on your heart as you come to this moment?`
+            : `I'm glad you're here. What would you like to bring before God today?`;
+        } else {
+          message = struggle
+            ? `${userName}, how are you doing today? I know ${struggle} has been weighing on you.`
+            : `${userName}, how are you feeling right now?`;
+        }
+      }
+
+      res.json({ message: message.trim() });
     } catch (error) {
       console.error("Error getting personalized opening:", error);
       res.status(500).json({ error: "Failed to get personalized opening" });
