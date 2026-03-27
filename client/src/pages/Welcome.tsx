@@ -22,7 +22,7 @@ export default function Welcome() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 flex flex-col justify-between px-6 pt-16 pb-10">
+      <main className="flex-1 flex flex-col px-6 pt-16 pb-10 max-w-md mx-auto w-full">
         <motion.div
           className="space-y-5"
           initial={{ opacity: 0, y: 20 }}
@@ -33,12 +33,12 @@ export default function Welcome() {
             A companion<br />for your faith.
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed max-w-xs">
-            Wherever you are on your journey — doubting, searching, or simply tired — you don't have to walk it alone.
+            Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
           </p>
         </motion.div>
 
         <motion.div
-          className="space-y-3 my-10"
+          className="space-y-3 mt-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
