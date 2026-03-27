@@ -1083,10 +1083,16 @@ export default function Bible() {
                               : `${currentChapter.reference}:${first}-${last}`;
                             const text = sorted.map(v => v.text).join(" ");
                             const shareText = `"${text}" — ${ref}`;
+                            const appUrl = `${window.location.origin}/bible?book=${encodeURIComponent(currentChapter?.reference?.split(" ").slice(0,-1).join(" ") || "")}&chapter=${encodeURIComponent(currentChapter?.number || "")}`;
+                            const fullShare = `${shareText}\n\nRead it in context on SoulGuide: ${appUrl}`;
                             if (navigator.share) {
-                              navigator.share({ text: shareText });
+                              navigator.share({
+                                title: `${ref} — SoulGuide`,
+                                text: shareText,
+                                url: appUrl,
+                              });
                             } else {
-                              navigator.clipboard.writeText(shareText);
+                              navigator.clipboard.writeText(fullShare);
                             }
                           }}
                           data-testid="button-share-verses"
