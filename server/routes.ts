@@ -2151,7 +2151,28 @@ RULES:
     }
   });
 
-  // Mark notification as read
+  // Mark ALL notifications as read — must be before /:id/read to avoid route conflict
+  app.patch("/api/notifications/read-all", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { db } = await import("./db");
+      const { notifications } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      await db
+        .update(notifications)
+        .set({ isRead: 1 })
+        .where(eq(notifications.userId, session.userId));
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark all as read" });
+    }
+  });
+
+  // Mark single notification as read
   app.patch("/api/notifications/:id/read", async (req: Request, res: Response) => {
     try {
       const session = req.session as SessionWithUser;
@@ -2172,27 +2193,6 @@ RULES:
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to mark as read" });
-    }
-  });
-
-  // Mark all notifications as read
-  app.patch("/api/notifications/read-all", async (req: Request, res: Response) => {
-    try {
-      const session = req.session as SessionWithUser;
-      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
-
-      const { db } = await import("./db");
-      const { notifications } = await import("@shared/schema");
-      const { eq } = await import("drizzle-orm");
-
-      await db
-        .update(notifications)
-        .set({ isRead: 1 })
-        .where(eq(notifications.userId, session.userId));
-
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to mark all as read" });
     }
   });
 
