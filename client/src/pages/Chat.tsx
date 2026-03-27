@@ -156,8 +156,14 @@ export default function Chat() {
   }, [messages, streamingContent, scrollToBottom]);
 
   // Hide bottom nav when input is focused or has content
+  // Also scroll to bottom so last message stays visible above keyboard
   useEffect(() => {
     setHideNav(isInputFocused || input.length > 0);
+    if (isInputFocused) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 300); // delay matches keyboard animation
+    }
   }, [isInputFocused, input, setHideNav]);
 
   // Reset hideNav when leaving the chat page
@@ -741,7 +747,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col pb-20">
+    <div className="h-dvh bg-background flex flex-col pb-20">
       <header className="sticky top-0 z-40 bg-background border-b border-border/50">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
