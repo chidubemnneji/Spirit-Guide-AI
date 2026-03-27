@@ -12,6 +12,7 @@ import { Phase2NewToFaith } from "@/components/onboarding/Phase2NewToFaith";
 import { GoalsStep } from "@/components/onboarding/GoalsStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Logo } from "@/components/Logo";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -102,10 +103,11 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen gradient-onboarding">
-      <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
-      <div className="fixed top-3 right-4 z-50">
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 pt-4">
+        <Logo size={32} />
         <ThemeToggle />
       </div>
+      <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
       <main className="pt-24 pb-12">
         <div className="max-w-lg mx-auto px-5">
           {renderStep()}

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { BookOpen, Sparkles, MessageCircle } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 const features = [
   { icon: MessageCircle, label: "AI companion", sub: "Listens without judgment" },
@@ -23,6 +24,15 @@ export default function Welcome() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <main className="flex-1 flex flex-col px-6 pt-16 pb-10 max-w-md mx-auto w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-8"
+        >
+          <Logo size={44} showWordmark />
+        </motion.div>
+
         <motion.div
           className="space-y-5"
           initial={{ opacity: 0, y: 20 }}

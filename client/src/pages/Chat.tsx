@@ -13,6 +13,7 @@ import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { MoodCheckIn, type Mood } from "@/components/MoodCheckIn";
+import { Logo } from "@/components/Logo";
 import type { Message, Conversation, RecommendationCard } from "@shared/schema";
 
 // Bible verse pattern: Book Chapter:Verse or Book Chapter:Verse-Verse
@@ -755,10 +756,7 @@ export default function Chat() {
               }}
               onNewChat={handleNewChat}
             />
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-foreground">Soul Care</h1>
-              <p className="text-sm text-muted-foreground">Your AI companion</p>
-            </div>
+            <Logo size={30} showWordmark />
           </div>
           <div className="flex items-center gap-2">
             <Button
