@@ -33,7 +33,14 @@ interface JourneyTask {
   action: () => void;
 }
 
-function getGreetingByTime(): string {
+const STRUGGLE_DISPLAY: Record<string, string> = {
+  distant_from_god: "Feeling distant from God",
+  wrestling_doubts: "Wrestling with doubts",
+  feel_alone: "Feeling alone in faith",
+  guilt_shame: "Carrying guilt or shame",
+  life_overwhelming: "Life feeling overwhelming",
+  new_to_faith: "New to faith",
+};
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) return "Good morning";
   if (hour >= 12 && hour < 18) return "Good afternoon";
@@ -267,7 +274,7 @@ export default function Devotion() {
     enabled: !!user,
   });
   const struggle = personaData?.primaryStruggle
-    ? personaData.primaryStruggle.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+    ? STRUGGLE_DISPLAY[personaData.primaryStruggle] || personaData.primaryStruggle.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
     : null;
 
   // Build verse of the day link for Bible navigation using shared utility
