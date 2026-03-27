@@ -366,7 +366,7 @@ export default function Devotion() {
     .map(e => format(new Date(e.completedAt as string), "yyyy-MM-dd")) || [];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20">
       <main className="px-5 py-6 max-w-lg mx-auto space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

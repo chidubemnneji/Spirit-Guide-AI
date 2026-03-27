@@ -221,7 +221,7 @@ export default function Journal() {
   const entries = data?.entries || [];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20">
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="flex items-center gap-3 px-4 h-14">
           <Button

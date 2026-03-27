@@ -25,7 +25,7 @@ export function BottomNav() {
           exit={{ y: 100 }}
           transition={{ type: "spring", damping: 28, stiffness: 350 }}
         >
-          <div className="flex items-center justify-around gap-2 h-20 max-w-lg mx-auto px-4 pb-4 pt-2">
+        <div className="flex items-center justify-around gap-2 h-16 max-w-lg mx-auto px-4 pb-2 pt-1">
             {navItems.map((item) => {
               const isActive = location === item.path || 
                 (item.path === "/chat" && location === "/transition") ||
@@ -40,21 +40,21 @@ export function BottomNav() {
                 >
                   <motion.div
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[72px] hover-elevate",
+                      "flex flex-col items-center justify-center gap-1 px-4 py-1.5 rounded-2xl transition-all min-w-[64px] hover-elevate",
                       isActive && "bg-primary/10"
                     )}
                     whileTap={{ scale: 0.95 }}
                   >
                     <Icon 
                       className={cn(
-                        "w-6 h-6 transition-colors",
+                        "w-5 h-5 transition-colors",
                         isActive ? "text-primary" : "text-muted-foreground"
                       )} 
                       strokeWidth={isActive ? 2.5 : 2}
                     />
                     <span 
                       className={cn(
-                        "text-xs font-medium transition-colors",
+                        "text-[11px] font-medium transition-colors",
                         isActive ? "text-primary" : "text-muted-foreground"
                       )}
                     >

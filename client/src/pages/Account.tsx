@@ -312,7 +312,7 @@ export default function Account() {
   const relationalDescription = getRelationalDescription(conversationCount);
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-20">
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="flex items-center justify-between px-5 h-14">
           <span className="font-serif text-lg font-semibold">Profile</span>
