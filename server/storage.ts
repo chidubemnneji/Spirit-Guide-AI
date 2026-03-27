@@ -291,7 +291,10 @@ export class DrizzleStorage implements IStorage {
     const convRows = await db
       .select({ id: conversations.id })
       .from(conversations)
-      .where(eq(conversations.userId, userId));
+      .where(and(
+        eq(conversations.userId, userId),
+        eq(conversations.channel, "general")
+      ));
 
     const conversationCount = convRows.length;
 

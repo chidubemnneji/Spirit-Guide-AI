@@ -117,6 +117,7 @@ export default function Chat() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<number | null>(null);
   const [pendingMood, setPendingMood] = useState<Mood | null>(null);
+  const pendingMoodRef = useRef<Mood | null>(null);
   const [showMoodCheckIn, setShowMoodCheckIn] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -291,6 +292,7 @@ export default function Chat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: messageContent }),
+        credentials: "include",
       });
 
       if (!response.ok) throw new Error("Failed to send message");
@@ -474,9 +476,10 @@ export default function Chat() {
 
     setMessages((prev) => [...prev, userMessage]);
     const messageContent = input.trim();
-    const moodToSend = pendingMood;
+    const moodToSend = pendingMoodRef.current;
     setInput("");
     setPendingMood(null);
+    pendingMoodRef.current = null;
     setIsStreaming(true);
     setStreamingContent("");
 
@@ -826,11 +829,13 @@ export default function Chat() {
               visible={showMoodCheckIn}
               onSelect={(mood) => {
                 setPendingMood(mood);
+                pendingMoodRef.current = mood;
                 setShowMoodCheckIn(false);
-                // Now actually send the message that triggered the check-in
                 setTimeout(() => sendMessage(), 50);
               }}
               onSkip={() => {
+                setPendingMood(null);
+                pendingMoodRef.current = null;
                 setShowMoodCheckIn(false);
                 setTimeout(() => sendMessage(), 50);
               }}

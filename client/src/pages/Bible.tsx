@@ -815,9 +815,23 @@ export default function Bible() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-primary"
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
                               const combinedText = bookmark.verses.map(v => `${v.number}. ${v.text}`).join(" ");
+                              // Create fresh conversation for this reflection
+                              try {
+                                localStorage.removeItem("soulguide_conversation_id");
+                                const res = await fetch("/api/conversations", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  credentials: "include",
+                                  body: JSON.stringify({ title: `Reflecting on ${bookmark.reference}` }),
+                                });
+                                if (res.ok) {
+                                  const conv = await res.json();
+                                  localStorage.setItem("soulguide_conversation_id", String(conv.id));
+                                }
+                              } catch {}
                               navigate(`/chat?verse=${encodeURIComponent(bookmark.reference)}&text=${encodeURIComponent(combinedText)}`);
                               setBookmarksSheetOpen(false);
                             }}
