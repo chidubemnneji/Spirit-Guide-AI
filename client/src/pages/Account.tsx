@@ -229,7 +229,7 @@ function PrefRow({
   return (
     <button
       onClick={onClick}
-      disabled={disabled || !onClick}
+      disabled={disabled}
       className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-muted/50 transition-colors text-left disabled:opacity-60"
       data-testid={testId}
     >
@@ -441,11 +441,12 @@ export default function Account() {
               icon={theme === "dark" ? Moon : Sun}
               label="Dark mode"
               value={!isManualOverride ? "Auto" : undefined}
+              onClick={toggleTheme}
               right={
                 <div className="flex items-center gap-2">
                   {isManualOverride && (
                     <button
-                      onClick={resetToSystem}
+                      onClick={e => { e.stopPropagation(); resetToSystem(); }}
                       className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Auto
