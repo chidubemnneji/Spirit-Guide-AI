@@ -129,7 +129,7 @@ export default function Chat() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [, navigate] = useLocation();
   const searchString = useSearch();
-  const { setHideNav } = useScroll();
+  const { setHideNav, hideNav } = useScroll();
 
   // No intro gate needed - MeetPrayerPartner is shown post-onboarding via transition flow
 
@@ -747,7 +747,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-dvh bg-background flex flex-col pb-20">
+    <div className={`h-dvh bg-background flex flex-col ${hideNav ? "" : "pb-16"}`}>
       <header className="sticky top-0 z-40 bg-background border-b border-border/50">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
