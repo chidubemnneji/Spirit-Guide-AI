@@ -171,7 +171,7 @@ export default function Login() {
               <button
                 type="button"
                 className="font-semibold text-primary"
-                onClick={() => setLocation("/signup")}
+                onClick={() => setLocation("/onboarding")}
                 data-testid="link-signup"
               >
                 Create one

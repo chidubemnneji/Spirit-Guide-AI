@@ -17,8 +17,42 @@ interface SignupStepProps {
 
 export function SignupStep({ onComplete, onBack, isSubmitting }: SignupStepProps) {
   const { updateOnboarding, data } = useOnboarding();
-  const { signup } = useAuth();
+  const { signup, user } = useAuth();
   const { toast } = useToast();
+
+  // Already logged in (came via /signup page) — skip form, just submit onboarding
+  if (user) {
+    return (
+      <motion.div
+        className="space-y-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+      >
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+        >
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+            Almost there, {user.name.split(" ")[0]}
+          </h1>
+          <p className="text-muted-foreground">
+            Saving your journey...
+          </p>
+        </motion.div>
+        <ContinueButton
+          onClick={onComplete}
+          disabled={isSubmitting}
+          loading={isSubmitting}
+          variant="complete"
+        >
+          Start my journey
+        </ContinueButton>
+      </motion.div>
+    );
+  }
 
   const [name, setName] = useState(data.userName || "");
   const [email, setEmail] = useState("");
