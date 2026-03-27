@@ -393,3 +393,13 @@
     pointer-events: none;
   }
 }
+
+/* iOS safe area bottom padding */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Ensure main content doesn't hide under fixed bottom nav */
+.bottom-nav-clearance {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}

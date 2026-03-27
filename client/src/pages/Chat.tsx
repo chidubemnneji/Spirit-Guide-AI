@@ -741,7 +741,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-40 bg-background border-b border-border/50">
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -825,7 +825,7 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="border-t border-border/50 glass p-3">
+        <div className="sticky bottom-20 z-30 border-t border-border/50 glass p-3 pb-safe">
           <div className="w-full">
             <MoodCheckIn
               visible={showMoodCheckIn}
