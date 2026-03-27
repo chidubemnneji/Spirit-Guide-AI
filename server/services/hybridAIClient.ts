@@ -1,5 +1,5 @@
-import { anthropic } from "../anthropicClient";
-import { openai } from "../openaiClient";
+import { anthropic } from "./anthropicClient";
+import { openai } from "./openaiClient";
 
 export interface ChatMessage {
   role: "user" | "assistant";
