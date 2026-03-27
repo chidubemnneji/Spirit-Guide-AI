@@ -48,7 +48,7 @@ export default function Welcome() {
         </motion.div>
 
         <motion.div
-          className="space-y-3 mt-10"
+          className="space-y-3 mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
@@ -73,7 +73,7 @@ export default function Welcome() {
         </motion.div>
 
         <motion.div
-          className="space-y-3"
+          className="space-y-3 mt-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
