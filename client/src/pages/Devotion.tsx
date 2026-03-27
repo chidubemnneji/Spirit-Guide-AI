@@ -485,7 +485,7 @@ export default function Devotion() {
                 <Button 
                   variant="outline"
                   className="w-full rounded-xl"
-                  onClick={() => setLocation("/bible")}
+                  onClick={() => setLocation(getVerseOfDayLink())}
                   data-testid="button-read-in-context"
                 >
                   Read in Context
