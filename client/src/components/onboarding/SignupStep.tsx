@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueButton } from "./ContinueButton";
-import { BackButton } from "./BackButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
@@ -68,7 +67,6 @@ export function SignupStep({ onComplete, onBack, isSubmitting }: SignupStepProps
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <BackButton onClick={onBack} />
 
       <motion.div
         className="space-y-3"
