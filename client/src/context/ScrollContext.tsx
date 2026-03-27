@@ -5,15 +5,27 @@ interface ScrollContextType {
   setScrolling: (scrolling: boolean) => void;
   hideNav: boolean;
   setHideNav: (hide: boolean) => void;
+  lockHideNav: (locked: boolean) => void;
 }
 
 const ScrollContext = createContext<ScrollContextType | undefined>(undefined);
 
 export function ScrollProvider({ children }: { children: ReactNode }) {
   const [isScrolling, setIsScrolling] = useState(false);
-  const [hideNav, setHideNav] = useState(false);
+  const [hideNav, setHideNavState] = useState(false);
+  const lockedRef = useRef(false);
   const lastScrollY = useRef(0);
   const scrollThreshold = 10;
+
+  // When locked (e.g. keyboard open), scroll cannot un-hide the nav
+  const lockHideNav = useCallback((locked: boolean) => {
+    lockedRef.current = locked;
+  }, []);
+
+  const setHideNav = useCallback((hide: boolean) => {
+    setHideNavState(hide);
+    lockedRef.current = hide; // lock when hiding via focus
+  }, []);
 
   const setScrolling = useCallback((scrolling: boolean) => {
     setIsScrolling(scrolling);
@@ -21,20 +33,23 @@ export function ScrollProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleScroll = () => {
+      // Don't override if nav is locked (keyboard open)
+      if (lockedRef.current) return;
+
       const currentScrollY = window.scrollY;
       const scrollDelta = currentScrollY - lastScrollY.current;
 
       if (Math.abs(scrollDelta) > scrollThreshold) {
         if (scrollDelta > 0 && currentScrollY > 100) {
-          setHideNav(true);
+          setHideNavState(true);
         } else if (scrollDelta < 0) {
-          setHideNav(false);
+          setHideNavState(false);
         }
         lastScrollY.current = currentScrollY;
       }
 
       if (currentScrollY < 50) {
-        setHideNav(false);
+        setHideNavState(false);
       }
     };
 
@@ -43,7 +58,7 @@ export function ScrollProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ScrollContext.Provider value={{ isScrolling, setScrolling, hideNav, setHideNav }}>
+    <ScrollContext.Provider value={{ isScrolling, setScrolling, hideNav, setHideNav, lockHideNav }}>
       {children}
     </ScrollContext.Provider>
   );

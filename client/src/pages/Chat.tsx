@@ -855,7 +855,10 @@ export default function Chat() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setIsInputFocused(false)}
+                onBlur={() => {
+                  setIsInputFocused(false);
+                  if (!input.trim()) setHideNav(false);
+                }}
                 placeholder="Share what's on your heart..."
                 className="min-h-[44px] max-h-[160px] resize-none border-0 bg-transparent focus-visible:ring-0 text-sm tracking-refined"
                 rows={1}
