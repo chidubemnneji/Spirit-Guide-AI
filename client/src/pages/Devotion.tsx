@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/context/AuthContext";
-import { Sun, BookOpen, ChevronRight, ChevronDown, Check, Bookmark, Flame, Book, MessageCircle, PenLine, Bell } from "lucide-react";
+import { Sun, BookOpen, ChevronRight, Check, Flame, MessageCircle, Bell } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,15 +118,13 @@ function StreakBadge({ streak, className }: { streak: number; className?: string
 }
 
 function JourneyTaskCard({ task, index }: { task: JourneyTask; index: number }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08 }}
     >
-      <Card 
+      <Card
         className={cn(
           "border-0 shadow-sm overflow-hidden transition-all",
           task.isCompleted && "opacity-60"
@@ -135,78 +133,35 @@ function JourneyTaskCard({ task, index }: { task: JourneyTask; index: number }) 
       >
         <CardContent className="p-0">
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full p-5 flex items-start gap-4 text-left"
-            data-testid={`button-toggle-task-${task.id}`}
+            onClick={() => !task.isCompleted && task.action()}
+            disabled={task.isCompleted}
+            className="w-full p-4 flex items-center gap-4 text-left disabled:cursor-default"
+            data-testid={`button-start-task-${task.id}`}
           >
-            <div className="flex flex-col items-center gap-2 pt-1">
-              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
-                {task.duration}
-              </span>
-              <div className={cn(
-                "w-6 h-6 rounded border-2 flex items-center justify-center",
-                task.isCompleted ? "bg-primary border-primary" : "border-muted-foreground/30"
-              )}>
-                {task.isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
-              </div>
+            <div className={cn(
+              "w-8 h-8 rounded-xl border-2 flex items-center justify-center flex-shrink-0",
+              task.isCompleted ? "bg-primary border-primary" : "border-muted-foreground/30"
+            )}>
+              {task.isCompleted
+                ? <Check className="w-4 h-4 text-primary-foreground" />
+                : <span className="text-[10px] font-semibold text-muted-foreground">{task.duration.replace(" MIN","m")}</span>
+              }
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <h3 className={cn(
-                "font-semibold text-lg",
+                "font-semibold text-base",
                 task.isCompleted && "line-through text-muted-foreground"
               )}>
                 {task.title}
               </h3>
-              <p className="text-base text-muted-foreground mt-1">{task.subtitle}</p>
-              
-              {task.progress !== undefined && task.progress > 0 && !task.isCompleted && (
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary rounded-full transition-all" 
-                      style={{ width: `${task.progress}%` }} 
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-primary">{task.progress}% Read</span>
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground mt-0.5">{task.subtitle}</p>
             </div>
-            
-            <ChevronDown className={cn(
-              "w-6 h-6 text-muted-foreground transition-transform flex-shrink-0 mt-1",
-              isExpanded && "rotate-180"
-            )} />
-          </button>
-          
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="px-4 pb-4 pt-0">
-                  <div className="border-t pt-4">
-                    <Button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        task.action();
-                      }}
-                      className="w-full rounded-xl"
-                      disabled={task.isCompleted}
-                      data-testid={`button-start-task-${task.id}`}
-                    >
-                      {task.isCompleted ? "Completed" : "Begin"}
-                      {!task.isCompleted && <ChevronRight className="w-4 h-4 ml-2" />}
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
+
+            {!task.isCompleted && (
+              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             )}
-          </AnimatePresence>
+          </button>
         </CardContent>
       </Card>
     </motion.div>
@@ -311,7 +266,9 @@ export default function Devotion() {
     queryKey: ["/api/persona"],
     enabled: !!user,
   });
-  const struggle = personaData?.primaryStruggle?.replace(/_/g, " ") || null;
+  const struggle = personaData?.primaryStruggle
+    ? personaData.primaryStruggle.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+    : null;
 
   // Build verse of the day link for Bible navigation using shared utility
   const getVerseOfDayLink = () => {
