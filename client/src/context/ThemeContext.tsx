@@ -6,20 +6,39 @@ interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  isManualOverride: boolean;
+  resetToSystem: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+function getSystemTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme") as Theme | null;
-      if (saved) return saved;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    return "light";
+  // null = follow system, "light"/"dark" = manual override
+  const [manualTheme, setManualTheme] = useState<Theme | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("theme_override") as Theme | null;
   });
 
+  const [systemTheme, setSystemTheme] = useState<Theme>(getSystemTheme);
+
+  // Listen for OS theme changes
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? "dark" : "light");
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const theme = manualTheme ?? systemTheme;
+
+  // Apply to DOM
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark") {
@@ -27,19 +46,32 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
-    localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === "light" ? "dark" : "light"));
+    const next = theme === "light" ? "dark" : "light";
+    setManualTheme(next);
+    localStorage.setItem("theme_override", next);
   };
 
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+    setManualTheme(newTheme);
+    localStorage.setItem("theme_override", newTheme);
+  };
+
+  const resetToSystem = () => {
+    setManualTheme(null);
+    localStorage.removeItem("theme_override");
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{
+      theme,
+      toggleTheme,
+      setTheme,
+      isManualOverride: manualTheme !== null,
+      resetToSystem,
+    }}>
       {children}
     </ThemeContext.Provider>
   );

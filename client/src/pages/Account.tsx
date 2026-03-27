@@ -279,7 +279,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 export default function Account() {
   const [, setLocation] = useLocation();
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isManualOverride, resetToSystem } = useTheme();
   const { toast } = useToast();
   const [editJourneyOpen, setEditJourneyOpen] = useState(false);
 
@@ -440,11 +440,22 @@ export default function Account() {
             <PrefRow
               icon={theme === "dark" ? Moon : Sun}
               label="Dark mode"
+              value={!isManualOverride ? "Auto" : undefined}
               right={
-                <Toggle
-                  on={theme === "dark"}
-                  onToggle={toggleTheme}
-                />
+                <div className="flex items-center gap-2">
+                  {isManualOverride && (
+                    <button
+                      onClick={resetToSystem}
+                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Auto
+                    </button>
+                  )}
+                  <Toggle
+                    on={theme === "dark"}
+                    onToggle={toggleTheme}
+                  />
+                </div>
               }
               testId="button-dark-mode"
             />
