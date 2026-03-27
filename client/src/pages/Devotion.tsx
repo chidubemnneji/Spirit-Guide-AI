@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StreakCelebration } from "@/components/devotional/StreakCelebration";
+import { NotificationDrawer } from "@/components/NotificationDrawer";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, addDays, isToday, isSameDay } from "date-fns";
 import { buildBibleLink } from "@/lib/bibleUtils";
@@ -218,6 +219,12 @@ export default function Devotion() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationMilestone, setCelebrationMilestone] = useState(0);
   const [startTime] = useState(() => Date.now());
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const { data: notifData } = useQuery<{ unreadCount: number }>({
+    queryKey: ["/api/notifications"],
+    enabled: !!user,
+  });
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(() => {
     // Restore today's local completions from localStorage
     const today = new Date().toISOString().split("T")[0];
@@ -300,6 +307,12 @@ export default function Devotion() {
   const currentStreak = greeting?.currentStreak || 0;
   const joinedAt = greeting?.joinedAt as string | null ?? null;
 
+  const { data: personaData } = useQuery<{ primaryStruggle?: string }>({
+    queryKey: ["/api/persona"],
+    enabled: !!user,
+  });
+  const struggle = personaData?.primaryStruggle?.replace(/_/g, " ") || null;
+
   // Build verse of the day link for Bible navigation using shared utility
   const getVerseOfDayLink = () => {
     if (!devotional?.scriptureReference) return "/bible";
@@ -374,25 +387,30 @@ export default function Devotion() {
             </Avatar>
             
             <StreakBadge streak={currentStreak} />
-            
+
             <Button
               variant="ghost"
               size="icon"
               className="relative"
+              onClick={() => setShowNotifications(true)}
               data-testid="button-notifications"
             >
               <Bell className="w-5 h-5 text-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+              {(notifData?.unreadCount ?? 0) > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+              )}
             </Button>
           </div>
-          
+
           <div className="mt-4">
             <h1 className="font-serif text-3xl font-bold" data-testid="text-greeting">
               Today's Journey
             </h1>
-            <p className="text-muted-foreground mt-1" data-testid="text-greeting-subtext">
-              Seeking God's Help
-            </p>
+            {struggle && (
+              <p className="text-muted-foreground mt-1 capitalize" data-testid="text-greeting-subtext">
+                {struggle}
+              </p>
+            )}
           </div>
           
         </motion.div>
@@ -484,6 +502,12 @@ export default function Devotion() {
         milestone={celebrationMilestone}
         onClose={() => setShowCelebration(false)}
       />
+
+      <AnimatePresence>
+        {showNotifications && (
+          <NotificationDrawer onClose={() => setShowNotifications(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

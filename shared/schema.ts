@@ -436,3 +436,16 @@ export const insertPrayerJournalSchema = createInsertSchema(prayerJournalEntries
 
 export type PrayerJournalEntry = typeof prayerJournalEntries.$inferSelect;
 export type InsertPrayerJournalEntry = z.infer<typeof insertPrayerJournalSchema>;
+
+// Notifications
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // devotional_ready | streak_risk | milestone | weekly_reflection | welcome
+  title: varchar("title", { length: 200 }).notNull(),
+  body: text("body").notNull(),
+  isRead: integer("is_read").default(0).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;

@@ -83,6 +83,95 @@ const conversationSchema = z.object({
   title: z.string().optional(),
 });
 
+// ── Notification generator ────────────────────────────────────────────────────
+async function generateNotifications(userId: number, db: any) {
+  const { notifications } = await import("@shared/schema");
+  const { eq, and, gte } = await import("drizzle-orm");
+
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+
+  const upsertNotification = async (type: string, title: string, body: string) => {
+    const existing = await db
+      .select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.type, type),
+        gte(notifications.createdAt, todayDate)
+      ))
+      .limit(1);
+    if (existing.length === 0) {
+      await db.insert(notifications).values({ userId, type, title, body });
+    }
+  };
+
+  try {
+    // Welcome — once ever
+    const welcomeExists = await db.select().from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.type, "welcome")))
+      .limit(1);
+    if (welcomeExists.length === 0) {
+      await db.insert(notifications).values({
+        userId, type: "welcome",
+        title: "Welcome to SoulGuide",
+        body: "Your faith companion is ready. Start with today's devotional or open a conversation.",
+      });
+    }
+
+    // Daily devotional ready
+    await upsertNotification(
+      "devotional_ready",
+      "Today's devotional is ready",
+      "Take 5 minutes to read today's verse and reflect with your companion."
+    );
+
+    // Streak at risk — hasn't messaged today but has a streak
+    const { messages, conversations } = await import("@shared/schema");
+    const todayMsgs = await db.select({ id: messages.id })
+      .from(messages)
+      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+      .where(and(eq(conversations.userId, userId), gte(messages.createdAt, todayDate)))
+      .limit(1);
+
+    const stats = await storage.getUserStats(userId);
+    if (todayMsgs.length === 0 && stats.currentStreak >= 2) {
+      await upsertNotification(
+        "streak_risk",
+        `Your ${stats.currentStreak}-day streak`,
+        "You haven't prayed today. Keep the momentum going — even 2 minutes counts."
+      );
+    }
+
+    // Milestones
+    for (const milestone of [5, 10, 25, 50]) {
+      if (stats.conversationCount >= milestone) {
+        const exists = await db.select().from(notifications)
+          .where(and(eq(notifications.userId, userId), eq(notifications.type, `milestone_${milestone}`)))
+          .limit(1);
+        if (exists.length === 0) {
+          await db.insert(notifications).values({
+            userId, type: `milestone_${milestone}`,
+            title: `${milestone} conversations`,
+            body: `You've had ${milestone} conversations with your companion. That's real faithfulness.`,
+          });
+        }
+      }
+    }
+
+    // Weekly reflection on Sundays
+    if (new Date().getDay() === 0) {
+      await upsertNotification(
+        "weekly_reflection",
+        "Weekly reflection",
+        "A new week begins. Take a moment to look back at your journey this week."
+      );
+    }
+  } catch (e) {
+    console.error("generateNotifications error (non-blocking):", e);
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -2025,6 +2114,85 @@ RULES:
     } catch (error) {
       console.error("Journal delete error:", error);
       res.status(500).json({ error: "Failed to delete journal entry" });
+    }
+  });
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+
+  // Generate and fetch notifications for the user
+  app.get("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { db } = await import("./db");
+      const { notifications, users } = await import("@shared/schema");
+      const { eq, desc, and } = await import("drizzle-orm");
+
+      const userId = session.userId;
+
+      // Generate fresh notifications based on user state
+      await generateNotifications(userId, db);
+
+      // Fetch all notifications newest first
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(20);
+
+      const unreadCount = userNotifications.filter(n => n.isRead === 0).length;
+
+      res.json({ notifications: userNotifications, unreadCount });
+    } catch (error) {
+      console.error("Notifications error:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/notifications/:id/read", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+      const { db } = await import("./db");
+      const { notifications } = await import("@shared/schema");
+      const { and, eq } = await import("drizzle-orm");
+
+      await db
+        .update(notifications)
+        .set({ isRead: 1 })
+        .where(and(eq(notifications.id, id), eq(notifications.userId, session.userId)));
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark as read" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.patch("/api/notifications/read-all", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { db } = await import("./db");
+      const { notifications } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      await db
+        .update(notifications)
+        .set({ isRead: 1 })
+        .where(eq(notifications.userId, session.userId));
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark all as read" });
     }
   });
 
