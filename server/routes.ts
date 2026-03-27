@@ -1189,7 +1189,14 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(401).json({ success: false, error: "Not authenticated" });
       }
       const greeting = await devotionalService.getPersonalizedGreeting(session.userId);
-      res.json({ success: true, data: greeting });
+      const user = await storage.getUser(session.userId);
+      res.json({
+        success: true,
+        data: {
+          ...greeting,
+          joinedAt: user?.createdAt ?? null,
+        },
+      });
     } catch (error) {
       console.error("Error fetching greeting:", error);
       res.status(500).json({ success: false, error: "Failed to fetch greeting" });

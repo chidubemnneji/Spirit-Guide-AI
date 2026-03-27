@@ -39,25 +39,28 @@ function getGreetingByTime(): string {
   return "Good evening";
 }
 
-function WeekCalendar({ completedDays }: { completedDays: string[] }) {
+function WeekCalendar({ completedDays, joinedAt }: { completedDays: string[]; joinedAt?: string | null }) {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const joinDate = joinedAt ? new Date(joinedAt) : null;
   const days = [];
-  
+
   for (let i = 0; i < 7; i++) {
     const date = addDays(weekStart, i);
     const dayKey = format(date, "yyyy-MM-dd");
     const isComplete = completedDays.includes(dayKey);
     const isTodayDate = isToday(date);
-    
+    const isBeforeJoin = joinDate ? date < new Date(format(joinDate, "yyyy-MM-dd")) : false;
+
     days.push({
       dayLetter: format(date, "EEEEE"),
       date: date.getDate(),
       isTodayDate,
       isComplete,
+      isBeforeJoin,
     });
   }
-  
+
   return (
     <div className="flex items-center justify-between gap-1 px-2">
       {days.map((d, i) => (
@@ -68,16 +71,22 @@ function WeekCalendar({ completedDays }: { completedDays: string[] }) {
           transition={{ delay: i * 0.03 }}
           className="flex flex-col items-center gap-1.5"
         >
-          <span className="text-xs text-muted-foreground font-medium">{d.dayLetter}</span>
+          <span className={cn(
+            "text-xs font-medium",
+            d.isBeforeJoin ? "text-muted-foreground/30" : "text-muted-foreground"
+          )}>
+            {d.dayLetter}
+          </span>
           <div
             className={cn(
               "w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
-              d.isTodayDate && !d.isComplete && "bg-primary text-primary-foreground",
-              d.isComplete && "bg-primary/20 text-primary",
-              !d.isTodayDate && !d.isComplete && "text-muted-foreground"
+              d.isBeforeJoin && "opacity-25",
+              !d.isBeforeJoin && d.isTodayDate && !d.isComplete && "bg-primary text-primary-foreground",
+              !d.isBeforeJoin && d.isComplete && "bg-primary/20 text-primary",
+              !d.isBeforeJoin && !d.isTodayDate && !d.isComplete && "text-muted-foreground"
             )}
           >
-            {d.isComplete ? (
+            {d.isComplete && !d.isBeforeJoin ? (
               <Check className="w-4 h-4" />
             ) : (
               d.date
@@ -289,6 +298,7 @@ export default function Devotion() {
   const devotional = devotionalQuery.data?.data;
   const userName = user?.name?.split(" ")[0] || "Friend";
   const currentStreak = greeting?.currentStreak || 0;
+  const joinedAt = greeting?.joinedAt as string | null ?? null;
 
   // Build verse of the day link for Bible navigation using shared utility
   const getVerseOfDayLink = () => {
@@ -394,7 +404,7 @@ export default function Devotion() {
         >
           <Card className="border-0 shadow-sm" data-testid="card-week-calendar">
             <CardContent className="py-4">
-              <WeekCalendar completedDays={completedDays} />
+              <WeekCalendar completedDays={completedDays} joinedAt={joinedAt} />
             </CardContent>
           </Card>
         </motion.div>

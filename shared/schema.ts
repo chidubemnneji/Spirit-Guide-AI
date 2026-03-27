@@ -410,6 +410,7 @@ export interface DevotionalGreeting {
   subtext: string;
   currentStreak: number;
   streakTarget: number;
+  joinedAt?: string | null;
 }
 
 // Prayer Journal
