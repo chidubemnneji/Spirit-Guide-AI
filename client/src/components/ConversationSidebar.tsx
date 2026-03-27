@@ -20,15 +20,10 @@ export function ConversationSidebar({
 }: ConversationSidebarProps) {
   const [open, setOpen] = useState(false);
 
-  const { data: allConversations = [] } = useQuery<Conversation[]>({
+  const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
     refetchOnWindowFocus: true,
   });
-
-  // Filter out channel conversations (devotional/checkin) — those have their own persistent home
-  const conversations = allConversations.filter(
-    (c: any) => !c.channel || c.channel === "general"
-  );
 
   const handleSelect = (id: number) => {
     onSelect(id);

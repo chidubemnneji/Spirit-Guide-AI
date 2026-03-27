@@ -172,7 +172,9 @@ export default function Chat() {
 
   const loadExistingConversation = useCallback(async (convId: number) => {
     try {
-      const response = await fetch(`/api/conversations/${convId}/messages`);
+      const response = await fetch(`/api/conversations/${convId}/messages`, {
+        credentials: "include",
+      });
       if (response.ok) {
         const data = await response.json();
         setConversationId(convId);
@@ -525,7 +527,9 @@ export default function Chat() {
                   // If there are recommendations, fetch them
                   if (data.hasRecommendations && data.messageId) {
                     try {
-                      const cardsResponse = await fetch(`/api/messages/${data.messageId}/recommendations`);
+                      const cardsResponse = await fetch(`/api/messages/${data.messageId}/recommendations`, {
+                        credentials: "include",
+                      });
                       if (cardsResponse.ok) {
                         const cardsData = await cardsResponse.json();
                         assistantMessage.recommendationCards = cardsData.cards;

@@ -419,6 +419,7 @@ export async function registerRoutes(
   // Get single conversation with messages
   app.get("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
+      const session = req.session as SessionWithUser;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid conversation ID" });
@@ -426,6 +427,9 @@ export async function registerRoutes(
       const conversation = await storage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
+      }
+      if (conversation.userId !== session.userId) {
+        return res.status(403).json({ error: "Forbidden" });
       }
       const messages = await storage.getMessages(id);
       
@@ -463,6 +467,7 @@ export async function registerRoutes(
       const conversation = await storage.createConversation({
         title: title || "New Conversation",
         userId: sessionUserId,
+        channel: "general",
       });
       res.status(201).json(conversation);
     } catch (error) {
@@ -474,9 +479,15 @@ export async function registerRoutes(
   // Delete conversation
   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid conversation ID" });
+      }
+      const conversation = await storage.getConversation(id);
+      if (!conversation || conversation.userId !== session.userId) {
+        return res.status(404).json({ error: "Not found" });
       }
       await storage.deleteConversation(id);
       res.status(204).send();
@@ -489,6 +500,7 @@ export async function registerRoutes(
   // Get messages for a conversation
   app.get("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
+      const session = req.session as SessionWithUser;
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid conversation ID" });
@@ -496,6 +508,9 @@ export async function registerRoutes(
       const conversation = await storage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
+      }
+      if (session.userId && conversation.userId !== session.userId) {
+        return res.status(403).json({ error: "Forbidden" });
       }
       const messages = await storage.getMessages(id);
       

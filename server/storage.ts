@@ -141,7 +141,10 @@ export class DrizzleStorage implements IStorage {
     return db
       .select()
       .from(conversations)
-      .where(eq(conversations.userId, userId))
+      .where(and(
+        eq(conversations.userId, userId),
+        sql`(${conversations.channel} = 'general' OR ${conversations.channel} IS NULL)`
+      ))
       .orderBy(desc(conversations.createdAt));
   }
 
@@ -293,7 +296,7 @@ export class DrizzleStorage implements IStorage {
       .from(conversations)
       .where(and(
         eq(conversations.userId, userId),
-        eq(conversations.channel, "general")
+        sql`(${conversations.channel} = 'general' OR ${conversations.channel} IS NULL)`
       ));
 
     const conversationCount = convRows.length;
