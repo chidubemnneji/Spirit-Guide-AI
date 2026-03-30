@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light only;
+}
+
 /* ============================================================
    LIGHT MODE — Purple / Off-white
    Primary: #7C6AC7 (contemplative purple)
