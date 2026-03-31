@@ -906,7 +906,7 @@ export default function Chat() {
                 </Button>
               </motion.div>
             </Card>
-            {showDisclaimer && (
+            {showDisclaimer && false && (
               <p
                 className="text-xs text-muted-foreground text-center mt-2 tracking-refined cursor-pointer"
                 onClick={() => {
