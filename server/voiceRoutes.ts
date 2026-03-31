@@ -11,9 +11,9 @@ export function registerVoiceRoutes(app: Express) {
       }
 
       const audioBuffer = Buffer.from(audio, "base64");
-      // mp4 audio from iOS — treat as mp3 for Whisper compatibility
-      const normalizedFormat = format === "mp4" ? "mp3" : format as "wav" | "mp3" | "webm";
-      const transcript = await speechToText(audioBuffer, normalizedFormat);
+      // iOS records audio/mp4 — pass as m4a which Whisper accepts
+      const normalizedFormat = format === "mp4" ? "m4a" : format as "wav" | "mp3" | "webm";
+      const transcript = await speechToText(audioBuffer, normalizedFormat as any);
       
       res.json({ transcript });
     } catch (error) {
