@@ -130,7 +130,7 @@ export default function TransitionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="pt-4"
+            className="pt-4 space-y-4"
           >
             <Button 
               className="w-full h-14 rounded-2xl text-base font-semibold"
@@ -139,6 +139,9 @@ export default function TransitionPage() {
             >
               Start Your Journey
             </Button>
+            <p className="text-xs text-muted-foreground text-center leading-relaxed px-4">
+              Your companion is AI. It listens well but is not a therapist, pastor, or crisis service. If you are in crisis, please contact a professional or call a helpline.
+            </p>
           </motion.div>
         </motion.div>
       </main>
