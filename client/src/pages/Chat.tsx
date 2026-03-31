@@ -603,7 +603,18 @@ export default function Chat() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      
+      // iOS Safari supports audio/mp4, other browsers support audio/webm
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+        ? "audio/mp4"
+        : "";
+      
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+        
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
@@ -647,7 +658,10 @@ export default function Chat() {
               const response = await fetch("/api/voice/transcribe", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ audio: base64, format: "webm" }),
+                body: JSON.stringify({ 
+                  audio: base64, 
+                  format: audioBlob.type.includes("mp4") ? "mp4" : "webm"
+                }),
               });
               if (response.ok) {
                 const { transcript } = await response.json();
