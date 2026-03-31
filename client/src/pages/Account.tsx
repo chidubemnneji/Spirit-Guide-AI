@@ -533,6 +533,26 @@ export default function Account() {
           </div>
         </motion.div>
 
+        {/* ── Delete account ── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.35, delay: 0.28 }}
+          className="mt-3 pb-2"
+        >
+          <button
+            onClick={async () => {
+              if (window.confirm("Delete your account? This permanently removes all your conversations, journal entries, and personal data. This cannot be undone.")) {
+                await apiRequest("DELETE", "/api/auth/account");
+                window.location.href = "/";
+              }
+            }}
+            className="w-full text-xs text-muted-foreground/40 hover:text-destructive transition-colors py-2"
+          >
+            Delete account and all data
+          </button>
+        </motion.div>
+
         {/* ── Legal footer ── */}
         <div className="flex items-center justify-center gap-4 mt-6">
           <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</button>

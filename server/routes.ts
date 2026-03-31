@@ -278,6 +278,27 @@ export async function registerRoutes(
     });
   });
 
+  // Auth: Delete account and all associated data
+  app.delete("/api/auth/account", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const userId = session.userId;
+
+      // Delete user — cascade deletes all associated data via FK constraints
+      await storage.deleteUser(userId);
+
+      // Destroy session
+      req.session.destroy(() => {});
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete account error:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   // Auth: Get current user
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {

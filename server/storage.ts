@@ -40,6 +40,7 @@ export interface IStorage {
   getConversationsByUser(userId: number): Promise<Conversation[]>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   deleteConversation(id: number): Promise<void>;
+  deleteUser(id: number): Promise<void>;
 
   getMessages(conversationId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
@@ -155,6 +156,10 @@ export class DrizzleStorage implements IStorage {
 
   async deleteConversation(id: number): Promise<void> {
     await db.delete(conversations).where(eq(conversations.id, id));
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async getMessages(conversationId: number): Promise<Message[]> {
