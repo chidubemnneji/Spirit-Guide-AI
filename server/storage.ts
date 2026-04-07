@@ -263,6 +263,22 @@ export class DrizzleStorage implements IStorage {
       .orderBy(recommendationCards.createdAt);
   }
 
+  async getRecommendationCardsForMessages(messageIds: number[]): Promise<Map<number, RecommendationCard[]>> {
+    if (messageIds.length === 0) return new Map();
+    const cards = await db
+      .select()
+      .from(recommendationCards)
+      .where(inArray(recommendationCards.messageId, messageIds))
+      .orderBy(recommendationCards.createdAt);
+    const map = new Map<number, RecommendationCard[]>();
+    for (const card of cards) {
+      if (card.messageId === null) continue;
+      if (!map.has(card.messageId)) map.set(card.messageId, []);
+      map.get(card.messageId)!.push(card);
+    }
+    return map;
+  }
+
   async getRecommendationCard(id: number): Promise<RecommendationCard | undefined> {
     const rows = await db.select().from(recommendationCards).where(eq(recommendationCards.id, id)).limit(1);
     return rows[0];

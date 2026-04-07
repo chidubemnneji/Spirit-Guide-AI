@@ -543,16 +543,13 @@ export async function registerRoutes(
       }
       const messages = await storage.getMessages(id);
       
-      // Attach recommendation cards to assistant messages
-      const messagesWithCards = await Promise.all(
-        messages.map(async (msg) => {
-          if (msg.role === "assistant") {
-            const cards = await storage.getRecommendationCardsForMessage(msg.id);
-            return { ...msg, recommendationCards: cards };
-          }
-          return msg;
-        })
-      );
+      // Batch fetch recommendation cards in one query
+      const assistantMessageIds = messages.filter(m => m.role === "assistant").map(m => m.id);
+      const cardsMap = await storage.getRecommendationCardsForMessages(assistantMessageIds);
+      const messagesWithCards = messages.map(msg => ({
+        ...msg,
+        recommendationCards: cardsMap.get(msg.id) || [],
+      }));
       
       res.json({ ...conversation, messages: messagesWithCards });
     } catch (error) {
@@ -624,16 +621,13 @@ export async function registerRoutes(
       }
       const messages = await storage.getMessages(id);
       
-      // Attach recommendation cards to assistant messages
-      const messagesWithCards = await Promise.all(
-        messages.map(async (msg) => {
-          if (msg.role === "assistant") {
-            const cards = await storage.getRecommendationCardsForMessage(msg.id);
-            return { ...msg, recommendationCards: cards };
-          }
-          return msg;
-        })
-      );
+      // Batch fetch recommendation cards in one query
+      const assistantMsgIds = messages.filter(m => m.role === "assistant").map(m => m.id);
+      const cardsMap2 = await storage.getRecommendationCardsForMessages(assistantMsgIds);
+      const messagesWithCards = messages.map(msg => ({
+        ...msg,
+        recommendationCards: cardsMap2.get(msg.id) || [],
+      }));
       
       res.json({ messages: messagesWithCards });
     } catch (error) {

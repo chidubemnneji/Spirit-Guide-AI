@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Cross, HelpCircle, Sunrise, Lightbulb, ArrowRight, CloudRain, Minus, Sun, Mic, MicOff, Volume2 } from "lucide-react";
+import { ArrowUp, Loader2, Sparkles, RotateCcw, MessageCircle, AlertTriangle, Mic, MicOff, Volume2, CloudRain, Minus, Sun, Cross, HelpCircle, Sunrise, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";

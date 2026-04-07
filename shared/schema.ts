@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -63,7 +63,11 @@ export const conversations = pgTable("conversations", {
   title: text("title").default("New Conversation"),
   channel: varchar("channel", { length: 50 }).default("general"), // general | devotional | checkin
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
+}, (t) => ({
+  userIdIdx: index("conversations_user_id_idx").on(t.userId),
+  channelIdx: index("conversations_channel_idx").on(t.channel),
+  createdAtIdx: index("conversations_created_at_idx").on(t.createdAt),
+}));
 
 // Messages table
 export const messages = pgTable("messages", {
@@ -72,7 +76,10 @@ export const messages = pgTable("messages", {
   role: varchar("role", { length: 20 }).notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
+}, (t) => ({
+  conversationIdIdx: index("messages_conversation_id_idx").on(t.conversationId),
+  createdAtIdx: index("messages_created_at_idx").on(t.createdAt),
+}));
 
 // Conversation Topics - for memory across conversations
 export const conversationTopics = pgTable("conversation_topics", {
