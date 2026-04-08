@@ -16,6 +16,8 @@ function getSystemTheme(): Theme {
   if (typeof window === "undefined") return "light";
   // Force light mode inside native app WebView
   if (navigator.userAgent.includes("SoulGuide")) return "light";
+  // Force light mode if URL has nativeApp param
+  if (new URLSearchParams(window.location.search).get("nativeApp")) return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
