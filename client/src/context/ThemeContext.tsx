@@ -40,17 +40,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const theme = manualTheme ?? systemTheme;
+  const isNativeApp = typeof window !== "undefined" && 
+    new URLSearchParams(window.location.search).get("nativeApp") === "1";
+
+  const theme = isNativeApp ? "light" : (manualTheme ?? systemTheme);
 
   // Apply to DOM
   useEffect(() => {
+    if (isNativeApp) {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+      return;
+    }
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
+      root.classList.remove("light");
     } else {
       root.classList.remove("dark");
+      root.classList.add("light");
     }
-  }, [theme]);
+  }, [theme, isNativeApp]);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
