@@ -73,6 +73,29 @@ app.use((req, res, next) => {
   next();
 });
 (async () => {
+  // Auto-create missing tables on startup
+  try {
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS prayer_journal_entries (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(200),
+        content TEXT NOT NULL,
+        mood VARCHAR(50),
+        tags TEXT[],
+        verse_reference VARCHAR(100),
+        verse_text TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    log("prayer_journal_entries table ready", "db");
+  } catch (err) {
+    console.error("[db] migration error:", err);
+  }
+
   if (!process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY) {
     console.warn("⚠️  WARNING: AI_INTEGRATIONS_ANTHROPIC_API_KEY is not configured.");
     console.warn("   AI chat features will use templated fallback responses.");
