@@ -32,6 +32,48 @@ const VERSE_OF_THE_DAY = {
   reference: "Psalm 46:10",
 };
 
+function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) {
+  const { data } = useQuery<{ success: boolean; data: { scriptureText?: string; scriptureReference?: string } }>({
+    queryKey: ["/api/devotional/today"],
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const text = data?.data?.scriptureText || VERSE_OF_THE_DAY.text;
+  const reference = data?.data?.scriptureReference || VERSE_OF_THE_DAY.reference;
+
+  return (
+    <motion.div
+      className="px-5 py-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6 }}
+    >
+      <button
+        className="w-full text-left"
+        onClick={() => onNavigate(reference)}
+      >
+        <Card className="overflow-hidden border-primary/20 hover:border-primary/40 transition-colors">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                Verse of the Day
+              </span>
+            </div>
+            <p className="font-serif text-lg leading-relaxed italic text-foreground">
+              "{text}"
+            </p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm font-medium text-primary">{reference}</p>
+              <span className="text-xs text-muted-foreground">Read in context →</span>
+            </div>
+          </CardContent>
+        </Card>
+      </button>
+    </motion.div>
+  );
+}
+
 export default function Bible() {
   const {
     currentVersion,
@@ -654,25 +696,8 @@ export default function Bible() {
           </motion.div>
         </div>
 
-        {/* Verse of the Day Widget */}
-        <motion.div 
-          className="px-5 py-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card className="overflow-hidden bg-gradient-to-br from-card to-muted/30">
-            <CardContent className="p-5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Personalized Widget Preview
-              </span>
-              <p className="font-serif text-xl mt-3 text-foreground">
-                "{VERSE_OF_THE_DAY.text}"
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">{VERSE_OF_THE_DAY.reference}</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Verse of the Day — live from today's devotional */}
+        <TodaysVerseCard onNavigate={navigateToVerse} />
 
         {/* Book Selection Sheet */}
         <Sheet open={bookSheetOpen} onOpenChange={setBookSheetOpen}>
