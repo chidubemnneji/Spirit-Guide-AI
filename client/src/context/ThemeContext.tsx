@@ -14,10 +14,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function getSystemTheme(): Theme {
   if (typeof window === "undefined") return "light";
-  // Force light mode inside native app WebView
-  if (navigator.userAgent.includes("SoulGuide")) return "light";
-  // Force light mode if URL has nativeApp param
-  if (new URLSearchParams(window.location.search).get("nativeApp")) return "light";
+  // Force light mode inside native app WebView, but not for bible (which follows system)
+  if (navigator.userAgent.includes("SoulGuide")) {
+    const path = window.location.pathname;
+    if (!path.startsWith("/bible")) return "light";
+  }
+  // Force light mode if URL has nativeApp param (non-bible pages)
+  if (new URLSearchParams(window.location.search).get("nativeApp") && !window.location.pathname.startsWith("/bible")) return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
