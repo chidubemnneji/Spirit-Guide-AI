@@ -10,6 +10,9 @@ export const users = pgTable("users", {
   name: varchar("name", { length: 255 }).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   hasCompletedOnboarding: integer("has_completed_onboarding").default(0),
+  emailVerified: integer("email_verified").default(0),
+  verificationToken: varchar("verification_token", { length: 255 }),
+  verificationTokenExpiry: timestamp("verification_token_expiry"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   lastActive: timestamp("last_active").default(sql`CURRENT_TIMESTAMP`),
 });

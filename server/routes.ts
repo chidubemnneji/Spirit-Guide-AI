@@ -191,7 +191,6 @@ export async function registerRoutes(
 
       const { name, email, password } = parseResult.data;
 
-      // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(409).json({
@@ -200,25 +199,127 @@ export async function registerRoutes(
         });
       }
 
-      // Hash password and create user
+      // Generate verification token
+      const crypto = await import("crypto");
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       const passwordHash = await hashPassword(password);
-      const user = await storage.createUser({ name, email, passwordHash });
+      const { db } = await import("./db");
+      const { users } = await import("@shared/schema");
+      const [user] = await db.insert(users).values({
+        name,
+        email,
+        passwordHash,
+        emailVerified: 0,
+        verificationToken,
+        verificationTokenExpiry,
+      }).returning();
 
       // Set session
       (req.session as SessionWithUser).userId = user.id;
 
+      // Send verification email (non-blocking)
+      const { sendVerificationEmail } = await import("./services/emailService");
+      sendVerificationEmail(email, name, verificationToken).catch(err =>
+        console.error("Failed to send verification email:", err)
+      );
+
       res.status(201).json({
         success: true,
+        requiresVerification: true,
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
           hasCompletedOnboarding: false,
+          emailVerified: false,
         },
       });
     } catch (error) {
       console.error("Signup error:", error);
       res.status(500).json({ success: false, error: "Failed to create account" });
+    }
+  });
+
+  // Email verification
+  app.get("/api/auth/verify-email", async (req: Request, res: Response) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) return res.status(400).send("Invalid verification link.");
+
+      const { db } = await import("./db");
+      const { users } = await import("@shared/schema");
+      const { eq, and, gt } = await import("drizzle-orm");
+
+      const [user] = await db.select().from(users).where(
+        and(
+          eq(users.verificationToken, token),
+          gt(users.verificationTokenExpiry, new Date())
+        )
+      );
+
+      if (!user) {
+        return res.status(400).send(`
+          <html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#0f0d0a;color:#e8e2d8;">
+            <h2>Link expired or invalid</h2>
+            <p style="color:#a09880;">This verification link has expired or already been used.</p>
+            <a href="/" style="color:#C8A96E;">Back to SoulGuide</a>
+          </body></html>
+        `);
+      }
+
+      await db.update(users)
+        .set({ emailVerified: 1, verificationToken: null, verificationTokenExpiry: null })
+        .where(eq(users.id, user.id));
+
+      // Set session so they're logged in after verifying
+      (req.session as SessionWithUser).userId = user.id;
+
+      return res.send(`
+        <html>
+        <head><meta http-equiv="refresh" content="2;url=/" /></head>
+        <body style="font-family:sans-serif;text-align:center;padding:60px;background:#0f0d0a;color:#e8e2d8;">
+          <div style="font-size:48px;margin-bottom:16px;">✅</div>
+          <h2 style="color:#C8A96E;">Email confirmed!</h2>
+          <p style="color:#a09880;">Redirecting you to SoulGuide...</p>
+        </body></html>
+      `);
+    } catch (error) {
+      console.error("Verify email error:", error);
+      res.status(500).send("Something went wrong. Please try again.");
+    }
+  });
+
+  // Resend verification email
+  app.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { db } = await import("./db");
+      const { users } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      const crypto = await import("crypto");
+
+      const [user] = await db.select().from(users).where(eq(users.id, session.userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+      if (user.emailVerified) return res.json({ success: true, message: "Already verified" });
+
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await db.update(users)
+        .set({ verificationToken, verificationTokenExpiry })
+        .where(eq(users.id, user.id));
+
+      const { sendVerificationEmail } = await import("./services/emailService");
+      await sendVerificationEmail(user.email, user.name, verificationToken);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ error: "Failed to resend email" });
     }
   });
 
@@ -323,6 +424,7 @@ export async function registerRoutes(
           name: user.name,
           email: user.email,
           hasCompletedOnboarding: !!user.hasCompletedOnboarding,
+          emailVerified: !!(user as any).emailVerified,
         },
         persona: persona || null,
       });

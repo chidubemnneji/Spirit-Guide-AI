@@ -78,6 +78,19 @@ app.use((req, res, next) => {
     const { db } = await import("./db");
     const { sql } = await import("drizzle-orm");
     await db.execute(sql`
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS email_verified INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS verification_token VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS verification_token_expiry TIMESTAMP
+    `);
+    // Mark existing users (created before verification) as verified
+    await db.execute(sql`
+      UPDATE users SET email_verified = 1
+      WHERE email_verified = 0 AND verification_token IS NULL
+    `);
+    log("email verification columns ready", "db");
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS prayer_journal_entries (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
