@@ -13,6 +13,7 @@ import { signupSchema, loginSchema } from "@shared/schema";
 import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
+import { anthropic } from "./services/anthropicClient";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
 import { memoryExtractor } from "./services/memoryExtractor";
@@ -1558,6 +1559,49 @@ I'm here to listen whenever you're ready to talk.`;
     } catch (error) {
       console.error("Scripture feeling API error:", error);
       res.status(500).json({ error: "Failed to retrieve scriptures" });
+    }
+  });
+
+  // AI Bible Search
+  app.post("/api/bible/ai-search", async (req: Request, res: Response) => {
+    try {
+      const { query } = req.body;
+      if (!query?.trim()) {
+        return res.status(400).json({ error: "Query is required" });
+      }
+
+      const response = await anthropic.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{
+          role: "user",
+          content: `You are a Bible scholar. The user is searching for: "${query}"
+
+Return 4-5 highly relevant Bible verses. For each verse provide:
+- The exact verse text (NIV translation preferred)
+- The reference (e.g. John 3:16)
+- One sentence explaining why it's relevant to the query
+
+Respond ONLY with valid JSON in this exact format, no other text:
+{
+  "results": [
+    {
+      "reference": "John 3:16",
+      "text": "For God so loved the world...",
+      "relevance": "This verse speaks directly to..."
+    }
+  ]
+}`
+        }]
+      });
+
+      const raw = response.content[0].type === "text" ? response.content[0].text : "";
+      const cleaned = raw.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      res.json(parsed);
+    } catch (error) {
+      console.error("AI Bible search error:", error);
+      res.status(500).json({ error: "Search failed" });
     }
   });
 
