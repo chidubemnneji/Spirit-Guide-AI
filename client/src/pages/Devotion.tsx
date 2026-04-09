@@ -51,7 +51,7 @@ function getGreetingByTime(): string {
 
 function WeekCalendar({ completedDays, joinedAt }: { completedDays: string[]; joinedAt?: string | null }) {
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const joinDate = joinedAt ? new Date(joinedAt) : null;
   const days = [];
 
