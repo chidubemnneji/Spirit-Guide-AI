@@ -87,6 +87,7 @@ export default function Bible() {
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
   const [highlightedVerses, setHighlightedVerses] = useState<Set<string>>(new Set());
   const [animateContent, setAnimateContent] = useState(false);
@@ -538,45 +539,34 @@ export default function Bible() {
           </motion.p>
         </div>
 
-        {/* Search Bar */}
-        <motion.div 
+        {/* Search trigger */}
+        <motion.div
           className="px-5 py-3"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Input
-                placeholder="Search verses or type a reference..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="pr-10"
-                data-testid="input-search"
-              />
-            </div>
-            <Button 
-              onClick={handleSearch} 
-              disabled={searchLoading}
-              size="icon"
-              variant="ghost"
-              className="text-primary"
-              data-testid="button-do-search"
-            >
-              {searchLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            </Button>
-          </div>
-          
+          <button
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 border border-border/50 text-muted-foreground text-sm hover:bg-muted transition-colors"
+            onClick={() => setSearchSheetOpen(true)}
+            data-testid="input-search"
+          >
+            <Search className="w-4 h-4 flex-shrink-0" />
+            <span>Search verses or type a reference...</span>
+          </button>
+
           {/* Feeling chips */}
           <div className="flex flex-wrap gap-2 mt-3">
             {FEELINGS.map((feeling) => (
               <Button
                 key={feeling.id}
-                variant={activeFeeling === feeling.id ? "default" : "outline"}
+                variant="outline"
                 size="sm"
                 className="text-xs"
-                onClick={() => handleFeelingSelect(feeling.id)}
+                onClick={() => {
+                  setSearchSheetOpen(true);
+                  setTimeout(() => handleFeelingSelect(feeling.id), 100);
+                }}
                 data-testid={`button-feeling-${feeling.id}`}
               >
                 {feeling.label}
@@ -585,21 +575,71 @@ export default function Bible() {
           </div>
         </motion.div>
 
-        {/* Search Results */}
-        <AnimatePresence>
-          {searchResults.length > 0 && (
-            <motion.div
-              className="px-5 py-2"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-            >
-              <div className="space-y-2 max-h-[480px] overflow-y-auto">
-                {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
-                  <Card 
+        {/* Full-screen Search Sheet */}
+        <Sheet open={searchSheetOpen} onOpenChange={(open) => {
+          setSearchSheetOpen(open);
+          if (!open) { setSearchResults([]); setSearchQuery(""); setActiveFeeling(null); }
+        }}>
+          <SheetContent side="bottom" className="h-[100dvh] flex flex-col p-0 rounded-none border-0">
+            <div className="flex items-center gap-3 px-4 pt-12 pb-3 border-b border-border/50">
+              <div className="flex-1 flex items-center gap-2 bg-muted/60 rounded-xl px-3 py-2.5 border border-border/50">
+                <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input
+                  autoFocus
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  placeholder="Search verses or type a reference..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+                {searchQuery && (
+                  <button onClick={() => { setSearchQuery(""); setSearchResults([]); }}>
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
+              </div>
+              <Button size="sm" onClick={handleSearch} disabled={searchLoading || !searchQuery.trim()} className="rounded-xl shrink-0">
+                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Go"}
+              </Button>
+              <button onClick={() => setSearchSheetOpen(false)} className="text-muted-foreground text-sm shrink-0">
+                Cancel
+              </button>
+            </div>
+
+            <div className="flex gap-2 px-4 py-3 overflow-x-auto border-b border-border/50 shrink-0">
+              {FEELINGS.map((feeling) => (
+                <Button
+                  key={feeling.id}
+                  variant={activeFeeling === feeling.id ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs shrink-0"
+                  onClick={() => handleFeelingSelect(feeling.id)}
+                >
+                  {feeling.label}
+                </Button>
+              ))}
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="px-4 py-4 space-y-3">
+                {searchLoading && (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Finding verses...</p>
+                  </div>
+                )}
+                {!searchLoading && searchResults.length === 0 && (
+                  <div className="py-16 text-center">
+                    <BookOpen className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">Search by topic, emotion, or reference</p>
+                    <p className="text-xs text-muted-foreground/50 mt-1">Try "anxiety", "forgiveness", or "John 3:16"</p>
+                  </div>
+                )}
+                {!searchLoading && searchResults.map((result: any, index: number) => (
+                  <Card
                     key={index}
                     className="p-4 cursor-pointer hover-elevate"
-                    onClick={() => navigateToVerse(result.reference)}
+                    onClick={() => { navigateToVerse(result.reference); setSearchSheetOpen(false); }}
                   >
                     <p className="text-xs font-semibold text-primary mb-1">{result.reference}</p>
                     <p className="text-sm text-foreground/90 leading-relaxed">{result.text}</p>
@@ -608,30 +648,10 @@ export default function Bible() {
                     )}
                   </Card>
                 ))}
-                {searchResults.length > 5 && !showAllResults && (
-                  <Button 
-                    variant="ghost" 
-                    className="w-full text-sm"
-                    onClick={() => setShowAllResults(true)}
-                  >
-                    Show {searchResults.length - 5} more results
-                  </Button>
-                )}
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="w-full mt-2 text-muted-foreground"
-                onClick={() => {
-                  setSearchResults([]);
-                  setSearchQuery("");
-                }}
-              >
-                Clear results
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
 
         {/* Cards Section */}
         <div className="px-5 py-4 space-y-4">
