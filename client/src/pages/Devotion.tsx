@@ -323,6 +323,18 @@ export default function Devotion() {
         setLocation("/devotional");
       },
     },
+    {
+      id: "prayer-journal",
+      title: "Reflect & Journal",
+      subtitle: "Record your thoughts, prayers and moments with God",
+      icon: "pen",
+      duration: "3 MIN",
+      isCompleted: completedTaskIds.has("prayer-journal"),
+      action: () => {
+        handleTaskComplete("prayer-journal");
+        setLocation("/journal");
+      },
+    },
   ];
 
   const progressPercent = Math.round((completedTaskIds.size / journeyTasks.length) * 100);
