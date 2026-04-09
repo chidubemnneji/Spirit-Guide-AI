@@ -459,6 +459,49 @@ export default function Devotion() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Streak card */}
+            {currentStreak > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Card className="border border-primary/20 shadow-sm overflow-hidden">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Flame className="w-8 h-8 text-primary" />
+                        <div>
+                          <p className="text-3xl font-bold text-primary leading-none">{currentStreak}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">day streak</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: Math.min(currentStreak, 7) }).map((_, i) => (
+                          <Flame
+                            key={i}
+                            className="w-4 h-4 text-primary"
+                            style={{ opacity: (i + 1) / Math.min(currentStreak, 7) }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {currentStreak === 1
+                        ? "Day 1 complete. You showed up — that matters."
+                        : currentStreak < 7
+                        ? "You're building something real. Keep going."
+                        : currentStreak < 14
+                        ? "A whole week of showing up. That's not nothing."
+                        : currentStreak < 30
+                        ? "This is becoming a habit. God notices faithfulness."
+                        : "Your consistency is a form of worship. Keep it going."}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </main>
