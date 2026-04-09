@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 import { BIBLE_VERSE_PATTERN } from "@/lib/bibleUtils";
@@ -326,12 +326,18 @@ export default function Bible() {
     setShowAllResults(false);
     
     try {
-      const res = await fetch(`/api/scripture/feeling?feeling=${feeling}&count=5`);
+      // Use AI search for feeling-based queries too
+      const res = await fetch("/api/bible/ai-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: `verses about feeling ${feeling}` }),
+      });
       const data = await res.json();
-      if (data.selected_scriptures) {
-        setSearchResults(data.selected_scriptures.map((s: any) => ({
-          reference: s.citation,
-          text: s.text,
+      if (data.results) {
+        setSearchResults(data.results.map((r: any) => ({
+          reference: r.reference,
+          text: r.text,
+          relevance: r.relevance,
         })));
       } else {
         setSearchResults([]);
@@ -580,14 +586,8 @@ export default function Bible() {
           if (!open) { setSearchResults([]); setSearchQuery(""); setActiveFeeling(null); }
         }}>
           <SheetContent side="bottom" className="h-[100dvh] flex flex-col p-0 rounded-none border-0">
-            {/* X button top right */}
-            <div className="flex justify-end px-4 pt-4 pb-0">
-              <button onClick={() => setSearchSheetOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {/* Search input row */}
-            <div className="flex items-center gap-2 px-4 pt-2 pb-3 border-b border-border/50">
+            {/* Search input row — X inline on right */}
+            <div className="flex items-center gap-2 px-4 pt-12 pb-3 border-b border-border/50">
               <div className="flex-1 flex items-center gap-2 bg-muted/60 rounded-xl px-3 py-3 border border-border/50">
                 <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <input
@@ -605,8 +605,11 @@ export default function Bible() {
                 )}
               </div>
               <Button size="sm" onClick={handleSearch} disabled={searchLoading || !searchQuery.trim()} className="rounded-xl shrink-0 px-4">
-                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Go"}
+                {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
               </Button>
+              <button onClick={() => setSearchSheetOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="flex gap-2 px-4 py-3 overflow-x-auto border-b border-border/50 shrink-0">
@@ -638,14 +641,23 @@ export default function Bible() {
                     <p className="text-xs text-muted-foreground/50 mt-1">Try "anxiety", "forgiveness", or "John 3:16"</p>
                   </div>
                 )}
+                {/* AI results label */}
+                {!searchLoading && searchResults.length > 0 && (
+                  <div className="flex items-center gap-2 pb-1">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide">
+                      AI results for "{searchQuery || (activeFeeling ? `feeling ${activeFeeling}` : "")}"
+                    </p>
+                  </div>
+                )}
                 {!searchLoading && searchResults.map((result: any, index: number) => (
                   <Card
                     key={index}
                     className="p-4 cursor-pointer hover-elevate"
                     onClick={() => { navigateToVerse(result.reference); setSearchSheetOpen(false); }}
                   >
-                    <p className="text-xs font-semibold text-primary mb-1">{result.reference}</p>
-                    <p className="text-sm text-foreground/90 leading-relaxed">{result.text}</p>
+                    <p className="text-sm font-semibold text-primary mb-2">{result.reference}</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed italic">"{result.text}"</p>
                     {result.relevance && (
                       <p className="text-xs text-muted-foreground mt-2 italic border-t border-border/50 pt-2">{result.relevance}</p>
                     )}
