@@ -544,7 +544,7 @@ export default function Bible() {
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Input
-                placeholder="Ask me anything about the Bible..."
+                placeholder="Search verses or type a reference..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
