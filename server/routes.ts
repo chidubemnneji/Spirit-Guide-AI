@@ -220,11 +220,13 @@ export async function registerRoutes(
       // Set session
       (req.session as SessionWithUser).userId = user.id;
 
-      // Send verification email (non-blocking)
-      const { sendVerificationEmail } = await import("./services/emailService");
-      sendVerificationEmail(email, name, verificationToken).catch(err =>
-        console.error("Failed to send verification email:", err)
-      );
+      // Send verification email only if feature is enabled (non-blocking)
+      if (isEnabled("EMAIL_VERIFICATION")) {
+        const { sendVerificationEmail } = await import("./services/emailService");
+        sendVerificationEmail(email, name, verificationToken).catch(err =>
+          console.error("Failed to send verification email:", err)
+        );
+      }
 
       res.status(201).json({
         success: true,

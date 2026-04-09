@@ -5,6 +5,7 @@ interface FeatureFlags {
   EVENING_PRAYER: boolean;
   AMBIENT_SOUNDS: boolean;
   TOPIC_DEVOTIONALS: boolean;
+  EMAIL_VERIFICATION: boolean;
 }
 
 const defaultFlags: FeatureFlags = {
@@ -12,6 +13,7 @@ const defaultFlags: FeatureFlags = {
   EVENING_PRAYER: false,
   AMBIENT_SOUNDS: false,
   TOPIC_DEVOTIONALS: false,
+  EMAIL_VERIFICATION: false,
 };
 
 export function useFlags() {

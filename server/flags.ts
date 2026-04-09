@@ -6,6 +6,7 @@ const defaults: Record<string, boolean> = {
   EVENING_PRAYER: false,
   AMBIENT_SOUNDS: false,
   TOPIC_DEVOTIONALS: false,
+  EMAIL_VERIFICATION: false,
 };
 
 function loadFlags(): Record<string, boolean> {

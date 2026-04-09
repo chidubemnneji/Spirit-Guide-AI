@@ -26,16 +26,17 @@ import NotFound from "@/pages/not-found";
 import Journal from "@/pages/Journal";
 import DevotionalReading from "@/pages/DevotionalReading";
 import VerifyEmail from "@/pages/VerifyEmail";
+import { useFlags } from "@/hooks/useFlags";
 
 const ONBOARDING_ROUTES = ["/", "/signup", "/login", "/onboarding", "/transition", "/meet-prayer-partner"];
 
 // Wraps any route that requires auth — shows nothing while redirecting
 function Protected({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
+  const flags = useFlags();
   useAuthGuard();
   if (isLoading) return null;
-  // Block unverified users from protected routes
-  if (user && !user.emailVerified) return <VerifyEmail />;
+  if (flags.EMAIL_VERIFICATION && user && !user.emailVerified) return <VerifyEmail />;
   return <Component />;
 }
 
