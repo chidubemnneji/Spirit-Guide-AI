@@ -594,17 +594,17 @@ export default function Bible() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-[480px] overflow-y-auto">
                 {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
                   <Card 
                     key={index}
-                    className="p-3 cursor-pointer hover-elevate"
+                    className="p-4 cursor-pointer hover-elevate"
                     onClick={() => navigateToVerse(result.reference)}
                   >
-                    <p className="text-xs font-medium text-primary">{result.reference}</p>
-                    <p className="text-sm text-foreground/80 line-clamp-2 mt-1">{result.text}</p>
+                    <p className="text-xs font-semibold text-primary mb-1">{result.reference}</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{result.text}</p>
                     {result.relevance && (
-                      <p className="text-xs text-muted-foreground mt-1 italic">{result.relevance}</p>
+                      <p className="text-xs text-muted-foreground mt-2 italic border-t border-border/50 pt-2">{result.relevance}</p>
                     )}
                   </Card>
                 ))}
