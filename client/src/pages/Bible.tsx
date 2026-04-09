@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Sparkles } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 import { BIBLE_VERSE_PATTERN } from "@/lib/bibleUtils";
@@ -635,18 +635,29 @@ export default function Bible() {
                   </div>
                 )}
                 {!searchLoading && searchResults.length === 0 && (
-                  <div className="py-16 text-center">
-                    <BookOpen className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">Search by topic, emotion, or reference</p>
-                    <p className="text-xs text-muted-foreground/50 mt-1">Try "anxiety", "forgiveness", or "John 3:16"</p>
+                  <div className="py-12 text-center">
+                    <BookOpen className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-sm font-medium text-muted-foreground mb-4">How to search</p>
+                    <div className="space-y-2 text-left max-w-xs mx-auto">
+                      {[
+                        { hint: "By topic", example: "\"verses about anxiety\"" },
+                        { hint: "By feeling", example: "\"I feel alone and need comfort\"" },
+                        { hint: "By question", example: "\"what does God say about forgiveness\"" },
+                        { hint: "By reference", example: "\"John 3:16\"" },
+                      ].map(({ hint, example }) => (
+                        <div key={hint} className="flex gap-3 items-start">
+                          <span className="text-xs text-muted-foreground/50 w-20 shrink-0 pt-0.5">{hint}</span>
+                          <span className="text-xs text-muted-foreground italic">{example}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {/* AI results label */}
+                {/* Results label */}
                 {!searchLoading && searchResults.length > 0 && (
-                  <div className="flex items-center gap-2 pb-1">
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <div className="pb-1">
                     <p className="text-xs font-semibold text-primary uppercase tracking-wide">
-                      AI results for "{searchQuery || (activeFeeling ? `feeling ${activeFeeling}` : "")}"
+                      Results for "{searchQuery || (activeFeeling ? `feeling ${activeFeeling}` : "")}"
                     </p>
                   </div>
                 )}
