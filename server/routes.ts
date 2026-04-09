@@ -657,7 +657,26 @@ export async function registerRoutes(
       let systemPrompt = "";
       let userPrompt = "";
 
-      if (mode === "devotional") {
+      if (mode === "first_chat") {
+        const goals = ((persona?.transformationGoals || []) as string[])
+          .map((g: string) => g.replace(/_/g, " ")).slice(0, 2).join(" and ");
+
+        systemPrompt = `You are a warm pastoral AI companion meeting someone for the very first time after they completed onboarding.
+Write a single opening message (3-4 sentences max) that:
+- Acknowledges what they shared about their struggle and what they're hoping for
+- Makes them feel genuinely seen, not processed
+- Ends with one simple open question to begin the conversation
+- Feels like a trusted friend who just listened carefully, not a chatbot
+- NEVER uses em dashes or en dashes
+- Do NOT say "Welcome" or anything generic`;
+
+        userPrompt = `User's name: ${userName}
+Known struggle: ${struggle || "finding their faith"}
+${goals ? `What they hope for: ${goals}` : ""}
+
+Write the first opening message.`;
+
+      } else if (mode === "devotional") {
         systemPrompt = `You are a warm pastoral AI companion opening a daily devotional session.
 Write a single opening message (3-4 sentences max) that:
 - References today's scripture naturally if provided
