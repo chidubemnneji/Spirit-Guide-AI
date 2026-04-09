@@ -14,13 +14,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function getSystemTheme(): Theme {
   if (typeof window === "undefined") return "light";
-  // Force light mode inside native app WebView, but not for bible (which follows system)
-  if (navigator.userAgent.includes("SoulGuide")) {
-    const path = window.location.pathname;
-    if (!path.startsWith("/bible")) return "light";
-  }
-  // Force light mode if URL has nativeApp param (non-bible pages)
-  if (new URLSearchParams(window.location.search).get("nativeApp") && !window.location.pathname.startsWith("/bible")) return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
@@ -43,18 +36,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const isNativeApp = typeof window !== "undefined" && 
-    new URLSearchParams(window.location.search).get("nativeApp") === "1";
-
-  const theme = isNativeApp ? "light" : (manualTheme ?? systemTheme);
+  const theme = manualTheme ?? systemTheme;
 
   // Apply to DOM
   useEffect(() => {
-    if (isNativeApp) {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
-      return;
-    }
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
@@ -63,7 +48,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.remove("dark");
       root.classList.add("light");
     }
-  }, [theme, isNativeApp]);
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
