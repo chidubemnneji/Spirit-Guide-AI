@@ -601,8 +601,8 @@ export default function Bible() {
               <Button size="sm" onClick={handleSearch} disabled={searchLoading || !searchQuery.trim()} className="rounded-xl shrink-0">
                 {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Go"}
               </Button>
-              <button onClick={() => setSearchSheetOpen(false)} className="text-muted-foreground text-sm shrink-0">
-                Cancel
+              <button onClick={() => setSearchSheetOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
