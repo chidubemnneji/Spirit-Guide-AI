@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, MessageCircle, Sparkles, Timer, Moon, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Devotional } from "@shared/schema";
+import { useFlags } from "@/hooks/useFlags";
 
 function SectionBlock({
   label,
@@ -112,6 +113,168 @@ function PrayerBlock({ content, index }: { content: string; index: number }) {
   );
 }
 
+function TimedModeSection() {
+  const flags = useFlags();
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+  const [timedText, setTimedText] = useState<string | null>(null);
+  const [eveningText, setEveningText] = useState<string | null>(null);
+  const [mode, setMode] = useState<"timed" | "evening" | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+
+  const timedMutation = useMutation({
+    mutationFn: async (duration: number) => {
+      const res = await fetch(`/api/devotional/timed?duration=${duration}`, { credentials: "include" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setTimedText(data.text);
+      setMode("timed");
+    },
+  });
+
+  const eveningMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/prayer/evening", { credentials: "include" });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setEveningText(data.text);
+      setMode("evening");
+    },
+  });
+
+  const playText = async (text: string) => {
+    try {
+      const res = await fetch("/api/voice/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text, voice: "nova" }),
+      });
+      const data = await res.json();
+      if (data.audio) {
+        const blob = new Blob([Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], { type: "audio/mp3" });
+        const url = URL.createObjectURL(blob);
+        const el = new Audio(url);
+        el.onended = () => setIsPlaying(false);
+        el.play();
+        setAudio(el);
+        setIsPlaying(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const togglePlay = (text: string) => {
+    if (isPlaying && audio) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      playText(text);
+    }
+  };
+
+  if (!flags.TIMED_DEVOTIONALS && !flags.EVENING_PRAYER) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+      className="space-y-3 pt-2"
+    >
+      {/* Timed devotionals */}
+      {flags.TIMED_DEVOTIONALS && !mode && (
+        <div className="bg-card border border-border/50 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Timer className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold">Guided Meditation</span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            A spoken devotional timed to your schedule
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {[2, 5, 10, 15].map(d => (
+              <button
+                key={d}
+                onClick={() => { setSelectedDuration(d); timedMutation.mutate(d); }}
+                className={cn(
+                  "py-2.5 rounded-xl text-sm font-semibold border transition-all",
+                  selectedDuration === d
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border/50 hover:border-primary/40"
+                )}
+              >
+                {d}m
+              </button>
+            ))}
+          </div>
+          {timedMutation.isPending && (
+            <p className="text-xs text-muted-foreground text-center mt-3 animate-pulse">
+              Preparing your meditation...
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Evening prayer */}
+      {flags.EVENING_PRAYER && !mode && (
+        <button
+          onClick={() => eveningMutation.mutate()}
+          disabled={eveningMutation.isPending}
+          className="w-full bg-card border border-border/50 rounded-2xl p-5 text-left hover:border-primary/30 transition-colors"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Moon className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold">Evening Prayer</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {eveningMutation.isPending ? "Preparing your prayer..." : "A gentle prayer to close your day"}
+          </p>
+        </button>
+      )}
+
+      {/* Generated content */}
+      {(timedText || eveningText) && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-primary/5 border border-primary/20 rounded-2xl p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {mode === "timed" ? <Timer className="w-4 h-4 text-primary" /> : <Moon className="w-4 h-4 text-primary" />}
+              <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                {mode === "timed" ? `${selectedDuration}-Minute Meditation` : "Evening Prayer"}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl gap-1.5"
+              onClick={() => togglePlay((timedText || eveningText)!)}
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              {isPlaying ? "Pause" : "Listen"}
+            </Button>
+          </div>
+          <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+            {timedText || eveningText}
+          </p>
+          <button
+            onClick={() => { setMode(null); setTimedText(null); setEveningText(null); setSelectedDuration(null); }}
+            className="text-xs text-muted-foreground mt-4 hover:text-foreground transition-colors"
+          >
+            ← Back
+          </button>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function DevotionalReading() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -209,6 +372,9 @@ export default function DevotionalReading() {
             />
           );
         })}
+
+        {/* Timed / Evening modes */}
+        <TimedModeSection />
 
         {/* Begin prayer CTA */}
         <motion.div

@@ -14,6 +14,7 @@ import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
+import { flags, isEnabled } from "./flags";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
 import { memoryExtractor } from "./services/memoryExtractor";
@@ -1633,6 +1634,111 @@ I'm here to listen whenever you're ready to talk.`;
     }
   });
 
+  // ── Timed Devotionals (feature flagged) ─────────────────────────────────────
+  app.get("/api/devotional/timed", async (req: Request, res: Response) => {
+    if (!isEnabled("TIMED_DEVOTIONALS")) {
+      return res.status(404).json({ error: "Feature not enabled" });
+    }
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const duration = parseInt(req.query.duration as string) || 5; // 2, 5, 10, 15 mins
+      const validDurations = [2, 5, 10, 15];
+      if (!validDurations.includes(duration)) {
+        return res.status(400).json({ error: "Duration must be 2, 5, 10, or 15 minutes" });
+      }
+
+      const user = await storage.getUser(session.userId);
+      const persona = await storage.getPersona(session.userId);
+      const devotional = await devotionalService.getTodayDevotional(session.userId);
+      const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || "your faith journey";
+      const firstName = user?.name?.split(" ")[0] || "friend";
+
+      const wordCounts: Record<number, number> = { 2: 150, 5: 400, 10: 800, 15: 1200 };
+      const targetWords = wordCounts[duration];
+
+      const systemPrompt = `You are a warm pastoral guide leading a ${duration}-minute spoken devotional meditation.
+Write approximately ${targetWords} words — this is meant to be read aloud slowly and thoughtfully.
+Structure: Opening breath (settle in) → Scripture reflection → Personal application to the listener's struggle → Guided prayer → Closing blessing.
+Tone: Calm, unhurried, deeply personal. Speak directly to the listener as "you".
+Do NOT use headers, bullet points, or markdown. Write flowing spoken prose only.
+Reference the listener's known struggle naturally but gently.
+End with a short prayer they can breathe through.`;
+
+      const userPrompt = `Listener's name: ${firstName}
+Known struggle: ${struggle}
+Today's scripture: ${devotional?.scriptureReference || "Psalm 46:10"} — "${devotional?.scriptureText || "Be still, and know that I am God."}"
+Today's theme: ${devotional?.title || "Finding Peace"}
+
+Write a ${duration}-minute devotional meditation.`;
+
+      let text = "";
+      for await (const chunk of hybridAIClient.streamChat({
+        systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+        maxTokens: Math.min(targetWords * 2, 2000),
+      })) {
+        if (!chunk.done && chunk.content) text += chunk.content;
+        if (chunk.done) break;
+      }
+
+      res.json({
+        success: true,
+        duration,
+        text: text.trim(),
+        scripture: {
+          reference: devotional?.scriptureReference,
+          text: devotional?.scriptureText,
+        },
+      });
+    } catch (error) {
+      console.error("Timed devotional error:", error);
+      res.status(500).json({ error: "Failed to generate devotional" });
+    }
+  });
+
+  // ── Evening Prayer (feature flagged) ────────────────────────────────────────
+  app.get("/api/prayer/evening", async (req: Request, res: Response) => {
+    if (!isEnabled("EVENING_PRAYER")) {
+      return res.status(404).json({ error: "Feature not enabled" });
+    }
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const user = await storage.getUser(session.userId);
+      const persona = await storage.getPersona(session.userId);
+      const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || "your faith journey";
+      const firstName = user?.name?.split(" ")[0] || "friend";
+
+      const systemPrompt = `You are a gentle pastoral presence leading a bedtime prayer.
+Write approximately 200 words — calm, slow, restful. This is spoken aloud as someone prepares for sleep.
+Structure: Settling (3-4 sentences to release the day) → Gratitude → Surrender of burdens → Blessing into sleep.
+Tone: Hushed, tender, reassuring. Speak in second person ("you", "your").
+No headers or formatting. Flowing spoken prose only.
+End with a short scripture blessing — something peaceful like Numbers 6:24-26 or Psalm 4:8.`;
+
+      const userPrompt = `${firstName} is ending their day. Known struggle: ${struggle}.
+Write an evening prayer to help them release the day and rest in God's peace.`;
+
+      let text = "";
+      for await (const chunk of hybridAIClient.streamChat({
+        systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+        maxTokens: 400,
+      })) {
+        if (!chunk.done && chunk.content) text += chunk.content;
+        if (chunk.done) break;
+      }
+
+      res.json({ success: true, text: text.trim() });
+    } catch (error) {
+      console.error("Evening prayer error:", error);
+      res.status(500).json({ error: "Failed to generate evening prayer" });
+    }
+  });
+
   // Feeling-based Scripture API
   app.post("/api/scripture/feeling", async (req: Request, res: Response) => {
     try {
@@ -1681,6 +1787,11 @@ I'm here to listen whenever you're ready to talk.`;
       console.error("Scripture feeling API error:", error);
       res.status(500).json({ error: "Failed to retrieve scriptures" });
     }
+  });
+
+  // Feature flags
+  app.get("/api/flags", (_req: Request, res: Response) => {
+    res.json(flags);
   });
 
   // AI Bible Search
