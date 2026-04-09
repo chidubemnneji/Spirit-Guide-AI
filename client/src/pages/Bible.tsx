@@ -273,44 +273,43 @@ export default function Bible() {
   };
 
   const handleSearch = useCallback(async () => {
-    if (searchQuery.trim() && currentVersion) {
-      setSearchLoading(true);
-      setShowAllResults(false);
-      setActiveFeeling(null);
-      try {
-        // Check if it's a specific verse reference like "John 3:16"
-        const versePattern = new RegExp(BIBLE_VERSE_PATTERN.source, 'i');
-        const hasVerseReference = versePattern.test(searchQuery);
+    if (!searchQuery.trim()) return;
+    setSearchLoading(true);
+    setShowAllResults(false);
+    setActiveFeeling(null);
+    try {
+      // Check if it's a specific verse reference like "John 3:16"
+      const versePattern = new RegExp(BIBLE_VERSE_PATTERN.source, 'i');
+      const hasVerseReference = versePattern.test(searchQuery);
 
-        if (hasVerseReference) {
-          // Direct Bible API lookup for specific references
-          const res = await fetch(`/api/bible/${currentVersion.id}/search?query=${encodeURIComponent(searchQuery)}`);
-          const data = await res.json();
-          setSearchResults(data || []);
+      if (hasVerseReference && currentVersion) {
+        // Direct Bible API lookup for specific references
+        const res = await fetch(`/api/bible/${currentVersion.id}/search?query=${encodeURIComponent(searchQuery)}`);
+        const data = await res.json();
+        setSearchResults(data || []);
+      } else {
+        // AI-powered search for natural language queries
+        const res = await fetch("/api/bible/ai-search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: searchQuery }),
+        });
+        const data = await res.json();
+        if (data.results) {
+          setSearchResults(data.results.map((r: any) => ({
+            reference: r.reference,
+            text: r.text,
+            relevance: r.relevance,
+          })));
         } else {
-          // AI-powered search for natural language queries
-          const res = await fetch("/api/bible/ai-search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: searchQuery }),
-          });
-          const data = await res.json();
-          if (data.results) {
-            setSearchResults(data.results.map((r: any) => ({
-              reference: r.reference,
-              text: r.text,
-              relevance: r.relevance,
-            })));
-          } else {
-            setSearchResults([]);
-          }
+          setSearchResults([]);
         }
-      } catch (error) {
-        console.error("Search error:", error);
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
       }
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
     }
   }, [searchQuery, currentVersion]);
 
