@@ -990,6 +990,47 @@ Write the check-in opening.`;
         } catch (memoryError) {
           console.error("Memory context error (continuing):", memoryError);
         }
+
+        // Inject recent journal entries into context
+        try {
+          const { db } = await import("./db");
+          const { prayerJournalEntries } = await import("@shared/schema");
+          const { eq, desc } = await import("drizzle-orm");
+          const recentEntries = await db
+            .select()
+            .from(prayerJournalEntries)
+            .where(eq(prayerJournalEntries.userId, userId))
+            .orderBy(desc(prayerJournalEntries.createdAt))
+            .limit(5);
+
+          if (recentEntries.length > 0) {
+            const journalContext = recentEntries.map((e) => {
+              const daysAgo = Math.floor(
+                (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              const when = daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+              const moodNote = e.mood ? ` (feeling ${e.mood})` : "";
+              return `- ${when}${moodNote}: "${e.content.slice(0, 200)}${e.content.length > 200 ? "..." : ""}"`;
+            }).join("\n");
+
+            memoryContext = (memoryContext || "") + `
+
+═══════════════════════════════════════════════════════════
+RECENT JOURNAL ENTRIES
+═══════════════════════════════════════════════════════════
+The user has written these private reflections recently. Reference them naturally — don't quote directly, but let them inform how you respond. If they've expressed something in their journal, you don't need them to repeat it.
+
+${journalContext}
+
+Use this to:
+- Pick up where their heart already is
+- Notice patterns across entries (recurring doubts, emotions, themes)
+- Reflect growth or acknowledge struggle you've seen over time
+`;
+          }
+        } catch (journalError) {
+          console.error("Journal context error (continuing):", journalError);
+        }
       }
 
       // Build enhanced system prompt with all intelligence
@@ -2384,7 +2425,34 @@ RULES:
           verseText: verseText || null,
         })
         .returning();
+
       res.status(201).json({ entry });
+
+      // Async: extract insights from journal entry to enrich memory
+      setImmediate(async () => {
+        try {
+          const insights = await memoryExtractor.extractInsights([
+            { role: "user", content: `Journal entry${mood ? ` (feeling ${mood})` : ""}: ${content.trim()}` },
+            { role: "assistant", content: "Thank you for sharing this reflection." },
+            { role: "user", content: content.trim() },
+            { role: "assistant", content: "I hear you." },
+          ]);
+          if (insights) {
+            // Save memorable moments from journal to memory
+            for (const moment of insights.memorableMoments || []) {
+              await storage.saveMoment(
+                session.userId!,
+                -1, // -1 = from journal, not a conversation
+                moment.type,
+                `[Journal] ${moment.summary}`,
+                moment.emotionalImpact
+              );
+            }
+          }
+        } catch (e) {
+          // Non-blocking — ignore errors
+        }
+      });
     } catch (error) {
       console.error("Journal create error:", error);
       res.status(500).json({ error: "Failed to create journal entry" });
