@@ -18,6 +18,11 @@ import { flags, isEnabled } from "./flags";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
 import { memoryExtractor } from "./services/memoryExtractor";
+import { db } from "./db";
+import * as schema from "@shared/schema";
+import { eq, desc, and, gt, gte, asc, sql, inArray } from "drizzle-orm";
+import crypto from "crypto";
+import { sendVerificationEmail } from "./services/emailService";
 import { recommendationEngine } from "./services/recommendationEngine";
 import { trustTrackingService } from "./services/trustTrackingService";
 import { modeTransitionService } from "./services/modeTransitionService";
@@ -87,34 +92,31 @@ const conversationSchema = z.object({
 
 // ── Notification generator ────────────────────────────────────────────────────
 async function generateNotifications(userId: number, db: any) {
-  const { notifications } = await import("@shared/schema");
-  const { eq, and, gte } = await import("drizzle-orm");
-
-  const todayDate = new Date();
+      const todayDate = new Date();
   todayDate.setHours(0, 0, 0, 0);
 
   const upsertNotification = async (type: string, title: string, body: string) => {
     const existing = await db
       .select()
-      .from(notifications)
+      .from(schema.notifications)
       .where(and(
-        eq(notifications.userId, userId),
-        eq(notifications.type, type),
-        gte(notifications.createdAt, todayDate)
+        eq(schema.notifications.userId, userId),
+        eq(schema.notifications.type, type),
+        gte(schema.notifications.createdAt, todayDate)
       ))
       .limit(1);
     if (existing.length === 0) {
-      await db.insert(notifications).values({ userId, type, title, body });
+      await db.insert(schema.notifications).values({ userId, type, title, body });
     }
   };
 
   try {
     // Welcome — once ever
-    const welcomeExists = await db.select().from(notifications)
-      .where(and(eq(notifications.userId, userId), eq(notifications.type, "welcome")))
+    const welcomeExists = await db.select().from(schema.notifications)
+      .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.type, "welcome")))
       .limit(1);
     if (welcomeExists.length === 0) {
-      await db.insert(notifications).values({
+      await db.insert(schema.notifications).values({
         userId, type: "welcome",
         title: "Welcome to SoulGuide",
         body: "Your faith companion is ready. Start with today's devotional or open a conversation.",
@@ -129,11 +131,10 @@ async function generateNotifications(userId: number, db: any) {
     );
 
     // Streak at risk — hasn't messaged today but has a streak
-    const { messages, conversations } = await import("@shared/schema");
-    const todayMsgs = await db.select({ id: messages.id })
-      .from(messages)
-      .innerJoin(conversations, eq(messages.conversationId, conversations.id))
-      .where(and(eq(conversations.userId, userId), gte(messages.createdAt, todayDate)))
+        const todayMsgs = await db.select({ id: schema.messages.id })
+      .from(schema.messages)
+      .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
+      .where(and(eq(schema.conversations.userId, userId), gte(schema.messages.createdAt, todayDate)))
       .limit(1);
 
     const stats = await storage.getUserStats(userId);
@@ -148,11 +149,11 @@ async function generateNotifications(userId: number, db: any) {
     // Milestones
     for (const milestone of [5, 10, 25, 50]) {
       if (stats.conversationCount >= milestone) {
-        const exists = await db.select().from(notifications)
-          .where(and(eq(notifications.userId, userId), eq(notifications.type, `milestone_${milestone}`)))
+        const exists = await db.select().from(schema.notifications)
+          .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.type, `milestone_${milestone}`)))
           .limit(1);
         if (exists.length === 0) {
-          await db.insert(notifications).values({
+          await db.insert(schema.notifications).values({
             userId, type: `milestone_${milestone}`,
             title: `${milestone} conversations`,
             body: `You've had ${milestone} conversations with your companion. That's real faithfulness.`,
@@ -201,14 +202,11 @@ export async function registerRoutes(
       }
 
       // Generate verification token
-      const crypto = await import("crypto");
       const verificationToken = crypto.randomBytes(32).toString("hex");
       const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       const passwordHash = await hashPassword(password);
-      const { db } = await import("./db");
-      const { users } = await import("@shared/schema");
-      const [user] = await db.insert(users).values({
+                  const [user] = await db.insert(schema.users).values({
         name,
         email,
         passwordHash,
@@ -222,7 +220,6 @@ export async function registerRoutes(
 
       // Send verification email only if feature is enabled (non-blocking)
       if (isEnabled("EMAIL_VERIFICATION")) {
-        const { sendVerificationEmail } = await import("./services/emailService");
         sendVerificationEmail(email, name, verificationToken).catch(err =>
           console.error("Failed to send verification email:", err)
         );
@@ -251,14 +248,10 @@ export async function registerRoutes(
       const token = req.query.token as string;
       if (!token) return res.status(400).send("Invalid verification link.");
 
-      const { db } = await import("./db");
-      const { users } = await import("@shared/schema");
-      const { eq, and, gt } = await import("drizzle-orm");
-
-      const [user] = await db.select().from(users).where(
+                        const [user] = await db.select().from(schema.users).where(
         and(
-          eq(users.verificationToken, token),
-          gt(users.verificationTokenExpiry, new Date())
+          eq(schema.users.verificationToken, token),
+          gt(schema.users.verificationTokenExpiry, new Date())
         )
       );
 
@@ -272,9 +265,9 @@ export async function registerRoutes(
         `);
       }
 
-      await db.update(users)
+      await db.update(schema.users)
         .set({ emailVerified: 1, verificationToken: null, verificationTokenExpiry: null })
-        .where(eq(users.id, user.id));
+        .where(eq(schema.users.id, user.id));
 
       // Set session so they're logged in after verifying
       (req.session as SessionWithUser).userId = user.id;
@@ -299,24 +292,16 @@ export async function registerRoutes(
     try {
       const session = req.session as SessionWithUser;
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
-
-      const { db } = await import("./db");
-      const { users } = await import("@shared/schema");
-      const { eq } = await import("drizzle-orm");
-      const crypto = await import("crypto");
-
-      const [user] = await db.select().from(users).where(eq(users.id, session.userId));
+      const [user] = await db.select().from(schema.users).where(eq(schema.users.id, session.userId));
       if (!user) return res.status(404).json({ error: "User not found" });
       if (user.emailVerified) return res.json({ success: true, message: "Already verified" });
 
       const verificationToken = crypto.randomBytes(32).toString("hex");
       const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      await db.update(users)
+      await db.update(schema.users)
         .set({ verificationToken, verificationTokenExpiry })
-        .where(eq(users.id, user.id));
-
-      const { sendVerificationEmail } = await import("./services/emailService");
+        .where(eq(schema.users.id, user.id));
       await sendVerificationEmail(user.email, user.name, verificationToken);
 
       res.json({ success: true });
@@ -584,17 +569,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid channel" });
       }
 
-      const { db } = await import("./db");
-      const { conversations } = await import("@shared/schema");
-      const { eq, and } = await import("drizzle-orm");
-
-      // Look for existing channel conversation
+                        // Look for existing channel conversation
       const existing = await db
         .select()
-        .from(conversations)
+        .from(schema.conversations)
         .where(and(
-          eq(conversations.userId, session.userId),
-          eq(conversations.channel, channel)
+          eq(schema.conversations.userId, session.userId),
+          eq(schema.conversations.channel, channel)
         ))
         .limit(1);
 
@@ -605,7 +586,7 @@ export async function registerRoutes(
       // Create new channel conversation
       const title = channel === "devotional" ? "Daily Devotional" : "Soul Check-In";
       const [created] = await db
-        .insert(conversations)
+        .insert(schema.conversations)
         .values({ userId: session.userId, title, channel })
         .returning();
 
@@ -993,14 +974,11 @@ Write the check-in opening.`;
 
         // Inject recent journal entries into context
         try {
-          const { db } = await import("./db");
-          const { prayerJournalEntries } = await import("@shared/schema");
-          const { eq, desc } = await import("drizzle-orm");
-          const recentEntries = await db
+                                        const recentEntries = await db
             .select()
-            .from(prayerJournalEntries)
-            .where(eq(prayerJournalEntries.userId, userId))
-            .orderBy(desc(prayerJournalEntries.createdAt))
+            .from(schema.prayerJournalEntries)
+            .where(eq(schema.prayerJournalEntries.userId, userId))
+            .orderBy(desc(schema.prayerJournalEntries.createdAt))
             .limit(5);
 
           if (recentEntries.length > 0) {
@@ -1041,7 +1019,6 @@ Use this to:
       // Inject mood-based RAG scriptures when user has shared their mood
       if (mood) {
         try {
-          const { getScripturesByFeeling, isValidFeeling } = await import("./services/feelingScriptureService");
           if (isValidFeeling(mood)) {
             const scriptureResult = getScripturesByFeeling(mood, undefined, 2);
             if (scriptureResult.selected_scriptures.length > 0) {
@@ -1539,16 +1516,13 @@ I'm here to listen whenever you're ready to talk.`;
       const devotional = await devotionalService.getTodaysDevotional(session.userId);
 
       // Also return which tasks the user has completed today
-      const { db } = await import("./db");
-      const { dailyDevotionalAssignments } = await import("@shared/schema");
-      const { eq, and } = await import("drizzle-orm");
-      const today = new Date().toISOString().split("T")[0];
+                        const today = new Date().toISOString().split("T")[0];
       const assignment = await db
         .select()
-        .from(dailyDevotionalAssignments)
+        .from(schema.dailyDevotionalAssignments)
         .where(and(
-          eq(dailyDevotionalAssignments.userId, session.userId),
-          eq(dailyDevotionalAssignments.assignedDate, today)
+          eq(schema.dailyDevotionalAssignments.userId, session.userId),
+          eq(schema.dailyDevotionalAssignments.assignedDate, today)
         ))
         .limit(1);
 
@@ -1694,7 +1668,7 @@ I'm here to listen whenever you're ready to talk.`;
 
       const user = await storage.getUser(session.userId);
       const persona = await storage.getPersona(session.userId);
-      const devotional = await devotionalService.getTodayDevotional(session.userId);
+      const devotional = await devotionalService.getTodaysDevotional(session.userId);
       const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || "your faith journey";
       const firstName = user?.name?.split(" ")[0] || "friend";
 
@@ -2372,10 +2346,7 @@ RULES:
 
       title = title.trim().replace(/["'.]+$/, "").slice(0, 60) || "Soul Care conversation";
 
-      const { db } = await import("./db");
-      const { conversations } = await import("@shared/schema");
-      const { eq } = await import("drizzle-orm");
-      await db.update(conversations).set({ title }).where(eq(conversations.id, convId));
+                        await db.update(schema.conversations).set({ title }).where(eq(schema.conversations.id, convId));
 
       res.json({ title });
     } catch (error) {
@@ -2390,14 +2361,11 @@ RULES:
     try {
       const session = req.session as SessionWithUser;
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
-      const { db } = await import("./db");
-      const { prayerJournalEntries } = await import("@shared/schema");
-      const { eq, desc } = await import("drizzle-orm");
-      const entries = await db
+                        const entries = await db
         .select()
-        .from(prayerJournalEntries)
-        .where(eq(prayerJournalEntries.userId, session.userId))
-        .orderBy(desc(prayerJournalEntries.createdAt));
+        .from(schema.prayerJournalEntries)
+        .where(eq(schema.prayerJournalEntries.userId, session.userId))
+        .orderBy(desc(schema.prayerJournalEntries.createdAt));
       res.json({ entries });
     } catch (error) {
       console.error("Journal fetch error:", error);
@@ -2411,10 +2379,8 @@ RULES:
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
       const { content, title, mood, tags, verseReference, verseText } = req.body;
       if (!content?.trim()) return res.status(400).json({ error: "Content is required" });
-      const { db } = await import("./db");
-      const { prayerJournalEntries } = await import("@shared/schema");
-      const [entry] = await db
-        .insert(prayerJournalEntries)
+                  const [entry] = await db
+        .insert(schema.prayerJournalEntries)
         .values({
           userId: session.userId,
           content: content.trim(),
@@ -2465,12 +2431,9 @@ RULES:
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
-      const { db } = await import("./db");
-      const { prayerJournalEntries } = await import("@shared/schema");
-      const { and, eq } = await import("drizzle-orm");
-      await db
-        .delete(prayerJournalEntries)
-        .where(and(eq(prayerJournalEntries.id, id), eq(prayerJournalEntries.userId, session.userId)));
+                        await db
+        .delete(schema.prayerJournalEntries)
+        .where(and(eq(schema.prayerJournalEntries.id, id), eq(schema.prayerJournalEntries.userId, session.userId)));
       res.status(204).send();
     } catch (error) {
       console.error("Journal delete error:", error);
@@ -2486,11 +2449,7 @@ RULES:
       const session = req.session as SessionWithUser;
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const { db } = await import("./db");
-      const { notifications, users } = await import("@shared/schema");
-      const { eq, desc, and } = await import("drizzle-orm");
-
-      const userId = session.userId;
+                        const userId = session.userId;
 
       // Generate fresh notifications based on user state
       await generateNotifications(userId, db);
@@ -2498,9 +2457,9 @@ RULES:
       // Fetch all notifications newest first
       const userNotifications = await db
         .select()
-        .from(notifications)
-        .where(eq(notifications.userId, userId))
-        .orderBy(desc(notifications.createdAt))
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, userId))
+        .orderBy(desc(schema.notifications.createdAt))
         .limit(20);
 
       const unreadCount = userNotifications.filter(n => n.isRead === 0).length;
@@ -2518,14 +2477,10 @@ RULES:
       const session = req.session as SessionWithUser;
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const { db } = await import("./db");
-      const { notifications } = await import("@shared/schema");
-      const { eq } = await import("drizzle-orm");
-
-      await db
-        .update(notifications)
+                        await db
+        .update(schema.notifications)
         .set({ isRead: 1 })
-        .where(eq(notifications.userId, session.userId));
+        .where(eq(schema.notifications.userId, session.userId));
 
       res.json({ success: true });
     } catch (error) {
@@ -2542,14 +2497,10 @@ RULES:
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
 
-      const { db } = await import("./db");
-      const { notifications } = await import("@shared/schema");
-      const { and, eq } = await import("drizzle-orm");
-
-      await db
-        .update(notifications)
+                        await db
+        .update(schema.notifications)
         .set({ isRead: 1 })
-        .where(and(eq(notifications.id, id), eq(notifications.userId, session.userId)));
+        .where(and(eq(schema.notifications.id, id), eq(schema.notifications.userId, session.userId)));
 
       res.json({ success: true });
     } catch (error) {
