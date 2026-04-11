@@ -267,7 +267,9 @@ export default function Bible() {
     if (parsed) {
       setSearchResults([]);
       setShowAllResults(false);
+      setSearchSheetOpen(false);
       navigate(`/bible?book=${encodeURIComponent(parsed.book)}&chapter=${parsed.chapter}&verse=${parsed.verse}`);
+      setShowReader(true);
     }
   };
 

@@ -299,22 +299,12 @@ export default function Devotion() {
       },
     },
     {
-      id: "gods-message",
-      title: "God's Message",
-      subtitle: devotional?.scriptureReference || "Today's verse for you",
-      icon: "book",
-      duration: "1 MIN",
-      isCompleted: completedTaskIds.has("gods-message"),
-      action: () => {
-        handleTaskComplete("gods-message");
-        setLocation(getVerseOfDayLink());
-      },
-    },
-    {
       id: "devotional-prayer",
       title: "Daily Devotional & Prayer",
-      subtitle: devotional?.title || "Reflection and connection with God",
-      icon: "message",
+      subtitle: devotional?.scriptureReference
+        ? `${devotional.scriptureReference} · ${devotional.title || "Reflection and prayer"}`
+        : "Reflection and connection with God",
+      icon: "book",
       duration: "5 MIN",
       isCompleted: completedTaskIds.has("devotional-prayer"),
       action: () => {
