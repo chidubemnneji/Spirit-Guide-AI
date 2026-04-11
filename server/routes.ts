@@ -2370,7 +2370,7 @@ RULES:
 
       const messages = await storage.getMessages(convId);
       const userMessages = messages.filter(m => m.role === "user").slice(0, 4);
-      if (userMessages.length < 2) {
+      if (userMessages.length < 1) {
         return res.json({ title: conversation.title, skipped: true });
       }
 

@@ -552,7 +552,7 @@ export default function Chat() {
                   setMessages((prev) => {
                     const updated = [...prev, assistantMessage];
                     const userCount = updated.filter(m => m.role === "user").length;
-                    if (userCount === 4 && conversationId) {
+                    if (userCount === 2 && conversationId) {
                       fetch(`/api/conversations/${conversationId}/title`, { method: "POST", credentials: "include" })
                         .then(r => r.json()).then(d => { if (d.title && !d.skipped) queryClient.invalidateQueries({ queryKey: ["/api/conversations"] }); }).catch(() => {});
                     }
