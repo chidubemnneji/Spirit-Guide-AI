@@ -23,6 +23,7 @@ import * as schema from "@shared/schema";
 import { eq, desc, and, gt, gte, asc, sql, inArray } from "drizzle-orm";
 import crypto from "crypto";
 import { sendVerificationEmail } from "./services/emailService";
+import { personaCache, userCache, journalCache, memoryCache } from "./cache";
 import { recommendationEngine } from "./services/recommendationEngine";
 import { trustTrackingService } from "./services/trustTrackingService";
 import { modeTransitionService } from "./services/modeTransitionService";
@@ -889,11 +890,23 @@ Write the check-in opening.`;
         return res.status(404).json({ error: "Conversation not found" });
       }
 
-      // Get user and persona for system prompt
+      // Get user and persona for system prompt — cached
       const session = req.session as SessionWithUser;
       const userId = session.userId;
-      const user = userId ? await storage.getUser(userId) : null;
-      const persona = await storage.getPersona(userId);
+
+      const userKey = `user:${userId}`;
+      let user = userCache.get(userKey);
+      if (!user && userId) {
+        user = await storage.getUser(userId);
+        if (user) userCache.set(userKey, user);
+      }
+
+      const personaKey = `persona:${userId}`;
+      let persona = personaCache.get(personaKey);
+      if (!persona && userId) {
+        persona = await storage.getPersona(userId);
+        if (persona) personaCache.set(personaKey, persona);
+      }
 
       // Save user message
       await storage.createMessage({
@@ -959,55 +972,68 @@ Write the check-in opening.`;
         console.error("Emotion detection error (continuing):", emotionError);
       }
 
-      // Get memory context if available
+      // Get memory context — cached to avoid DB hit on every message
       let memoryContext: string | undefined;
       if (userId) {
-        try {
-          const topics = await storage.getTopicsForUser(userId);
-          const moments = await storage.getRecentMoments(userId);
-          if (topics.length > 0 || moments.length > 0) {
-            memoryContext = memoryExtractor.formatMemoryForPrompt(topics, moments);
+        const memKey = `memory:${userId}`;
+        const cachedMem = memoryCache.get(memKey);
+        if (cachedMem) {
+          memoryContext = cachedMem;
+        } else {
+          try {
+            const topics = await storage.getTopicsForUser(userId);
+            const moments = await storage.getRecentMoments(userId);
+            if (topics.length > 0 || moments.length > 0) {
+              memoryContext = memoryExtractor.formatMemoryForPrompt(topics, moments);
+            }
+          } catch (memoryError) {
+            console.error("Memory context error (continuing):", memoryError);
           }
-        } catch (memoryError) {
-          console.error("Memory context error (continuing):", memoryError);
-        }
 
-        // Inject recent journal entries into context
-        try {
-                                        const recentEntries = await db
-            .select()
-            .from(schema.prayerJournalEntries)
-            .where(eq(schema.prayerJournalEntries.userId, userId))
-            .orderBy(desc(schema.prayerJournalEntries.createdAt))
-            .limit(5);
+          // Inject recent journal entries — cached
+          try {
+            const journalKey = `journal:${userId}`;
+            let recentEntries = journalCache.get(journalKey);
+            if (!recentEntries) {
+              recentEntries = await db
+                .select()
+                .from(schema.prayerJournalEntries)
+                .where(eq(schema.prayerJournalEntries.userId, userId))
+                .orderBy(desc(schema.prayerJournalEntries.createdAt))
+                .limit(5);
+              journalCache.set(journalKey, recentEntries);
+            }
 
-          if (recentEntries.length > 0) {
-            const journalContext = recentEntries.map((e) => {
-              const daysAgo = Math.floor(
-                (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-              );
-              const when = daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
-              const moodNote = e.mood ? ` (feeling ${e.mood})` : "";
-              return `- ${when}${moodNote}: "${e.content.slice(0, 200)}${e.content.length > 200 ? "..." : ""}"`;
-            }).join("\n");
+            if (recentEntries.length > 0) {
+              const journalContext = recentEntries.map((e: any) => {
+                const daysAgo = Math.floor(
+                  (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+                );
+                const when = daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+                const moodNote = e.mood ? ` (feeling ${e.mood})` : "";
+                return `- ${when}${moodNote}: "${e.content.slice(0, 200)}${e.content.length > 200 ? "..." : ""}"`;
+              }).join("\n");
 
-            memoryContext = (memoryContext || "") + `
+              memoryContext = (memoryContext || "") + `
 
 ═══════════════════════════════════════════════════════════
 RECENT JOURNAL ENTRIES
 ═══════════════════════════════════════════════════════════
-The user has written these private reflections recently. Reference them naturally — don't quote directly, but let them inform how you respond. If they've expressed something in their journal, you don't need them to repeat it.
+The user has written these private reflections recently. Reference them naturally — don't quote directly, but let them inform how you respond.
 
 ${journalContext}
 
 Use this to:
 - Pick up where their heart already is
-- Notice patterns across entries (recurring doubts, emotions, themes)
+- Notice patterns across entries
 - Reflect growth or acknowledge struggle you've seen over time
 `;
+            }
+          } catch (journalError) {
+            console.error("Journal context error (continuing):", journalError);
           }
-        } catch (journalError) {
-          console.error("Journal context error (continuing):", journalError);
+
+          if (memoryContext) memoryCache.set(memKey, memoryContext);
         }
       }
 
@@ -2301,6 +2327,12 @@ RULES:
       });
 
       res.json({ success: true });
+      // Invalidate persona and memory caches
+      const uid = (req.session as SessionWithUser).userId;
+      if (uid) {
+        personaCache.invalidate(`persona:${uid}`);
+        memoryCache.invalidate(`memory:${uid}`);
+      }
     } catch (error) {
       console.error("Persona update error:", error);
       res.status(500).json({ error: "Failed to update journey" });
@@ -2393,6 +2425,10 @@ RULES:
         .returning();
 
       res.status(201).json({ entry });
+
+      // Invalidate caches so next chat gets fresh journal data
+      journalCache.invalidate(`journal:${session.userId}`);
+      memoryCache.invalidate(`memory:${session.userId}`);
 
       // Async: extract insights from journal entry to enrich memory
       setImmediate(async () => {
