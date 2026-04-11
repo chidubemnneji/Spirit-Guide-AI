@@ -105,6 +105,11 @@ app.use((req, res, next) => {
       )
     `);
     log("prayer_journal_entries table ready", "db");
+
+    // Journal indexes
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS journal_user_id_idx ON prayer_journal_entries(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS journal_user_created_idx ON prayer_journal_entries(user_id, created_at DESC)`);
+    log("journal indexes ready", "db");
   } catch (err) {
     console.error("[db] migration error:", err);
   }

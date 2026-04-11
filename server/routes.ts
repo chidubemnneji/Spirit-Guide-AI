@@ -1539,16 +1539,22 @@ I'm here to listen whenever you're ready to talk.`;
       if (!session.userId) {
         return res.status(401).json({ success: false, error: "Not authenticated" });
       }
-      const devotional = await devotionalService.getTodaysDevotional(session.userId);
+      const today = new Date().toISOString().slice(0, 10);
+      const devKey = `devotional:${session.userId}:${today}`;
+      let devotional = personaCache.get(devKey); // reuse cache, devotional is persona-specific
+      if (!devotional) {
+        devotional = await devotionalService.getTodaysDevotional(session.userId);
+        if (devotional) personaCache.set(devKey, devotional);
+      }
 
       // Also return which tasks the user has completed today
-                        const today = new Date().toISOString().split("T")[0];
+      const todayDate = new Date().toISOString().split("T")[0];
       const assignment = await db
         .select()
         .from(schema.dailyDevotionalAssignments)
         .where(and(
           eq(schema.dailyDevotionalAssignments.userId, session.userId),
-          eq(schema.dailyDevotionalAssignments.assignedDate, today)
+          eq(schema.dailyDevotionalAssignments.assignedDate, todayDate)
         ))
         .limit(1);
 
@@ -1692,8 +1698,10 @@ I'm here to listen whenever you're ready to talk.`;
         return res.status(400).json({ error: "Duration must be 2, 5, 10, or 15 minutes" });
       }
 
-      const user = await storage.getUser(session.userId);
-      const persona = await storage.getPersona(session.userId);
+      const [user, persona] = await Promise.all([
+        storage.getUser(session.userId!),
+        storage.getPersona(session.userId!),
+      ]);
       const devotional = await devotionalService.getTodaysDevotional(session.userId);
       const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || "your faith journey";
       const firstName = user?.name?.split(" ")[0] || "friend";
@@ -1750,8 +1758,10 @@ Write a ${duration}-minute devotional meditation.`;
       const session = req.session as SessionWithUser;
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const user = await storage.getUser(session.userId);
-      const persona = await storage.getPersona(session.userId);
+      const [user, persona] = await Promise.all([
+        storage.getUser(session.userId!),
+        storage.getPersona(session.userId!),
+      ]);
       const struggle = persona?.primaryStruggle?.replace(/_/g, " ") || "your faith journey";
       const firstName = user?.name?.split(" ")[0] || "friend";
 

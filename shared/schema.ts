@@ -436,7 +436,10 @@ export const prayerJournalEntries = pgTable("prayer_journal_entries", {
   verseText: text("verse_text"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
-});
+}, (t) => ({
+  userIdIdx: index("journal_user_id_idx").on(t.userId),
+  userCreatedIdx: index("journal_user_created_idx").on(t.userId, t.createdAt),
+}));
 
 export const insertPrayerJournalSchema = createInsertSchema(prayerJournalEntries).omit({
   id: true,
