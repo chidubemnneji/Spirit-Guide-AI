@@ -1,10 +1,21 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "SoulGuide <noreply@soulguide.app>";
 const APP_URL = process.env.APP_URL || "https://spirit-guide-ai-production.up.railway.app";
 
-export async function sendVerificationEmail(email: string, name: string, token: string) {
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    console.warn("[email] RESEND_API_KEY not set — email sending disabled");
+    return null;
+  }
+  return new Resend(key);
+}
+
+export async function sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
   const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${token}`;
   const firstName = name.split(" ")[0];
 
@@ -77,7 +88,10 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   });
 }
 
-export async function sendPasswordResetEmail(email: string, name: string, token: string) {
+export async function sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;
   const firstName = name.split(" ")[0];
 
