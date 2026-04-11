@@ -14,6 +14,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function getSystemTheme(): Theme {
   if (typeof window === "undefined") return "light";
+  // Check URL param first — set by iOS native app to match system theme
+  const urlTheme = new URLSearchParams(window.location.search).get("theme");
+  if (urlTheme === "dark" || urlTheme === "light") return urlTheme;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
