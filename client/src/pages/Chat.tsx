@@ -970,7 +970,7 @@ function parseContentWithVerseLinks(
     parts.push(
       <button
         key={`${match.index}-${fullMatch}`}
-        onClick={() => navigate(`/bible?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verseParam}`)}
+        onClick={() => navigate(`/bible?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verseParam}&t=${Date.now()}`)}
         className={cn(
           "underline underline-offset-2 font-medium hover:opacity-80 transition-opacity",
           isUser ? "text-primary-foreground" : "text-primary"

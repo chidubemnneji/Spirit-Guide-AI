@@ -174,6 +174,15 @@ export default function Bible() {
     }
   }, [searchString]);
 
+  // If URL has book param, always show reader immediately (don't wait for books to load)
+  useEffect(() => {
+    if (!searchString) return;
+    const params = new URLSearchParams(searchString);
+    if (params.get("book")) {
+      setShowReader(true);
+    }
+  }, [searchString]);
+
   // Handle deep linking from chat
   useEffect(() => {
     if (urlProcessedRef.current || !searchString || !currentVersion || books.length === 0) return;
