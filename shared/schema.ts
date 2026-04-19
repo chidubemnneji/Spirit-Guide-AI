@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   emailVerified: integer("email_verified").default(0),
   verificationToken: varchar("verification_token", { length: 255 }),
   verificationTokenExpiry: timestamp("verification_token_expiry"),
+  googleId: varchar("google_id", { length: 255 }),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   lastActive: timestamp("last_active").default(sql`CURRENT_TIMESTAMP`),
 });

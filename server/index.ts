@@ -110,6 +110,8 @@ app.use((req, res, next) => {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS journal_user_id_idx ON prayer_journal_entries(user_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS journal_user_created_idx ON prayer_journal_entries(user_id, created_at DESC)`);
     log("journal indexes ready", "db");
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)`);
+    log("google_id column ready", "db");
   } catch (err) {
     console.error("[db] migration error:", err);
   }
@@ -125,6 +127,8 @@ app.use((req, res, next) => {
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === "soulguide-dev-secret") {
     console.warn("⚠️  WARNING: Using default SESSION_SECRET. Set a secure secret for production.");
   }
+  const { setupGoogleAuth } = await import("./services/googleAuth");
+  setupGoogleAuth(app);
   await registerRoutes(httpServer, app);
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

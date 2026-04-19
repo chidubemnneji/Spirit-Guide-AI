@@ -86,6 +86,7 @@ export default function Bible() {
 
   const [bookSheetOpen, setBookSheetOpen] = useState(false);
   const [chapterSheetOpen, setChapterSheetOpen] = useState(false);
+  const [searchSheetOpen, setSearchSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [targetVerse, setTargetVerse] = useState<string | null>(null);
   const [highlightedVerses, setHighlightedVerses] = useState<Set<string>>(new Set());

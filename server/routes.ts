@@ -55,7 +55,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-interface SessionWithUser extends Session {
+export interface SessionWithUser extends Session {
   userId?: number;
 }
 
