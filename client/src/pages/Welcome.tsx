@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { BookOpen, Sparkles, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { useQuery } from "@tanstack/react-query";
 
 const features = [
   { icon: MessageCircle, label: "AI companion", sub: "Listens without judgment" },
@@ -25,6 +26,9 @@ function GoogleIcon() {
 export default function Welcome() {
   const [, setLocation] = useLocation();
   const { setPhase, resetOnboarding } = useOnboarding();
+
+  const { data: flagsData } = useQuery<Record<string, boolean>>({ queryKey: ["/api/flags"] });
+  const googleEnabled = flagsData?.GOOGLE_AUTH === true;
 
   const handleBegin = () => {
     resetOnboarding();
@@ -93,23 +97,25 @@ export default function Welcome() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
         >
-          {/* Google Sign In */}
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={handleGoogle}
-            className="w-full text-base rounded-2xl h-14 border-border flex items-center gap-3 font-medium"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </Button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 py-1">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted-foreground">or</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
+          {/* Google Sign In — only when flag enabled */}
+          {googleEnabled && (
+            <>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleGoogle}
+                className="w-full text-base rounded-2xl h-14 border-border flex items-center gap-3 font-medium"
+              >
+                <GoogleIcon />
+                Continue with Google
+              </Button>
+              <div className="flex items-center gap-3 py-1">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            </>
+          )}
 
           <Button
             size="lg"

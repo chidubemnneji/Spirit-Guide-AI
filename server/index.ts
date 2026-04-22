@@ -4,6 +4,7 @@ import MemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { isEnabled } from "./flags";
 const app = express();
 app.set('trust proxy', 1);
 const httpServer = createServer(app);
@@ -128,7 +129,10 @@ app.use((req, res, next) => {
     console.warn("⚠️  WARNING: Using default SESSION_SECRET. Set a secure secret for production.");
   }
   const { setupGoogleAuth } = await import("./services/googleAuth");
-  setupGoogleAuth(app);
+  if (isEnabled("GOOGLE_AUTH")) {
+    setupGoogleAuth(app);
+    log("Google auth enabled", "auth");
+  }
   await registerRoutes(httpServer, app);
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

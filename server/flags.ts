@@ -7,6 +7,7 @@ const defaults: Record<string, boolean> = {
   AMBIENT_SOUNDS: false,
   TOPIC_DEVOTIONALS: false,
   EMAIL_VERIFICATION: false,
+  GOOGLE_AUTH: false,
 };
 
 function loadFlags(): Record<string, boolean> {
