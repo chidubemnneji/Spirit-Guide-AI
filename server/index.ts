@@ -113,6 +113,31 @@ app.use((req, res, next) => {
     log("journal indexes ready", "db");
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)`);
     log("google_id column ready", "db");
+
+    // Community tables
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS community_posts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(20) NOT NULL,
+        content TEXT NOT NULL,
+        anon_label VARCHAR(100) NOT NULL,
+        prayer_count INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS community_prayers (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        UNIQUE(post_id, user_id)
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS community_posts_user_id_idx ON community_posts(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS community_posts_created_at_idx ON community_posts(created_at DESC)`);
+    log("community tables ready", "db");
   } catch (err) {
     console.error("[db] migration error:", err);
   }

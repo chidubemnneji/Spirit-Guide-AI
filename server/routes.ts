@@ -2583,6 +2583,151 @@ RULES:
     }
   });
 
+  // ─── COMMUNITY ────────────────────────────────────────────────────────────
+
+  // GET /api/community — fetch latest 50 posts
+  app.get("/api/community", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      // Check feature flag
+      const user = await storage.getUser(session.userId);
+      const enabled = await isEnabledForUser("COMMUNITY_SECTION", user ?? undefined);
+      if (!enabled) return res.status(403).json({ error: "feature_disabled" });
+
+      const posts = await db
+        .select({
+          id: schema.communityPosts.id,
+          type: schema.communityPosts.type,
+          content: schema.communityPosts.content,
+          anonLabel: schema.communityPosts.anonLabel,
+          prayerCount: schema.communityPosts.prayerCount,
+          createdAt: schema.communityPosts.createdAt,
+        })
+        .from(schema.communityPosts)
+        .orderBy(desc(schema.communityPosts.createdAt))
+        .limit(50);
+
+      // Check which posts the current user has prayed for
+      const prayedRows = await db
+        .select({ postId: schema.communityPrayers.postId })
+        .from(schema.communityPrayers)
+        .where(eq(schema.communityPrayers.userId, session.userId));
+
+      const prayedSet = new Set(prayedRows.map(r => r.postId));
+
+      res.json({
+        posts: posts.map(p => ({ ...p, hasPrayed: prayedSet.has(p.id) }))
+      });
+    } catch (err) {
+      console.error("[community] GET error:", err);
+      res.status(500).json({ error: "Failed to fetch community posts" });
+    }
+  });
+
+  // POST /api/community — create a new post
+  app.post("/api/community", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const user = await storage.getUser(session.userId);
+      const enabled = await isEnabledForUser("COMMUNITY_SECTION", user ?? undefined);
+      if (!enabled) return res.status(403).json({ error: "feature_disabled" });
+
+      const { type, content } = req.body;
+      if (!type || !["prayer", "reflection"].includes(type)) {
+        return res.status(400).json({ error: "type must be prayer or reflection" });
+      }
+      if (!content?.trim() || content.trim().length > 500) {
+        return res.status(400).json({ error: "content required, max 500 chars" });
+      }
+
+      // Build anonymous label from persona struggle + rough location
+      const persona = await storage.getPersona(session.userId);
+      const struggle = persona?.primaryStruggle?.replace(/_/g, " ") ?? "life";
+      const labels = [
+        `Someone wrestling with ${struggle}`,
+        `A soul seeking peace`,
+        `Someone on the journey`,
+        `A heart finding its way`,
+        `Someone leaning into faith`,
+      ];
+      const anonLabel = labels[session.userId % labels.length];
+
+      const [post] = await db
+        .insert(schema.communityPosts)
+        .values({
+          userId: session.userId,
+          type,
+          content: content.trim(),
+          anonLabel,
+          prayerCount: 0,
+        })
+        .returning();
+
+      res.status(201).json({ post: { ...post, hasPrayed: false } });
+    } catch (err) {
+      console.error("[community] POST error:", err);
+      res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  // POST /api/community/:id/pray — toggle prayer on a post
+  app.post("/api/community/:id/pray", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const postId = parseInt(req.params.id);
+      if (isNaN(postId)) return res.status(400).json({ error: "Invalid post ID" });
+
+      // Check if already prayed
+      const existing = await db
+        .select()
+        .from(schema.communityPrayers)
+        .where(
+          and(
+            eq(schema.communityPrayers.postId, postId),
+            eq(schema.communityPrayers.userId, session.userId)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Un-pray
+        await db
+          .delete(schema.communityPrayers)
+          .where(
+            and(
+              eq(schema.communityPrayers.postId, postId),
+              eq(schema.communityPrayers.userId, session.userId)
+            )
+          );
+        await db
+          .update(schema.communityPosts)
+          .set({ prayerCount: sql`GREATEST(prayer_count - 1, 0)` })
+          .where(eq(schema.communityPosts.id, postId));
+        return res.json({ hasPrayed: false });
+      } else {
+        // Pray
+        await db.insert(schema.communityPrayers).values({
+          postId,
+          userId: session.userId,
+        });
+        await db
+          .update(schema.communityPosts)
+          .set({ prayerCount: sql`prayer_count + 1` })
+          .where(eq(schema.communityPosts.id, postId));
+        return res.json({ hasPrayed: true });
+      }
+    } catch (err) {
+      console.error("[community] pray error:", err);
+      res.status(500).json({ error: "Failed to toggle prayer" });
+    }
+  });
+
   registerVoiceRoutes(app);
 
   return httpServer;

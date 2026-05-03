@@ -463,3 +463,34 @@ export const notifications = pgTable("notifications", {
 });
 
 export type Notification = typeof notifications.$inferSelect;
+
+// =============================================================
+// Community — Prayer Wall & Devotional Reflections
+// =============================================================
+
+export const communityPosts = pgTable("community_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: varchar("type", { length: 20 }).notNull(), // "prayer" | "reflection"
+  content: text("content").notNull(),
+  // Anonymous display name — never reveals real identity
+  // e.g. "A soul in London", "Someone wrestling with doubt"
+  anonLabel: varchar("anon_label", { length: 100 }).notNull(),
+  prayerCount: integer("prayer_count").default(0).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (t) => ({
+  userIdIdx: index("community_posts_user_id_idx").on(t.userId),
+  createdAtIdx: index("community_posts_created_at_idx").on(t.createdAt),
+}));
+
+export const communityPrayers = pgTable("community_prayers", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => communityPosts.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (t) => ({
+  uniquePrayer: index("community_prayers_unique_idx").on(t.postId, t.userId),
+}));
+
+export type CommunityPost = typeof communityPosts.$inferSelect;
+export type CommunityPrayer = typeof communityPrayers.$inferSelect;
