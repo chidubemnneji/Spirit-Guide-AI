@@ -1183,6 +1183,7 @@ I'm here to listen whenever you're ready to talk.`;
             country,
             primaryStruggle: persona?.primaryStruggle ?? undefined,
             messageCount,
+            isBetaUser: !!((user as any).isBetaUser),
           } : undefined
         );
 
@@ -1869,7 +1870,10 @@ Write an evening prayer to help them release the day and rest in God's peace.`;
       const session = req.session as SessionWithUser;
       const user = session.userId ? await storage.getUser(session.userId) : undefined;
       const { getAllFlagsForUser } = await import("./flags");
-      const allFlags = await getAllFlagsForUser(user ?? undefined);
+      const allFlags = await getAllFlagsForUser(user ? {
+        id: user.id, email: user.email, name: user.name,
+        isBetaUser: !!((user as any).isBetaUser),
+      } : undefined);
       res.json(allFlags);
     } catch {
       res.json(flags); // fallback to sync defaults
@@ -2583,6 +2587,51 @@ RULES:
     }
   });
 
+  // ─── BETA ACCESS ──────────────────────────────────────────────────────────
+
+  // POST /api/admin/beta — grant or revoke beta access for a user by email
+  // Protected: only works when ADMIN_SECRET env var matches the provided secret
+  app.post("/api/admin/beta", async (req: Request, res: Response) => {
+    try {
+      const { email, grant, secret } = req.body;
+      const adminSecret = process.env.ADMIN_SECRET;
+
+      if (!adminSecret || secret !== adminSecret) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      if (!email) return res.status(400).json({ error: "email required" });
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      await db
+        .update(schema.users)
+        .set({ isBetaUser: grant ? 1 : 0 } as any)
+        .where(eq(schema.users.id, user.id));
+
+      // Invalidate user cache so next request picks up the change
+      userCache.invalidate(`user:${user.id}`);
+
+      console.log(`[beta] ${grant ? "granted" : "revoked"} beta access for ${email}`);
+      res.json({ ok: true, email, isBetaUser: !!grant });
+    } catch (err) {
+      console.error("[beta] error:", err);
+      res.status(500).json({ error: "Failed to update beta access" });
+    }
+  });
+
+  // GET /api/me/beta — check current user's beta status
+  app.get("/api/me/beta", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+      const user = await storage.getUser(session.userId);
+      res.json({ isBetaUser: !!((user as any)?.isBetaUser) });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to check beta status" });
+    }
+  });
+
   // ─── COMMUNITY ────────────────────────────────────────────────────────────
 
   // GET /api/community — fetch latest 50 posts
@@ -2593,7 +2642,9 @@ RULES:
 
       // Check feature flag
       const user = await storage.getUser(session.userId);
-      const enabled = await isEnabledForUser("COMMUNITY_SECTION", user ?? undefined);
+      const enabled = await isEnabledForUser("COMMUNITY_SECTION", user
+        ? { ...user, isBetaUser: !!((user as any).isBetaUser) }
+        : undefined);
       if (!enabled) return res.status(403).json({ error: "feature_disabled" });
 
       const posts = await db
@@ -2633,7 +2684,9 @@ RULES:
       if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
 
       const user = await storage.getUser(session.userId);
-      const enabled = await isEnabledForUser("COMMUNITY_SECTION", user ?? undefined);
+      const enabled = await isEnabledForUser("COMMUNITY_SECTION", user
+        ? { ...user, isBetaUser: !!((user as any).isBetaUser) }
+        : undefined);
       if (!enabled) return res.status(403).json({ error: "feature_disabled" });
 
       const { type, content } = req.body;

@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   verificationToken: varchar("verification_token", { length: 255 }),
   verificationTokenExpiry: timestamp("verification_token_expiry"),
   googleId: varchar("google_id", { length: 255 }),
+  isBetaUser: integer("is_beta_user").default(0),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   lastActive: timestamp("last_active").default(sql`CURRENT_TIMESTAMP`),
 });

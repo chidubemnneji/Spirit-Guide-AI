@@ -113,6 +113,8 @@ app.use((req, res, next) => {
     log("journal indexes ready", "db");
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)`);
     log("google_id column ready", "db");
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_beta_user INTEGER DEFAULT 0`);
+    log("is_beta_user column ready", "db");
 
     // Community tables
     await db.execute(sql`

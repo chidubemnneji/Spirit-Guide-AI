@@ -45,7 +45,8 @@ export function buildContext(user: {
   country?: string;
   primaryStruggle?: string;
   lifeStage?: string;
-  messageCount?: number; // total messages sent — enables engagement-based targeting
+  messageCount?: number;
+  isBetaUser?: boolean;
 }): ld.LDContext {
   return {
     kind: 'user',
@@ -62,6 +63,8 @@ export function buildContext(user: {
       hasCountry: !!user.country,
       messageCount: user.messageCount ?? 0,
       isHighEngagement: (user.messageCount ?? 0) >= 50,
+      // Beta access — used to gate community-section in LD segments
+      isBetaUser: user.isBetaUser ?? false,
     },
   };
 }

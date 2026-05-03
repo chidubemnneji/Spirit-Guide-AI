@@ -18,12 +18,12 @@ const FLAGS = [
 ];
 
 const SEED_CONTEXTS = [
-  { kind: 'user', key: 'seed-uk-1', email: 'seed-uk@example.com', name: 'Seed UK', country: 'United Kingdom', custom: { accountAge: 3, primaryStruggle: 'life_feeling_overwhelming', hasCountry: true, messageCount: 4, isHighEngagement: false } },
-  { kind: 'user', key: 'seed-us-1', email: 'seed-us@example.com', name: 'Seed US', country: 'United States', custom: { accountAge: 45, primaryStruggle: 'grief_and_loss', hasCountry: true, messageCount: 73, isHighEngagement: true } },
+  { kind: 'user', key: 'seed-uk-1', email: 'seed-uk@example.com', name: 'Seed UK', country: 'United Kingdom', custom: { accountAge: 3, primaryStruggle: 'life_feeling_overwhelming', hasCountry: true, messageCount: 4, isHighEngagement: false, isBetaUser: true } },
+  { kind: 'user', key: 'seed-us-1', email: 'seed-us@example.com', name: 'Seed US', country: 'United States', custom: { accountAge: 45, primaryStruggle: 'grief_and_loss', hasCountry: true, messageCount: 73, isHighEngagement: true, isBetaUser: false } },
   { kind: 'user', key: 'seed-au-1', email: 'seed-au@example.com', name: 'Seed AU', country: 'Australia', custom: { accountAge: 20, primaryStruggle: 'faith_and_doubt', hasCountry: true, messageCount: 12, isHighEngagement: false } },
   { kind: 'user', key: 'seed-ie-1', email: 'seed-ie@example.com', name: 'Seed IE', country: 'Ireland', custom: { accountAge: 90, primaryStruggle: 'relationship_and_loneliness', hasCountry: true } },
   { kind: 'user', key: 'seed-ng-1', email: 'seed-ng@example.com', name: 'Seed NG', country: 'Nigeria', custom: { accountAge: 1, primaryStruggle: 'purpose_and_identity', hasCountry: true } },
-  { kind: 'user', key: 'seed-anon', anonymous: true, custom: { accountAge: 0, primaryStruggle: null, hasCountry: false } },
+  { kind: 'user', key: 'seed-anon', anonymous: true, custom: { accountAge: 0, primaryStruggle: null, hasCountry: false, isBetaUser: false } },
 ];
 
 async function seed() {

@@ -47,7 +47,7 @@ export function isEnabled(flag: string): boolean {
 // Pass the user object if you have it — enables per-user targeting in LD
 export async function isEnabledForUser(
   ldFlag: string,
-  user?: { id: number | string; email?: string; name?: string; createdAt?: string | Date; country?: string; primaryStruggle?: string; messageCount?: number }
+  user?: { id: number | string; email?: string; name?: string; createdAt?: string | Date; country?: string; primaryStruggle?: string; messageCount?: number; isBetaUser?: boolean }
 ): Promise<boolean> {
   const context: LDContext = user ? buildContext(user) : ANONYMOUS_CONTEXT;
 
@@ -75,7 +75,7 @@ export async function isEnabledForUser(
 // ── Get AI model for a specific user ─────────────────────────────────────
 // Core use case: A/B test Sonnet vs Haiku per user
 export async function getAIModel(
-  user?: { id: number | string; email?: string; name?: string; createdAt?: string | Date; country?: string; primaryStruggle?: string; messageCount?: number }
+  user?: { id: number | string; email?: string; name?: string; createdAt?: string | Date; country?: string; primaryStruggle?: string; messageCount?: number; isBetaUser?: boolean }
 ): Promise<'claude-sonnet-4-20250514' | 'claude-haiku-4-5-20251001'> {
   const context: LDContext = user ? buildContext(user) : ANONYMOUS_CONTEXT;
 
@@ -91,7 +91,7 @@ export async function getAIModel(
 
 // ── Get all flags for /api/flags endpoint ─────────────────────────────────
 export async function getAllFlagsForUser(
-  user?: { id: number | string; email?: string; name?: string; country?: string; primaryStruggle?: string }
+  user?: { id: number | string; email?: string; name?: string; country?: string; primaryStruggle?: string; isBetaUser?: boolean }
 ): Promise<Record<string, boolean | string>> {
   const context: LDContext = user ? buildContext(user) : ANONYMOUS_CONTEXT;
 
