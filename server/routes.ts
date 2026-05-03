@@ -2589,34 +2589,25 @@ RULES:
 
   // ─── BETA ACCESS ──────────────────────────────────────────────────────────
 
-  // POST /api/admin/beta — grant or revoke beta access for a user by email
-  // Protected: only works when ADMIN_SECRET env var matches the provided secret
-  app.post("/api/admin/beta", async (req: Request, res: Response) => {
+  // POST /api/me/beta/join — self-serve beta signup, instant access
+  app.post("/api/me/beta/join", async (req: Request, res: Response) => {
     try {
-      const { email, grant, secret } = req.body;
-      const adminSecret = process.env.ADMIN_SECRET;
-
-      if (!adminSecret || secret !== adminSecret) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      if (!email) return res.status(400).json({ error: "email required" });
-
-      const user = await storage.getUserByEmail(email);
-      if (!user) return res.status(404).json({ error: "User not found" });
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
 
       await db
         .update(schema.users)
-        .set({ isBetaUser: grant ? 1 : 0 } as any)
-        .where(eq(schema.users.id, user.id));
+        .set({ isBetaUser: 1 } as any)
+        .where(eq(schema.users.id, session.userId));
 
-      // Invalidate user cache so next request picks up the change
-      userCache.invalidate(`user:${user.id}`);
+      // Invalidate cache so next request picks up the change
+      userCache.invalidate(`user:${session.userId}`);
 
-      console.log(`[beta] ${grant ? "granted" : "revoked"} beta access for ${email}`);
-      res.json({ ok: true, email, isBetaUser: !!grant });
+      console.log(`[beta] user ${session.userId} joined beta`);
+      res.json({ ok: true, isBetaUser: true });
     } catch (err) {
-      console.error("[beta] error:", err);
-      res.status(500).json({ error: "Failed to update beta access" });
+      console.error("[beta] join error:", err);
+      res.status(500).json({ error: "Failed to join beta" });
     }
   });
 
@@ -2629,6 +2620,30 @@ RULES:
       res.json({ isBetaUser: !!((user as any)?.isBetaUser) });
     } catch (err) {
       res.status(500).json({ error: "Failed to check beta status" });
+    }
+  });
+
+  // POST /api/me/beta/request — self-service: user requests or leaves beta
+  app.post("/api/me/beta/request", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { request } = req.body; // true = join, false = leave
+      const grant = !!request;
+
+      await db
+        .update(schema.users)
+        .set({ isBetaUser: grant ? 1 : 0 } as any)
+        .where(eq(schema.users.id, session.userId));
+
+      userCache.invalidate(`user:${session.userId}`);
+
+      console.log(`[beta] user ${session.userId} ${grant ? "joined" : "left"} beta`);
+      res.json({ ok: true, isBetaUser: grant });
+    } catch (err) {
+      console.error("[beta] self-service error:", err);
+      res.status(500).json({ error: "Failed to update beta status" });
     }
   });
 

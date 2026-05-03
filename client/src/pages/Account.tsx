@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   LogOut, ChevronRight, Flame, BookOpen,
   Bell, Moon, Sun, X, Loader2,
-  MessageCircle, Zap, Cloud, Heart, HelpCircle, Sprout,
+  MessageCircle, Zap, Cloud, Heart, HelpCircle, Sprout, FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@shared/schema";
@@ -311,6 +311,28 @@ export default function Account() {
   const { toast } = useToast();
   const [editJourneyOpen, setEditJourneyOpen] = useState(false);
   const [showArchetypeInfo, setShowArchetypeInfo] = useState(false);
+  const [betaLoading, setBetaLoading] = useState(false);
+
+  const { data: betaData, refetch: refetchBeta } = useQuery<{ isBetaUser: boolean }>({
+    queryKey: ["/api/me/beta"],
+    enabled: !!user,
+  });
+
+  const isBetaUser = betaData?.isBetaUser ?? false;
+
+  async function toggleBeta() {
+    setBetaLoading(true);
+    try {
+      // Optimistic update
+      const next = !isBetaUser;
+      await apiRequest("POST", "/api/me/beta/request", { request: next });
+      await refetchBeta();
+    } catch {
+      // silently fail — state stays as-is
+    } finally {
+      setBetaLoading(false);
+    }
+  }
 
   const { data: stats } = useQuery<UserStats>({
     queryKey: ["/api/user/stats"],
@@ -510,6 +532,20 @@ export default function Account() {
                 </div>
               }
               testId="button-dark-mode"
+            />
+            <PrefRow
+              icon={FlaskConical}
+              label="Beta access"
+              value={isBetaUser ? "Joined" : undefined}
+              right={
+                <div className="flex items-center gap-2">
+                  {betaLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    : <Toggle on={isBetaUser} onToggle={toggleBeta} />
+                  }
+                </div>
+              }
+              testId="button-beta-access"
             />
           </div>
         </motion.div>
