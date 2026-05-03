@@ -15,6 +15,7 @@ import { devotionalService } from "./services/devotionalService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
 import { flags, isEnabled, isEnabledForUser, getAIModel } from "./flags";
+import { getCountryFromRequest } from "./middleware/geoContext";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
 import { memoryExtractor } from "./services/memoryExtractor";
@@ -1166,9 +1167,18 @@ I'm here to listen whenever you're ready to talk.`;
       try {
         let usedProvider: "claude" | "openai" = "claude";
 
+        // Resolve client country for LaunchDarkly geo-targeting
+        const country = getCountryFromRequest(req);
+
         // LaunchDarkly: resolve which model this user gets
-        // "sonnet" = richer responses, "haiku" = faster + cheaper
-        const aiModel = await getAIModel(user ?? undefined);
+        // Targeting rules in LD can segment by country, struggle, account age etc.
+        const aiModel = await getAIModel(
+          user ? {
+            ...user,
+            country,
+            primaryStruggle: persona?.primaryStruggle ?? undefined,
+          } : undefined
+        );
 
         for await (const chunk of hybridAIClient.streamChat({
           systemPrompt,
