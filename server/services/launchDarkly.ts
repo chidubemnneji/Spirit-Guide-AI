@@ -1,3 +1,14 @@
+/**
+ * SoulGuide — LaunchDarkly Integration
+ *
+ * Features:
+ *  - Singleton client with graceful fallback to safe defaults
+ *  - Rich user context: country, accountAge, primaryStruggle, messageCount,
+ *    isHighEngagement, isBetaUser
+ *  - variationDetail() for evaluation reasons (RULE_MATCH, TARGET_MATCH etc)
+ *  - Custom metric tracking for experimentation
+ */
+
 import * as ld from '@launchdarkly/node-server-sdk';
 
 const DEFAULTS = {
@@ -37,6 +48,7 @@ export async function getLDClient(): Promise<ld.LDClient | null> {
   return ldClient;
 }
 
+// ── Context builder ───────────────────────────────────────────────────────
 export function buildContext(user: {
   id: number | string;
   email?: string;
@@ -63,7 +75,6 @@ export function buildContext(user: {
       hasCountry: !!user.country,
       messageCount: user.messageCount ?? 0,
       isHighEngagement: (user.messageCount ?? 0) >= 50,
-      // Beta access — used to gate community-section in LD segments
       isBetaUser: user.isBetaUser ?? false,
     },
   };
@@ -75,6 +86,13 @@ export const ANONYMOUS_CONTEXT: ld.LDContext = {
   anonymous: true,
 };
 
+// ── Flag evaluation with reason logging ──────────────────────────────────
+// Uses variationDetail() instead of variation() so we know WHY a flag resolved:
+//   RULE_MATCH    — a targeting rule matched (e.g. isBetaUser = true)
+//   TARGET_MATCH  — the user was individually targeted
+//   FALLTHROUGH   — no rules matched, default served
+//   OFF           — flag is turned off
+//   ERROR         — evaluation error
 export async function getFlag(
   key: FlagKey,
   context: ld.LDContext,
@@ -83,13 +101,25 @@ export async function getFlag(
   if (!client) return DEFAULTS[key];
 
   try {
-    return client.variation(key, context, DEFAULTS[key]) as unknown as string | boolean;
+    const detail = client.variationDetail(key, context, DEFAULTS[key]);
+    const value = await Promise.resolve(detail) as any;
+
+    // Log evaluation reason in development / staging for debugging
+    if (process.env.NODE_ENV !== 'production' || process.env.LD_LOG_REASONS === 'true') {
+      const reason = (value as any)?.reason ?? value?.reason;
+      console.log(`[LaunchDarkly] flag=${key} value=${JSON.stringify((value as any)?.value ?? value)} reason=${JSON.stringify(reason)}`);
+    }
+
+    // variationDetail returns { value, variationIndex, reason }
+    const resolved = (value as any)?.value ?? value;
+    return resolved as unknown as string | boolean;
   } catch (err) {
     console.warn(`[LaunchDarkly] flag eval failed for "${key}":`, err);
     return DEFAULTS[key];
   }
 }
 
+// ── getAllFlags ───────────────────────────────────────────────────────────
 export async function getAllFlags(context: ld.LDContext): Promise<Record<string, string | boolean>> {
   const client = await getLDClient();
   if (!client) return { ...DEFAULTS };
@@ -111,6 +141,39 @@ export async function getAllFlags(context: ld.LDContext): Promise<Record<string,
   }
 }
 
+// ── Metric tracking for Experimentation ──────────────────────────────────
+// LD Experimentation lets you attach metrics to flag variations and measure
+// which variation drives better outcomes. We track these events:
+//
+//   chat-message-sent     — user sent a message (primary engagement metric)
+//   chat-session-length   — messages per session (quality signal)
+//   community-post-created — user created a community post
+//   community-prayer-given — user prayed for someone
+//   beta-joined            — user joined the beta programme
+//
+// In LD dashboard: Experiments → Create experiment → attach metric to flag
+// Then compare: do Sonnet users send more messages than Haiku users?
+
+export async function trackMetric(
+  metricKey: string,
+  context: ld.LDContext,
+  value?: number,
+): Promise<void> {
+  const client = await getLDClient();
+  if (!client) return;
+
+  try {
+    if (value !== undefined) {
+      client.track(metricKey, context, null, value);
+    } else {
+      client.track(metricKey, context, null);
+    }
+  } catch (err) {
+    console.warn(`[LaunchDarkly] metric tracking failed for "${metricKey}":`, err);
+  }
+}
+
+// ── Graceful shutdown ──────────────────────────────────────────────────────
 export async function closeLDClient(): Promise<void> {
   if (ldClient) {
     await ldClient.close();

@@ -15,6 +15,7 @@ import { devotionalService } from "./services/devotionalService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
 import { flags, isEnabled, isEnabledForUser, getAIModel } from "./flags";
+import { trackMetric, buildContext, ANONYMOUS_CONTEXT } from "./services/launchDarkly";
 import { getCountryFromRequest } from "./middleware/geoContext";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
@@ -1208,6 +1209,23 @@ I'm here to listen whenever you're ready to talk.`;
           role: "assistant",
           content: fullResponse,
         });
+
+        // LaunchDarkly Experimentation — track chat engagement
+        // This metric is attached to ai-model-version experiment in LD dashboard
+        // Lets us compare: do Sonnet users engage more than Haiku users?
+        const ldContext = user ? buildContext({
+          ...user,
+          country: getCountryFromRequest(req),
+          primaryStruggle: persona?.primaryStruggle ?? undefined,
+          messageCount,
+          isBetaUser: !!((user as any).isBetaUser),
+        }) : ANONYMOUS_CONTEXT;
+
+        // Track the message sent event
+        await trackMetric('chat-message-sent', ldContext);
+
+        // Track session length (how many messages in this conversation)
+        await trackMetric('chat-session-length', ldContext, userTurnCount + 1);
 
         // For phase 4+ (recommendation phase), generate interactive practice cards
         let recommendationCards: any[] = [];
@@ -2604,6 +2622,15 @@ RULES:
       userCache.invalidate(`user:${session.userId}`);
 
       console.log(`[beta] user ${session.userId} joined beta`);
+
+      // LaunchDarkly Experimentation — track beta conversion
+      const betaUser = await storage.getUser(session.userId);
+      const betaCtx = betaUser ? buildContext({
+        ...betaUser,
+        isBetaUser: true,
+      }) : ANONYMOUS_CONTEXT;
+      await trackMetric('beta-joined', betaCtx);
+
       res.json({ ok: true, isBetaUser: true });
     } catch (err) {
       console.error("[beta] join error:", err);
@@ -2736,6 +2763,14 @@ RULES:
         .returning();
 
       res.status(201).json({ post: { ...post, hasPrayed: false } });
+
+      // LaunchDarkly Experimentation — track community engagement
+      // Measures whether beta users who access community stay more engaged
+      const ldCtx = user ? buildContext({
+        ...user,
+        isBetaUser: !!((user as any).isBetaUser),
+      }) : ANONYMOUS_CONTEXT;
+      await trackMetric('community-post-created', ldCtx);
     } catch (err) {
       console.error("[community] POST error:", err);
       res.status(500).json({ error: "Failed to create post" });
@@ -2788,6 +2823,15 @@ RULES:
           .update(schema.communityPosts)
           .set({ prayerCount: sql`prayer_count + 1` })
           .where(eq(schema.communityPosts.id, postId));
+
+        // Track prayer given for experimentation
+        const prayUser = await storage.getUser(session.userId);
+        const prayCtx = prayUser ? buildContext({
+          ...prayUser,
+          isBetaUser: !!((prayUser as any).isBetaUser),
+        }) : ANONYMOUS_CONTEXT;
+        await trackMetric('community-prayer-given', prayCtx);
+
         return res.json({ hasPrayed: true });
       }
     } catch (err) {
