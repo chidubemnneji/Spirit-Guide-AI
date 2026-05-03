@@ -325,7 +325,7 @@ export default function Account() {
     try {
       // Optimistic update
       const next = !isBetaUser;
-      await apiRequest("POST", "/api/me/beta/request", { request: next });
+      await apiRequest("POST", "/api/me/beta/join");
       await refetchBeta();
     } catch {
       // silently fail — state stays as-is
