@@ -42,25 +42,26 @@ export function buildContext(user: {
   email?: string;
   name?: string;
   createdAt?: string | Date;
-  country?: string;        // full country name e.g. "United Kingdom"
-  primaryStruggle?: string; // from persona — enables struggle-based targeting
-  lifeStage?: string;      // e.g. "new believer", "exploring"
+  country?: string;
+  primaryStruggle?: string;
+  lifeStage?: string;
+  messageCount?: number; // total messages sent — enables engagement-based targeting
 }): ld.LDContext {
   return {
     kind: 'user',
     key: String(user.id),
     email: user.email,
     name: user.name,
-    // country is a built-in LD attribute — appears in targeting UI automatically
     country: user.country,
     custom: {
       accountAge: user.createdAt
         ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
         : 0,
-      // Custom attributes — usable in LD targeting rules under "Custom attributes"
       primaryStruggle: user.primaryStruggle ?? null,
       lifeStage: user.lifeStage ?? null,
       hasCountry: !!user.country,
+      messageCount: user.messageCount ?? 0,
+      isHighEngagement: (user.messageCount ?? 0) >= 50,
     },
   };
 }

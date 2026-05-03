@@ -1170,13 +1170,19 @@ I'm here to listen whenever you're ready to talk.`;
         // Resolve client country for LaunchDarkly geo-targeting
         const country = getCountryFromRequest(req);
 
+        // Get total message count for engagement-based LD targeting
+        // High engagement users (50+ messages) → sonnet in targeting rules
+        const userStats = userId ? await storage.getUserStats(userId).catch(() => null) : null;
+        const messageCount = userStats?.messageCount ?? 0;
+
         // LaunchDarkly: resolve which model this user gets
-        // Targeting rules in LD can segment by country, struggle, account age etc.
+        // Targeting rules: new users, high struggle, high engagement → sonnet
         const aiModel = await getAIModel(
           user ? {
             ...user,
             country,
             primaryStruggle: persona?.primaryStruggle ?? undefined,
+            messageCount,
           } : undefined
         );
 
