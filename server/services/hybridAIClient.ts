@@ -16,6 +16,7 @@ export interface HybridStreamOptions {
   systemPrompt: string;
   messages: ChatMessage[];
   maxTokens?: number;
+  model?: string; // LaunchDarkly-controlled — overrides PRIMARY_AI_MODEL env var
 }
 
 function isAnthropicTransientError(error: unknown): boolean {
@@ -38,9 +39,9 @@ function sanitizeText(text: string): string {
 }
 
 async function* streamFromClaude(options: HybridStreamOptions): AsyncGenerator<StreamChunk> {
-  const { systemPrompt, messages, maxTokens = 1024 } = options;
+  const { systemPrompt, messages, maxTokens = 1024, model } = options;
   const stream = anthropic.messages.stream({
-    model: process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5",
+    model: model || process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5",
     max_tokens: maxTokens,
     system: systemPrompt,
     messages: messages.map((m) => ({

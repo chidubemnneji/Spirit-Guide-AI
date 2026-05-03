@@ -14,7 +14,7 @@ import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
-import { flags, isEnabled } from "./flags";
+import { flags, isEnabled, isEnabledForUser, getAIModel } from "./flags";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
 import { memoryExtractor } from "./services/memoryExtractor";
@@ -1165,11 +1165,16 @@ I'm here to listen whenever you're ready to talk.`;
 
       try {
         let usedProvider: "claude" | "openai" = "claude";
-        
+
+        // LaunchDarkly: resolve which model this user gets
+        // "sonnet" = richer responses, "haiku" = faster + cheaper
+        const aiModel = await getAIModel(user ?? undefined);
+
         for await (const chunk of hybridAIClient.streamChat({
           systemPrompt,
           messages: chatMessages,
           maxTokens: 1024,
+          model: aiModel,
         })) {
           if (chunk.done) {
             usedProvider = chunk.provider;
@@ -1843,8 +1848,16 @@ Write an evening prayer to help them release the day and rest in God's peace.`;
   });
 
   // Feature flags
-  app.get("/api/flags", (_req: Request, res: Response) => {
-    res.json(flags);
+  app.get("/api/flags", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      const user = session.userId ? await storage.getUser(session.userId) : undefined;
+      const { getAllFlagsForUser } = await import("./flags");
+      const allFlags = await getAllFlagsForUser(user ?? undefined);
+      res.json(allFlags);
+    } catch {
+      res.json(flags); // fallback to sync defaults
+    }
   });
 
   // AI Bible Search
