@@ -1,15 +1,10 @@
-/**
- * Seed LaunchDarkly context schema — plain JS, no compilation needed
- * Run via: node scripts/seedLDContext.js
- */
-
-const ld = require('@launchdarkly/node-server-sdk');
+import * as ld from '@launchdarkly/node-server-sdk';
 
 const SDK_KEY = process.env.LAUNCHDARKLY_SDK_KEY || '';
 
 if (!SDK_KEY) {
-  console.error('ERROR: LAUNCHDARKLY_SDK_KEY not set');
-  process.exit(1);
+  console.error('[LD Seed] ERROR: LAUNCHDARKLY_SDK_KEY not set — skipping');
+  process.exit(0);
 }
 
 const FLAGS = [
@@ -23,41 +18,12 @@ const FLAGS = [
 ];
 
 const SEED_CONTEXTS = [
-  {
-    kind: 'user', key: 'seed-uk-1',
-    email: 'seed-uk@example.com', name: 'Seed UK',
-    country: 'United Kingdom',
-    custom: { accountAge: 3, primaryStruggle: 'life_feeling_overwhelming', hasCountry: true },
-  },
-  {
-    kind: 'user', key: 'seed-us-1',
-    email: 'seed-us@example.com', name: 'Seed US',
-    country: 'United States',
-    custom: { accountAge: 45, primaryStruggle: 'grief_and_loss', hasCountry: true },
-  },
-  {
-    kind: 'user', key: 'seed-au-1',
-    email: 'seed-au@example.com', name: 'Seed AU',
-    country: 'Australia',
-    custom: { accountAge: 20, primaryStruggle: 'faith_and_doubt', hasCountry: true },
-  },
-  {
-    kind: 'user', key: 'seed-ie-1',
-    email: 'seed-ie@example.com', name: 'Seed IE',
-    country: 'Ireland',
-    custom: { accountAge: 90, primaryStruggle: 'relationship_and_loneliness', hasCountry: true },
-  },
-  {
-    kind: 'user', key: 'seed-ng-1',
-    email: 'seed-ng@example.com', name: 'Seed NG',
-    country: 'Nigeria',
-    custom: { accountAge: 1, primaryStruggle: 'purpose_and_identity', hasCountry: true },
-  },
-  {
-    kind: 'user', key: 'seed-anon',
-    anonymous: true,
-    custom: { accountAge: 0, primaryStruggle: null, hasCountry: false },
-  },
+  { kind: 'user', key: 'seed-uk-1', email: 'seed-uk@example.com', name: 'Seed UK', country: 'United Kingdom', custom: { accountAge: 3, primaryStruggle: 'life_feeling_overwhelming', hasCountry: true } },
+  { kind: 'user', key: 'seed-us-1', email: 'seed-us@example.com', name: 'Seed US', country: 'United States', custom: { accountAge: 45, primaryStruggle: 'grief_and_loss', hasCountry: true } },
+  { kind: 'user', key: 'seed-au-1', email: 'seed-au@example.com', name: 'Seed AU', country: 'Australia', custom: { accountAge: 20, primaryStruggle: 'faith_and_doubt', hasCountry: true } },
+  { kind: 'user', key: 'seed-ie-1', email: 'seed-ie@example.com', name: 'Seed IE', country: 'Ireland', custom: { accountAge: 90, primaryStruggle: 'relationship_and_loneliness', hasCountry: true } },
+  { kind: 'user', key: 'seed-ng-1', email: 'seed-ng@example.com', name: 'Seed NG', country: 'Nigeria', custom: { accountAge: 1, primaryStruggle: 'purpose_and_identity', hasCountry: true } },
+  { kind: 'user', key: 'seed-anon', anonymous: true, custom: { accountAge: 0, primaryStruggle: null, hasCountry: false } },
 ];
 
 async function seed() {
@@ -68,8 +34,8 @@ async function seed() {
     await client.waitForInitialization({ timeout: 10 });
     console.log('[LD Seed] Connected ✓');
   } catch (err) {
-    console.error('[LD Seed] Connection failed:', err.message);
-    process.exit(1);
+    console.error('[LD Seed] Connection failed — skipping seed:', err.message);
+    process.exit(0); // don't block app startup
   }
 
   let total = 0;
@@ -89,6 +55,6 @@ async function seed() {
 }
 
 seed().catch(err => {
-  console.error('[LD Seed] Error:', err);
-  process.exit(1);
+  console.error('[LD Seed] Error (non-fatal):', err.message);
+  process.exit(0); // never block app startup
 });
