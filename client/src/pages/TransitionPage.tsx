@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useOnboarding } from "@/context/OnboardingContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from "lucide-react";
 
@@ -47,23 +48,23 @@ const features = [
 export default function TransitionPage() {
   const [, setLocation] = useLocation();
   const { data } = useOnboarding();
+  const { refreshUser } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
 
   const content = bibleVerses[data.primaryStruggle || ""] || bibleVerses.new_to_faith;
 
-  useEffect(() => {
-    setIsVisible(true);
-    
-    const timer = setTimeout(() => {
-      setLocation("/meet-prayer-partner");
-    }, 12000);
-
-    return () => clearTimeout(timer);
-  }, [setLocation]);
-
-  const handleContinue = () => {
+  const navigateForward = async () => {
+    await refreshUser();
     setLocation("/meet-prayer-partner");
   };
+
+  useEffect(() => {
+    setIsVisible(true);
+    const timer = setTimeout(navigateForward, 12000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleContinue = () => navigateForward();
 
   return (
     <div className="min-h-screen flex flex-col gradient-onboarding">

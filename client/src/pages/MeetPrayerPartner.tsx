@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Cross, Clock, BookOpen, MessageCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const features = [
   {
@@ -24,6 +25,14 @@ const features = [
 
 export default function MeetPrayerPartner() {
   const [, setLocation] = useLocation();
+  const { refreshUser } = useAuth();
+
+  const handleContinue = async () => {
+    // Refresh user so hasCompletedOnboarding is up to date
+    // before Protected routes run their auth guard check
+    await refreshUser();
+    setLocation("/chat");
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -86,7 +95,7 @@ export default function MeetPrayerPartner() {
         >
           <Button
             size="lg"
-            onClick={() => setLocation("/chat")}
+            onClick={handleContinue}
             className="w-full rounded-2xl bg-foreground text-background"
             data-testid="button-start-conversation"
           >
