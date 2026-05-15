@@ -1,6 +1,8 @@
 import { useLocation } from "wouter";
 import { useOnboarding } from "@/context/OnboardingContext";
 
+import { Logo } from "@/components/Logo";
+
 export default function Welcome() {
   const [, setLocation] = useLocation();
   const { setPhase, resetOnboarding } = useOnboarding();
@@ -16,7 +18,7 @@ export default function Welcome() {
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2]">
         <div className="flex-1 py-6 px-6 flex items-center">
-          <h1 className="font-serif text-[26px] leading-none text-black tracking-wide">SoulGuide</h1>
+          <Logo size={28} showWordmark />
         </div>
       </header>
 
