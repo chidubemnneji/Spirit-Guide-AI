@@ -650,64 +650,31 @@ export default function Bible() {
         {/* Cards Section */}
         <div className="px-5 py-4 space-y-4">
           {/* Full Bible Reader Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+          <button
+            onClick={() => setBookSheetOpen(true)}
+            className="w-full text-left px-6 py-6 bg-white border-b border-[#f0f0ee] flex items-center justify-between"
+            data-testid="card-bible-reader"
           >
-            <Card 
-              className="overflow-hidden cursor-pointer hover-elevate"
-              onClick={() => setBookSheetOpen(true)}
-              data-testid="card-bible-reader"
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {currentVersion?.abbreviation || "NIV"} Version
-                    </span>
-                    <h3 className="font-semibold text-xl mt-1">Full Bible Reader</h3>
-                    <p className="text-muted-foreground mt-1">
-                      Read scripture in your preferred translation
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+            <div>
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{currentVersion?.abbreviation || "NIV"} Version</span>
+              <p className="font-serif text-[22px] text-black mb-1">Full Bible Reader</p>
+              <p className="text-[14px] text-[#73726C]">Read scripture in your preferred translation</p>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
 
-          {/* Your Verse Collection Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+          <button
+            onClick={() => setBookmarksSheetOpen(true)}
+            className="w-full text-left px-6 py-6 bg-white border-b border-[#f0f0ee] flex items-center justify-between"
+            data-testid="card-verse-collection"
           >
-            <Card 
-              className="overflow-hidden cursor-pointer hover-elevate"
-              onClick={() => setBookmarksSheetOpen(true)}
-              data-testid="card-verse-collection"
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {bookmarkGroups.length} Verses Saved
-                    </span>
-                    <h3 className="font-semibold text-xl mt-1">Your Verse Collection</h3>
-                    <p className="text-muted-foreground mt-1">
-                      Verses you've bookmarked and memorized
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Star className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+            <div>
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{bookmarkGroups.length} Verses Saved</span>
+              <p className="font-serif text-[22px] text-black mb-1">Your Verse Collection</p>
+              <p className="text-[14px] text-[#73726C]">Verses you've bookmarked and highlighted</p>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
         </div>
 
         {/* Verse of the Day — live from today's devotional */}
@@ -870,33 +837,27 @@ export default function Bible() {
 
   // Bible Reader View
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 bg-background border-b">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
+    <div className="min-h-screen pb-24" style={{ background: "#EBEAE5" }}>
+      <header className="sticky top-0 z-40 bg-white border-b border-[#D8D7D2]">
+        <div className="flex items-center">
+          <button
             onClick={() => setShowReader(false)}
+            className="py-5 px-5 border-r border-[#D8D7D2] text-[#73726C]"
             data-testid="button-back-to-bible-home"
           >
             <ArrowLeft className="w-5 h-5" />
-          </Button>
-          
-          <div className="text-center flex-1">
-            <p className="font-serif text-lg font-semibold">{currentChapter?.reference || "Select Chapter"}</p>
-            {currentVersion && (
-              <p className="text-xs text-muted-foreground">{currentVersion.name}</p>
-            )}
+          </button>
+          <div className="flex-1 py-5 px-5">
+            <p className="font-serif text-[20px] leading-none text-black">{currentChapter?.reference || "Select Chapter"}</p>
+            {currentVersion && <p className="text-[10px] font-semibold tracking-wider uppercase text-[#73726C] mt-0.5">{currentVersion.name}</p>}
           </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={() => setBookmarksSheetOpen(true)}
+            className="py-5 px-5 border-l border-[#D8D7D2] text-[11px] font-semibold tracking-wider uppercase text-[#73726C]"
             data-testid="button-open-bookmarks"
           >
-            <Bookmark className={cn("w-5 h-5", bookmarkGroups.length > 0 && "fill-current text-primary")} />
-          </Button>
+            Saved
+          </button>
         </div>
         
         {/* Navigation */}
@@ -1148,11 +1109,11 @@ export default function Bible() {
                   transition={{ delay: index * 0.01 }}
                   onClick={() => handleVerseClick(verse.number)}
                   className={cn(
-                    "font-serif text-lg leading-relaxed py-1 px-2 -mx-2 rounded-lg cursor-pointer transition-colors",
-                    highlightedVerses.has(verse.number) && "bg-primary/20"
+                    "font-serif text-[19px] leading-[1.7] py-2 px-3 -mx-3 cursor-pointer transition-colors",
+                    highlightedVerses.has(verse.number) ? "bg-[#1b291d]/10" : "hover:bg-[#1b291d]/5"
                   )}
                 >
-                  <span className="text-primary font-bold text-sm mr-2">{verse.number}</span>
+                  <span className="text-[#1b291d] font-bold text-[13px] mr-2">{verse.number}</span>
                   {verse.text}
                 </motion.p>
               ))}

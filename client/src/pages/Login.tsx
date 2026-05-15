@@ -1,18 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,165 +15,94 @@ export default function Login() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = () => {
-    const newErrors: typeof errors = {};
-    
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-    
-    if (!password) {
-      newErrors.password = "Password is required";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e: typeof errors = {};
+    if (!email.trim()) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email";
+    if (!password) e.password = "Password is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
     if (!validate()) return;
-    
     setIsLoading(true);
     const result = await login(email, password);
     setIsLoading(false);
-    
     if (result.success) {
-      const response = await fetch("/api/auth/me", { credentials: "include" });
-      const data = await response.json();
-      if (data.success && data.user) {
-        setLocation(data.user.hasCompletedOnboarding ? "/devotion" : "/onboarding");
-      } else {
-        setLocation("/onboarding");
-      }
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const data = await res.json();
+      setLocation(data?.user?.hasCompletedOnboarding ? "/devotion" : "/onboarding");
     } else {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: result.error || "Invalid email or password",
-      });
+      toast({ variant: "destructive", title: "Login failed", description: result.error || "Invalid email or password" });
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col gradient-onboarding">
-      <header className="flex items-center p-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLocation("/")}
-          data-testid="button-back"
-          className="rounded-full"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
+      {/* Header */}
+      <header className="flex bg-white border-b border-[#D8D7D2]">
+        <button onClick={() => setLocation("/")} className="py-6 px-6 flex items-center border-r border-[#D8D7D2]" data-testid="button-back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="flex-1 py-6 px-6 flex items-center justify-center">
+          <h1 className="font-serif text-[22px] leading-none text-black tracking-wide">Sign in</h1>
+        </div>
       </header>
 
-      <main className="flex-1 flex flex-col justify-center px-6 pb-12">
-        <motion.div 
-          className="w-full max-w-md mx-auto space-y-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="space-y-2">
-            <h1 className="font-serif text-3xl font-bold">Welcome back</h1>
-            <p className="text-muted-foreground">
-              Sign in to continue your journey
-            </p>
+      <main className="flex-1 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          {/* Section */}
+          <div className="section-band"><span>Your Details</span></div>
+
+          <div className="px-6 py-5 bg-white border-b border-[#f0f0ee]">
+            <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block mb-1">Email</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com" data-testid="input-email"
+              className="w-full font-serif text-[18px] text-black bg-transparent focus:outline-none"
+            />
+            {errors.email && <p className="text-[12px] text-red-600 mt-1">{errors.email}</p>}
           </div>
-          
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                data-testid="input-email"
-                className={`h-12 rounded-xl bg-card border-0 ${errors.email ? "ring-2 ring-destructive" : ""}`}
+
+          <div className="px-6 py-5 bg-white border-b border-[#f0f0ee]">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase">Password</label>
+              <button type="button" className="text-[10px] font-semibold tracking-[0.08em] uppercase text-[#1b291d]" data-testid="link-forgot-password">
+                Forgot?
+              </button>
+            </div>
+            <div className="flex items-center">
+              <input
+                type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Your password" data-testid="input-password"
+                className="flex-1 font-serif text-[18px] text-black bg-transparent focus:outline-none"
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
+              <button type="button" onClick={() => setShowPassword(v => !v)} data-testid="button-toggle-password">
+                {showPassword ? <EyeOff size={18} className="text-[#73726C]" /> : <Eye size={18} className="text-[#73726C]" />}
+              </button>
             </div>
+            {errors.password && <p className="text-[12px] text-red-600 mt-1">{errors.password}</p>}
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                <button
-                  type="button"
-                  className="text-xs text-primary"
-                  data-testid="link-forgot-password"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  data-testid="input-password"
-                  className={`h-12 rounded-xl bg-card border-0 pr-12 ${errors.password ? "ring-2 ring-destructive" : ""}`}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                  data-testid="button-toggle-password"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <Eye className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-14 rounded-2xl text-base font-semibold shadow-lg shadow-primary/25"
-              disabled={isLoading}
-              data-testid="button-login"
+          <div className="p-6 bg-white border-t border-[#D8D7D2] mt-4 space-y-3">
+            <button
+              type="submit" disabled={isLoading} data-testid="button-login"
+              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase disabled:opacity-40 flex items-center justify-center gap-2"
+              style={{ background: "#1b291d", color: "#fff" }}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-          </form>
-
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <button
-                type="button"
-                className="font-semibold text-primary"
-                onClick={() => setLocation("/onboarding")}
-                data-testid="link-signup"
-              >
+              {isLoading ? <><Loader2 size={16} className="animate-spin" /> Signing in...</> : "Sign in"}
+            </button>
+            <p className="text-[12px] text-[#73726C] text-center">
+              No account?{" "}
+              <button type="button" className="font-semibold text-[#1b291d]" onClick={() => setLocation("/onboarding")} data-testid="link-signup">
                 Create one
               </button>
             </p>
           </div>
-        </motion.div>
+        </form>
       </main>
     </div>
   );

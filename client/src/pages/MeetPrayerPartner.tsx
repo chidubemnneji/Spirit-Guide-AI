@@ -1,26 +1,10 @@
-import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Cross, Clock, BookOpen, MessageCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const features = [
-  {
-    icon: MessageCircle,
-    title: "Knows Your Journey",
-    description: "Every conversation builds on what I already know about your struggles with anxiety and your goals.",
-  },
-  {
-    icon: Clock,
-    title: "Always Available",
-    description: "3 AM and can't sleep? Triggered and need help NOW? I'm here. No judgment. No waiting.",
-  },
-  {
-    icon: BookOpen,
-    title: "Biblically Grounded",
-    description: "Every answer is rooted in Scripture. I'll guide you with God's truth, not my opinions.",
-  },
+  { tag: "Memory", title: "Knows Your Journey", sub: "Every conversation builds on what came before. Your companion remembers your struggles and your progress." },
+  { tag: "Always on", title: "Available at 3 AM", sub: "No judgment. No waiting. No booking. Just presence, whenever you need it." },
+  { tag: "Grounded", title: "Biblically Rooted", sub: "Every answer is shaped by Scripture. Truth, not opinion." },
 ];
 
 export default function MeetPrayerPartner() {
@@ -28,80 +12,65 @@ export default function MeetPrayerPartner() {
   const { refreshUser } = useAuth();
 
   const handleContinue = async () => {
-    // Refresh user so hasCompletedOnboarding is up to date
-    // before Protected routes run their auth guard check
     await refreshUser();
     setLocation("/chat");
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <main className="flex-1 flex flex-col px-5 py-8 max-w-lg mx-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="w-14 h-14 rounded-2xl border-2 border-foreground flex items-center justify-center mb-8"
-        >
-          <MessageCircle className="w-7 h-7 text-foreground" />
-        </motion.div>
+    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
+      {/* Header */}
+      <header className="flex bg-white border-b border-[#D8D7D2]">
+        <div className="flex-1 py-6 px-6 flex items-center">
+          <h1 className="font-serif text-[26px] leading-none text-black tracking-wide">Your Companion</h1>
+        </div>
+      </header>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="font-serif text-3xl font-bold text-foreground leading-tight mb-4"
-        >
-          Meet Your Personal Prayer Partner
-        </motion.h1>
+      <main className="flex-1 flex flex-col">
+        {/* Intro */}
+        <div className="p-6">
+          <div className="bg-white p-7">
+            <div className="w-full aspect-[4/3] mb-7 bg-[#e9e8e4] flex items-center justify-center">
+              <p className="font-serif text-2xl italic text-center leading-relaxed px-8 text-[#1b291d]">
+                "I know your story. I'm here 24/7 to walk with you."
+              </p>
+            </div>
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Meet your guide</span>
+            </div>
+            <h2 className="font-serif text-[36px] leading-[1.15] text-black mb-4">
+              Your Personal<br />Prayer Partner
+            </h2>
+            <p className="text-[17px] leading-[1.65] text-[#545454]">
+              An AI companion that knows your faith journey and walks with you through every season.
+            </p>
+          </div>
+        </div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="text-muted-foreground mb-8"
-        >
-          I know your story. I know your struggles. I'm here 24/7 to guide you closer to God.
-        </motion.p>
-
-        <div className="space-y-3 flex-1">
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.1 }}
-            >
-              <Card className="border-2 border-border shadow-none">
-                <CardContent className="p-4 flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-5 h-5 text-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+        {/* Features */}
+        <div className="border-y border-[#D8D7D2] py-5 px-8 bg-white">
+          <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-black">What to expect</h3>
+        </div>
+        <div className="flex flex-col">
+          {features.map((f, i) => (
+            <div key={i} className="px-6 py-6 bg-white border-b border-[#f0f0ee]">
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{f.tag}</span>
+              <p className="font-serif text-[20px] text-black mb-1">{f.title}</p>
+              <p className="text-[14px] text-[#73726C] leading-relaxed">{f.sub}</p>
+            </div>
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8"
-        >
-          <Button
-            size="lg"
+        {/* CTA */}
+        <div className="p-6 bg-white border-t border-[#D8D7D2] mt-4">
+          <button
             onClick={handleContinue}
-            className="w-full rounded-2xl bg-foreground text-background"
             data-testid="button-start-conversation"
+            className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase"
+            style={{ background: "#1b291d", color: "#fff" }}
           >
-            Start Your First Conversation
-          </Button>
-        </motion.div>
+            Start your first conversation
+          </button>
+        </div>
       </main>
     </div>
   );

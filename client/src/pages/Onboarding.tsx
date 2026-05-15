@@ -11,8 +11,6 @@ import { Phase2Overwhelmed } from "@/components/onboarding/Phase2Overwhelmed";
 import { Phase2NewToFaith } from "@/components/onboarding/Phase2NewToFaith";
 import { GoalsStep } from "@/components/onboarding/GoalsStep";
 import { SignupStep } from "@/components/onboarding/SignupStep";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Logo } from "@/components/Logo";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -35,80 +33,33 @@ export default function Onboarding() {
   const { refreshUser } = useAuth();
 
   const submitMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/onboarding", data);
-    },
-    onSuccess: async () => {
-      await refreshUser();
-      setLocation("/transition");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Something went wrong",
-        description: error.message || "Failed to complete onboarding. Please try again.",
-        variant: "destructive",
-      });
-    },
+    mutationFn: async () => apiRequest("POST", "/api/onboarding", data),
+    onSuccess: async () => { await refreshUser(); setLocation("/transition"); },
+    onError: (error: Error) => toast({ title: "Something went wrong", description: error.message || "Failed to complete onboarding.", variant: "destructive" }),
   });
 
   const handleBack = useCallback(() => {
-    if (currentPhase > 1) {
-      setPhase(currentPhase - 1);
-    } else {
-      setLocation("/");
-    }
+    if (currentPhase > 1) setPhase(currentPhase - 1);
+    else setLocation("/");
   }, [currentPhase, setPhase, setLocation]);
 
   const renderStep = () => {
     switch (currentPhase) {
-      case 1:
-        return (
-          <Phase1
-            onNext={(struggle: string) => {
-              setPhase(2);
-            }}
-            onBack={handleBack}
-          />
-        );
+      case 1: return <Phase1 onNext={() => setPhase(2)} onBack={handleBack} />;
       case 2: {
-        const DepthComponent = data.primaryStruggle
-          ? phase2Components[data.primaryStruggle]
-          : Phase2DistantFromGod;
-        return (
-          <DepthComponent
-            onNext={() => setPhase(3)}
-            onBack={handleBack}
-          />
-        );
+        const Comp = data.primaryStruggle ? phase2Components[data.primaryStruggle] : Phase2DistantFromGod;
+        return <Comp onNext={() => setPhase(3)} onBack={handleBack} />;
       }
-      case 3:
-        return (
-          <GoalsStep
-            onNext={() => setPhase(4)}
-            onBack={handleBack}
-          />
-        );
-      case 4:
-        return (
-          <SignupStep
-            onComplete={() => submitMutation.mutate()}
-            onBack={handleBack}
-            isSubmitting={submitMutation.isPending}
-          />
-        );
-      default:
-        return null;
+      case 3: return <GoalsStep onNext={() => setPhase(4)} onBack={handleBack} />;
+      case 4: return <SignupStep onComplete={() => submitMutation.mutate()} onBack={handleBack} isSubmitting={submitMutation.isPending} />;
+      default: return null;
     }
   };
 
   return (
-    <div className="min-h-screen gradient-onboarding">
-      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 pt-4">
-        <Logo size={32} />
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen" style={{ background: "#EBEAE5" }}>
       <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
-      <main className="pt-24 pb-12">
+      <main className="pt-[90px] pb-12">
         <div className="max-w-lg mx-auto px-5">
           {renderStep()}
         </div>

@@ -1,15 +1,5 @@
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { BookOpen, Sparkles, MessageCircle } from "lucide-react";
-import { Logo } from "@/components/Logo";
-
-const features = [
-  { icon: MessageCircle, label: "AI companion", sub: "Listens without judgment" },
-  { icon: BookOpen, label: "Scripture", sub: "Matched to your moment" },
-  { icon: Sparkles, label: "Personalised", sub: "Grows with you over time" },
-];
 
 export default function Welcome() {
   const [, setLocation] = useLocation();
@@ -22,79 +12,80 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-1 flex flex-col px-6 pt-16 pb-10 max-w-md mx-auto w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
-        >
-          <Logo size={44} showWordmark />
-        </motion.div>
+    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
+      {/* Header */}
+      <header className="flex bg-white border-b border-[#D8D7D2]">
+        <div className="flex-1 py-6 px-6 flex items-center">
+          <h1 className="font-serif text-[26px] leading-none text-black tracking-wide">Sanctuary</h1>
+        </div>
+      </header>
 
-        <motion.div
-          className="space-y-5"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground leading-tight">
-            A companion<br />for your faith.
-          </h1>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-xs">
-            Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
-          </p>
-        </motion.div>
+      {/* Hero */}
+      <main className="flex-1 flex flex-col">
+        <div className="p-6">
+          <div className="bg-white p-7">
+            {/* Hero image placeholder */}
+            <div className="w-full aspect-[4/3] mb-7 overflow-hidden bg-[#e9e8e4] flex items-center justify-center">
+              <p className="font-serif text-2xl italic text-center leading-relaxed px-8 text-[#1b291d]">
+                "Come to me, all who are weary and burdened, and I will give you rest."
+              </p>
+            </div>
+            <div className="flex items-center justify-between mb-5">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Faith Companion</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#111]">Matthew 11:28</span>
+            </div>
+            <h2 className="font-serif text-[40px] leading-[1.15] text-black mb-4">
+              A companion<br />for your faith.
+            </h2>
+            <p className="text-[17px] leading-[1.65] text-[#545454]">
+              Wherever you are on your journey — doubting, searching, or simply tired — you don't have to walk it alone.
+            </p>
+          </div>
+        </div>
 
-        <motion.div
-          className="space-y-3 mt-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          {features.map((f, i) => (
-            <motion.div
-              key={f.label}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/50"
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 + i * 0.1 }}
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <f.icon className="w-5 h-5 text-primary" />
+        {/* What's inside */}
+        <div className="border-y border-[#D8D7D2] py-5 px-8 bg-white flex items-center">
+          <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-black">What's inside</h3>
+        </div>
+
+        <div className="flex flex-col">
+          {[
+            { tag: "Daily", title: "Personalised Devotionals", sub: "Scripture matched to your struggle, every morning." },
+            { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
+            { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
+          ].map((item, i) => (
+            <div key={i} className="px-6 py-6 bg-white border-b border-[#f0f0ee] flex items-start justify-between">
+              <div className="flex-1 pr-4">
+                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{item.tag}</span>
+                <p className="font-serif text-[20px] text-black mb-1">{item.title}</p>
+                <p className="text-[14px] text-[#73726C]">{item.sub}</p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{f.label}</p>
-                <p className="text-xs text-muted-foreground">{f.sub}</p>
-              </div>
-            </motion.div>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="space-y-3 mt-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <Button
-            size="lg"
+        {/* CTAs */}
+        <div className="p-6 space-y-3 bg-white border-t border-[#D8D7D2] mt-4">
+          <button
             onClick={handleBegin}
             data-testid="button-begin-transformation"
-            className="w-full text-base font-semibold rounded-2xl bg-foreground text-background h-14"
+            className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase"
+            style={{ background: "#1b291d", color: "#fff" }}
           >
-            Get started
-          </Button>
-          <Button
-            size="lg"
-            variant="ghost"
+            Begin your journey
+          </button>
+          <button
             onClick={() => setLocation("/login")}
-            className="w-full text-base rounded-2xl h-12 text-muted-foreground"
+            className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase border border-[#D8D7D2] text-[#73726C]"
+            style={{ background: "transparent" }}
           >
             I already have an account
-          </Button>
-        </motion.div>
+          </button>
+          <p className="text-[11px] text-[#73726C] text-center tracking-wide">Free. No ads. No data selling.</p>
+        </div>
       </main>
     </div>
   );
