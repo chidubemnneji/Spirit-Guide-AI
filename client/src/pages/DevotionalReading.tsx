@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -120,6 +121,7 @@ function TimedModeSection() {
   const [eveningText, setEveningText] = useState<string | null>(null);
   const [mode, setMode] = useState<"timed" | "evening" | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showAudioPlayer, setShowAudioPlayer] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   const timedMutation = useMutation({
@@ -314,6 +316,17 @@ export default function DevotionalReading() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Audio Player overlay */}
+      {showAudioPlayer && (
+        <AudioPlayer
+          title={devotional?.title || "Guided Reflection"}
+          subtitle={devotional?.scriptureReference || "A moment of stillness"}
+          duration={selectedDuration || 600}
+          sections={["Presence", "Gratitude", "Review"]}
+          onClose={() => setShowAudioPlayer(false)}
+        />
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border/50">
         <div className="flex items-center gap-3 px-4 h-14">
@@ -325,7 +338,16 @@ export default function DevotionalReading() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <span className="font-serif text-base font-semibold">Today's Devotional</span>
+          <span className="font-serif text-base font-semibold flex-1">Today's Devotional</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAudioPlayer(true)}
+            className="gap-1.5 text-xs font-semibold uppercase tracking-wider"
+          >
+            <Play className="w-3.5 h-3.5" />
+            Listen
+          </Button>
         </div>
       </header>
 
