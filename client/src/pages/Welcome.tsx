@@ -44,7 +44,7 @@ export default function Welcome() {
             <h2 className="font-serif text-[40px] leading-[1.15] text-black mb-4">
               A companion<br />for your faith.
             </h2>
-            <p className="text-[17px] leading-[1.65] text-[#545454]">
+            <p className="text-[16px] leading-[1.65] text-[#545454]">
               Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
             </p>
           </div>
