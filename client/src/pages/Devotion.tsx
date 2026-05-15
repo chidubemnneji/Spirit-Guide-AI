@@ -171,6 +171,13 @@ export default function Devotion() {
         </div>
       </div>
 
+      {/* Daily Progress */}
+      <div className="section-band mt-4">
+        <span>Daily Progress</span>
+        <span className="text-[11px] font-medium tracking-[0.08em] text-[#73726C] uppercase">{weekRange}</span>
+      </div>
+      <WeekStrip completedDays={completedDays} joinedAt={joinedAt} />
+
       {/* Today's Readings */}
       <div className="border-y border-[#D8D7D2] py-5 px-8 mt-4 bg-white flex items-center justify-between">
         <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-black">Today's Readings</h3>
@@ -203,13 +210,6 @@ export default function Devotion() {
           </button>
         ))}
       </div>
-
-      {/* Daily Progress */}
-      <div className="section-band mt-4">
-        <span>Daily Progress</span>
-        <span className="text-[11px] font-medium tracking-[0.08em] text-[#73726C] uppercase">{weekRange}</span>
-      </div>
-      <WeekStrip completedDays={completedDays} joinedAt={joinedAt} />
 
       {/* Verse of the day */}
       {devotional && (
