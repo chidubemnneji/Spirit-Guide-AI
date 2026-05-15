@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { useAuth } from "@/context/AuthContext";
 import { ContinueButton } from "./ContinueButton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
-import { PasswordStrengthIndicator, isPasswordStrong } from "@/components/PasswordStrengthIndicator";
+import { BackButton } from "./BackButton";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { isPasswordStrong } from "@/components/PasswordStrengthIndicator";
 import { useToast } from "@/hooks/use-toast";
 
 interface SignupStepProps {
@@ -19,41 +17,6 @@ export function SignupStep({ onComplete, onBack, isSubmitting }: SignupStepProps
   const { updateOnboarding, data } = useOnboarding();
   const { signup, user } = useAuth();
   const { toast } = useToast();
-
-  // Already logged in (came via /signup page) — skip form, just submit onboarding
-  if (user) {
-    return (
-      <motion.div
-        className="space-y-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-      >
-        <motion.div
-          className="space-y-3"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-        >
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground leading-tight">
-            Almost there, {user.name.split(" ")[0]}
-          </h1>
-          <p className="text-muted-foreground">
-            Saving your journey...
-          </p>
-        </motion.div>
-        <ContinueButton
-          onClick={onComplete}
-          disabled={isSubmitting}
-          loading={isSubmitting}
-          variant="complete"
-        >
-          Start my journey
-        </ContinueButton>
-      </motion.div>
-    );
-  }
-
   const [name, setName] = useState(data.userName || "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,11 +24,28 @@ export function SignupStep({ onComplete, onBack, isSubmitting }: SignupStepProps
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
 
+  // Already logged in — just submit onboarding data
+  if (user) {
+    return (
+      <div className="space-y-8 pt-4">
+        <div>
+          <h1 className="font-serif text-[32px] text-black leading-tight mb-3">
+            Almost there, {user.name.split(" ")[0]}
+          </h1>
+          <p className="text-[16px] text-[#73726C]">Saving your journey...</p>
+        </div>
+        <ContinueButton onClick={onComplete} disabled={isSubmitting} loading={isSubmitting}>
+          Start my journey
+        </ContinueButton>
+      </div>
+    );
+  }
+
   const validate = () => {
     const errs: typeof errors = {};
     if (!name.trim()) errs.name = "Name is required";
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Enter a valid email";
-    if (!isPasswordStrong(password)) errs.password = "Password doesn't meet requirements";
+    if (!isPasswordStrong(password)) errs.password = "Password needs uppercase, number and 8+ characters";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -74,122 +54,81 @@ export function SignupStep({ onComplete, onBack, isSubmitting }: SignupStepProps
 
   const handleComplete = async () => {
     if (!validate()) return;
-
     setIsSigningUp(true);
     updateOnboarding({ userName: name.trim() });
-
     const result = await signup(name.trim(), email.trim(), password);
     setIsSigningUp(false);
-
     if (result.success) {
       onComplete();
     } else {
-      toast({
-        variant: "destructive",
-        title: "Couldn't create your account",
-        description: result.error || "Please try again",
-      });
+      toast({ variant: "destructive", title: "Couldn't create your account", description: result.error || "Please try again" });
     }
   };
 
   const firstName = name.split(" ")[0];
 
   return (
-    <motion.div
-      className="space-y-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-    >
+    <div className="pt-4">
+      <BackButton onClick={onBack} />
 
-      <motion.div
-        className="space-y-3"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.4 }}
-      >
-        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-foreground leading-tight">
-          {firstName ? `Almost there, ${firstName}` : "One last thing"}
-        </h1>
-        <p className="text-muted-foreground">
-          Create your account to save your journey
-        </p>
-      </motion.div>
+      <h1 className="font-serif text-[32px] text-black leading-tight mb-2">
+        {firstName ? `Almost there, ${firstName}` : "One last thing"}
+      </h1>
+      <p className="text-[16px] text-[#73726C] mb-8">Create your account to save your journey.</p>
 
-      <motion.div
-        className="space-y-4"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-      >
-        <div className="space-y-1.5">
-          <Label htmlFor="name">Your name</Label>
-          <Input
-            id="name"
-            type="text"
-            placeholder="First name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-12 rounded-xl border-2"
-            data-testid="input-name"
-            autoFocus
+      {/* Form fields — editorial style */}
+      <div className="flex flex-col mb-6">
+        <div className="px-0 py-4 border-b border-[#D8D7D2]">
+          <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block mb-1">Your name</label>
+          <input
+            type="text" value={name} onChange={e => setName(e.target.value)}
+            placeholder="First name" autoFocus data-testid="input-name"
+            className="w-full font-serif text-[20px] text-black bg-transparent focus:outline-none placeholder:text-[#ccc]"
           />
-          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          {errors.name && <p className="text-[12px] text-red-600 mt-1">{errors.name}</p>}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="h-12 rounded-xl border-2"
-            data-testid="input-email"
+        <div className="px-0 py-4 border-b border-[#D8D7D2]">
+          <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block mb-1">Email</label>
+          <input
+            type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com" data-testid="input-email"
+            className="w-full font-serif text-[20px] text-black bg-transparent focus:outline-none placeholder:text-[#ccc]"
           />
-          {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+          {errors.email && <p className="text-[12px] text-red-600 mt-1">{errors.email}</p>}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Create a password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-12 rounded-xl border-2 pr-11"
-              data-testid="input-password"
+        <div className="px-0 py-4 border-b border-[#D8D7D2]">
+          <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block mb-1">Password</label>
+          <div className="flex items-center">
+            <input
+              type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="8+ chars, uppercase, number" data-testid="input-password"
+              className="flex-1 font-serif text-[20px] text-black bg-transparent focus:outline-none placeholder:text-[#ccc]"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPassword
-                ? <EyeOff className="w-5 h-5" />
-                : <Eye className="w-5 h-5" />}
+            <button type="button" onClick={() => setShowPassword(v => !v)} className="text-[#73726C] ml-2">
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          {password && <PasswordStrengthIndicator password={password} />}
-          {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+          {/* Strength indicator */}
+          {password && (
+            <div className="flex gap-1 mt-2">
+              {[/[A-Z]/, /[0-9]/, /.{8,}/].map((re, i) => (
+                <div key={i} className="h-0.5 flex-1 transition-colors" style={{ background: re.test(password) ? "#1b291d" : "#D8D7D2" }} />
+              ))}
+            </div>
+          )}
+          {errors.password && <p className="text-[12px] text-red-600 mt-1">{errors.password}</p>}
         </div>
-      </motion.div>
+      </div>
 
-      <p className="text-xs text-muted-foreground text-center">
-        By continuing you agree to our Terms of Service and Privacy Policy
+      <p className="text-[11px] text-[#73726C] text-center mb-6 tracking-wide">
+        By continuing you agree to our Terms of Service and Privacy Policy.
       </p>
 
-      <ContinueButton
-        onClick={handleComplete}
-        disabled={!canSubmit}
-        loading={isSigningUp || isSubmitting}
-        variant="complete"
-      >
+      <ContinueButton onClick={handleComplete} disabled={!canSubmit} loading={isSigningUp || isSubmitting}>
         Start my journey
       </ContinueButton>
-    </motion.div>
+    </div>
   );
 }
