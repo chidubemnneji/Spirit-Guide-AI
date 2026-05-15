@@ -27,10 +27,12 @@ export default function Welcome() {
         <div className="p-6">
           <div className="bg-white p-7">
             {/* Hero image placeholder */}
-            <div className="w-full aspect-[4/3] mb-7 overflow-hidden bg-[#e9e8e4] flex items-center justify-center">
-              <p className="font-serif text-2xl italic text-center leading-relaxed px-8 text-[#1b291d]">
-                "Come to me, all who are weary and burdened, and I will give you rest."
-              </p>
+            <div className="w-full aspect-[4/3] mb-7 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80"
+                alt="Peaceful mountain landscape at dawn"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex items-center justify-between mb-5">
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Faith Companion</span>
