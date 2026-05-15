@@ -588,19 +588,30 @@ export default function Bible() {
           {/* Feeling chips */}
           <div className="flex flex-wrap gap-2 mt-3">
             {FEELINGS.map((feeling) => (
-              <Button
+              <button
                 key={feeling.id}
-                variant={activeFeeling === feeling.id ? "default" : "outline"}
-                size="sm"
-                className="text-xs"
                 onClick={() => handleFeelingSelect(feeling.id)}
                 data-testid={`button-feeling-${feeling.id}`}
+                className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase transition-colors"
+                style={{
+                  background: activeFeeling === feeling.id ? "#1b291d" : "transparent",
+                  color: activeFeeling === feeling.id ? "#fff" : "#73726C",
+                  border: activeFeeling === feeling.id ? "1px solid #1b291d" : "1px solid #D8D7D2",
+                }}
               >
                 {feeling.label}
-              </Button>
+              </button>
             ))}
           </div>
         </motion.div>
+
+        {/* Loading state */}
+        {searchLoading && (
+          <div className="flex items-center gap-2 px-6 py-4 bg-white border-b border-[#f0f0ee]">
+            <Loader2 className="w-4 h-4 animate-spin text-[#1b291d]" />
+            <span className="text-[13px] text-[#73726C]">Finding verses...</span>
+          </div>
+        )}
 
         {/* Search Results */}
         <AnimatePresence>
@@ -611,38 +622,35 @@ export default function Bible() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <div className="space-y-2 max-h-[480px] overflow-y-auto">
+              <div className="max-h-[480px] overflow-y-auto">
                 {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
-                  <Card 
+                  <button
                     key={index}
-                    className="p-4 cursor-pointer hover-elevate"
+                    className="w-full text-left px-6 py-5 bg-white border-b border-[#f0f0ee] block"
                     onClick={() => navigateToVerse(result.reference)}
                   >
-                    <p className="text-xs font-semibold text-primary mb-1">{result.reference}</p>
-                    <p className="text-sm text-foreground/90 leading-relaxed">{result.text}</p>
+                    <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1b291d] mb-1.5">{result.reference}</p>
+                    <p className="font-serif text-[17px] text-black leading-relaxed">{result.text}</p>
                     {result.relevance && (
-                      <p className="text-xs text-muted-foreground mt-2 italic border-t border-border/50 pt-2">{result.relevance}</p>
+                      <p className="text-[12px] text-[#73726C] mt-2 italic">{result.relevance}</p>
                     )}
-                  </Card>
+                  </button>
                 ))}
                 {searchResults.length > 5 && !showAllResults && (
-                  <Button 
-                    variant="ghost" 
-                    className="w-full text-sm"
+                  <button
+                    className="w-full py-4 text-[11px] font-semibold tracking-wider uppercase text-[#1b291d] bg-white border-b border-[#f0f0ee]"
                     onClick={() => setShowAllResults(true)}
                   >
                     Show {searchResults.length - 5} more results
-                  </Button>
+                  </button>
                 )}
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="w-full mt-2 text-muted-foreground"
-                onClick={() => { setSearchResults([]); setSearchQuery(""); }}
+              <button
+                className="w-full py-3 text-[11px] font-semibold tracking-wider uppercase text-[#73726C] bg-white"
+                onClick={() => { setSearchResults([]); setSearchQuery(""); setActiveFeeling(null); }}
               >
                 Clear results
-              </Button>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
