@@ -149,13 +149,18 @@ export default function Devotion() {
       {/* Hero card */}
       <div className="p-6 pb-0">
         <div className="bg-white p-7">
-          <div className="w-full aspect-[4/3] mb-7 overflow-hidden bg-[#e9e8e4] flex items-center justify-center">
-            {devotional?.scriptureText ? (
-              <p className="font-serif text-2xl italic text-center leading-relaxed px-6 text-[#1b291d]">
-                "{devotional.scriptureText.slice(0, 120)}{devotional.scriptureText.length > 120 ? "…" : ""}"
-              </p>
-            ) : (
-              <p className="font-serif text-2xl italic text-center leading-relaxed px-6 text-[#1b291d]/40">Loading today's scripture…</p>
+          <div className="w-full aspect-[4/3] mb-7 overflow-hidden relative">
+            <img
+              src="https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format&fit=crop&q=80"
+              alt="Peaceful morning nature"
+              className="w-full h-full object-cover"
+            />
+            {devotional?.scriptureText && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-5 py-4">
+                <p className="font-serif text-[15px] italic text-white leading-relaxed">
+                  "{devotional.scriptureText.slice(0, 100)}{devotional.scriptureText.length > 100 ? "…" : ""}"
+                </p>
+              </div>
             )}
           </div>
           <div className="flex items-center justify-between mb-5">
