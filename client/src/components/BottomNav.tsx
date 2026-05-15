@@ -1,5 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { useFlags } from "@/hooks/useFlags";
+import { useScroll } from "@/context/ScrollContext";
 
 const BASE_NAV = [
   {
@@ -54,6 +55,9 @@ const PROFILE_NAV = {
 export function BottomNav() {
   const [location] = useLocation();
   const flags = useFlags();
+  const { hideNav } = useScroll();
+
+  if (hideNav) return null;
 
   const navItems = flags["community-section"]
     ? [...BASE_NAV, COMMUNITY_NAV, PROFILE_NAV]
