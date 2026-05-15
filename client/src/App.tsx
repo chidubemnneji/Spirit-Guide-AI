@@ -66,10 +66,12 @@ function AppContent() {
   const showBottomNav = !ONBOARDING_ROUTES.includes(location);
 
   return (
-    <>
-      <Router />
-      {showBottomNav && <BottomNav />}
-    </>
+    <div className="min-h-screen bg-[#111] flex justify-center">
+      <div className="w-full max-w-[430px] relative bg-[#EBEAE5] min-h-screen shadow-2xl overflow-hidden">
+        <Router />
+        {showBottomNav && <BottomNav />}
+      </div>
+    </div>
   );
 }
 

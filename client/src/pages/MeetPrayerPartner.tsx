@@ -29,10 +29,12 @@ export default function MeetPrayerPartner() {
         {/* Intro */}
         <div className="p-6">
           <div className="bg-white p-7">
-            <div className="w-full aspect-[4/3] mb-7 bg-[#e9e8e4] flex items-center justify-center">
-              <p className="font-serif text-2xl italic text-center leading-relaxed px-8 text-[#1b291d]">
-                "I know your story. I'm here 24/7 to walk with you."
-              </p>
+            <div className="w-full aspect-[4/3] mb-7 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&auto=format&fit=crop&q=80"
+                alt="Peaceful forest path at dawn"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex items-center justify-between mb-5">
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Meet your guide</span>
