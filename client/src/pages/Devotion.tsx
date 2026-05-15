@@ -128,7 +128,7 @@ export default function Devotion() {
   const weekRange = (() => { const ws = startOfWeek(new Date(), { weekStartsOn: 1 }); return `${format(ws, "MMM d")} - ${format(addDays(ws, 6), "d")}`; })();
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2]">
         <div className="flex-1 py-6 px-6 flex items-center">

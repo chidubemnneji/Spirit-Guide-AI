@@ -315,7 +315,7 @@ export default function DevotionalReading() {
   ].filter(Boolean) as Array<{ type: string; label?: string; content: string; accent?: boolean }>;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20">
       {/* Audio Player overlay */}
       {showAudioPlayer && (
         <AudioPlayer

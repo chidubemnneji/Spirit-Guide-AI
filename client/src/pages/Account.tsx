@@ -77,7 +77,7 @@ export default function Account() {
   const dashArray = `${circumference * progressPct} ${circumference}`;
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2]">
         <div className="flex-1 py-6 px-6 flex items-center">

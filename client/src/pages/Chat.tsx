@@ -350,7 +350,7 @@ export default function Chat() {
   );
 
   return (
-    <div className={`h-dvh flex flex-col ${hideNav ? "" : "pb-[88px]"}`} style={{ background: "#EBEAE5" }}>
+    <div className={`h-dvh flex flex-col ${hideNav ? "" : "pb-[64px]"}`} style={{ background: "#EBEAE5" }}>
       {/* Header */}
       <header className="bg-white border-b border-[#D8D7D2] flex items-center">
         <div className="py-5 px-4 flex items-center border-r border-[#D8D7D2]">

@@ -845,7 +845,7 @@ export default function Bible() {
 
   // Bible Reader View
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       <header className="sticky top-0 z-40 bg-white border-b border-[#D8D7D2]">
         <div className="flex items-center">
           <button

@@ -129,7 +129,7 @@ export default function Journal() {
   const entries = data?.entries || [];
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2] sticky top-0 z-10">
         <div className="flex-1 py-6 px-6 flex items-center">

@@ -96,7 +96,7 @@ export default function Community() {
   const filtered = activeCategory === "All Threads" ? posts : posts.filter(p => categoryLabel(p) === activeCategory);
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       {/* Category tabs */}
       <header className="sticky top-0 z-20 bg-white border-b border-[#D8D7D2] flex items-center overflow-x-auto gap-2 px-4 py-4"
         style={{ scrollbarWidth: "none" }}>

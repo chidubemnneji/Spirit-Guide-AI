@@ -64,7 +64,7 @@ export function BottomNav() {
     : [...BASE_NAV, PROFILE_NAV];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#D8D7D2] flex items-center justify-between px-10 pb-4 pt-3 h-[88px]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#D8D7D2] flex items-center justify-between px-10 pb-2 pt-2 h-[64px]">
       {navItems.map((item) => {
         const isActive = location === item.path ||
           (item.path === "/chat" && location === "/transition");
