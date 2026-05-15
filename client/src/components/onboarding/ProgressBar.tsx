@@ -7,7 +7,7 @@ export function ProgressBar({ currentPhase, totalPhases }: ProgressBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#D8D7D2]">
       <div className="flex items-center justify-between px-6 py-5">
-        <h1 className="font-serif text-[22px] leading-none text-black tracking-wide">Sanctuary</h1>
+        <h1 className="font-serif text-[22px] leading-none text-black tracking-wide">SoulGuide</h1>
         <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#73726C]">
           {stepLabels[currentPhase - 1] ?? `Step ${currentPhase}`}
         </span>
