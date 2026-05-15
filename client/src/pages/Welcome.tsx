@@ -35,7 +35,7 @@ export default function Welcome() {
               />
             </div>
             <p className="font-serif text-[13px] italic text-[#73726C] mb-5 leading-relaxed">
-              "Come to me, all who are weary and burdened, and I will give you rest." — Matthew 11:28
+              "Come to me, all who are weary and burdened, and I will give you rest.", Matthew 11:28
             </p>
             <div className="flex items-center justify-between mb-5">
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Faith Companion</span>
@@ -45,7 +45,7 @@ export default function Welcome() {
               A companion<br />for your faith.
             </h2>
             <p className="text-[17px] leading-[1.65] text-[#545454]">
-              Wherever you are on your journey — doubting, searching, or simply tired — you don't have to walk it alone.
+              Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
             </p>
           </div>
         </div>
