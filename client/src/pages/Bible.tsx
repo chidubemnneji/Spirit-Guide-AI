@@ -526,17 +526,17 @@ export default function Bible() {
   // Bible Home View
   if (!showReader) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
         <div className="px-5 pt-6 pb-4">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <BookOpen className="w-10 h-10 text-primary mb-4" />
+            <BookOpen className="w-10 h-10 mb-4" style={{ color: "#1b291d" }} />
           </motion.div>
           
           <motion.h1 
-            className="font-serif text-3xl font-bold text-foreground"
+            className="font-serif text-3xl font-bold text-black"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -617,12 +617,20 @@ export default function Bible() {
         <AnimatePresence>
           {searchResults.length > 0 && (
             <motion.div
-              className="px-5 py-2"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <div className="max-h-[480px] overflow-y-auto">
+              <div className="section-band">
+                <span>Results</span>
+                <button
+                  className="text-[11px] font-medium tracking-wider uppercase text-[#73726C]"
+                  onClick={() => { setSearchResults([]); setSearchQuery(""); setActiveFeeling(null); }}
+                >
+                  Clear
+                </button>
+              </div>
+              <div>
                 {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
                   <button
                     key={index}
@@ -645,12 +653,6 @@ export default function Bible() {
                   </button>
                 )}
               </div>
-              <button
-                className="w-full py-3 text-[11px] font-semibold tracking-wider uppercase text-[#73726C] bg-white"
-                onClick={() => { setSearchResults([]); setSearchQuery(""); setActiveFeeling(null); }}
-              >
-                Clear results
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
