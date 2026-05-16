@@ -564,25 +564,25 @@ export default function Bible() {
         >
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <Input
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#73726C]" />
+              <input
                 placeholder="Search verses or type a reference..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="pr-10"
+                className="w-full pl-9 pr-4 py-2.5 bg-[#EBEAE5] border border-[#D8D7D2] focus:border-[#1b291d] outline-none text-[14px] font-sans text-black transition-colors"
                 data-testid="input-search"
               />
             </div>
-            <Button 
-              onClick={handleSearch} 
+            <button
+              onClick={handleSearch}
               disabled={searchLoading}
-              size="icon"
-              variant="ghost"
-              className="text-primary"
+              className="px-4 py-2.5 font-semibold text-[12px] tracking-wider uppercase disabled:opacity-40"
+              style={{ background: "#1b291d", color: "#fff" }}
               data-testid="button-do-search"
             >
-              {searchLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            </Button>
+              {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Go"}
+            </button>
           </div>
           
           {/* Feeling chips */}
