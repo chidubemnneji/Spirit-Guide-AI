@@ -247,6 +247,7 @@ export default function Bible() {
   // Search results
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeFeeling, setActiveFeeling] = useState<string | null>(null);
 
   const FEELINGS = [
@@ -288,8 +289,8 @@ export default function Bible() {
     setSearchLoading(true);
     setShowAllResults(false);
     setActiveFeeling(null);
+    setSearchError(null);
     try {
-      // Check if it's a specific verse reference like "John 3:16"
       const versePattern = new RegExp(BIBLE_VERSE_PATTERN.source, 'i');
       const hasVerseReference = versePattern.test(searchQuery);
 
@@ -299,14 +300,16 @@ export default function Bible() {
         const data = await res.json();
         setSearchResults(data || []);
       } else {
-        // AI-powered search for natural language queries
+        // AI-powered search for natural language queries (also fallback when no version loaded)
         const res = await fetch("/api/bible/ai-search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: searchQuery }),
+          credentials: "include",
         });
+        if (!res.ok) throw new Error(`Search failed: ${res.status}`);
         const data = await res.json();
-        if (data.results) {
+        if (data.results?.length) {
           setSearchResults(data.results.map((r: any) => ({
             reference: r.reference,
             text: r.text,
@@ -319,6 +322,7 @@ export default function Bible() {
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
+      setSearchError("Search failed. Please try again.");
     } finally {
       setSearchLoading(false);
     }
@@ -342,6 +346,7 @@ export default function Bible() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: `verses about feeling ${feeling}` }),
+        credentials: "include",
       });
       const data = await res.json();
       if (data.results) {
@@ -604,6 +609,13 @@ export default function Bible() {
             ))}
           </div>
         </motion.div>
+
+        {/* Search error */}
+        {searchError && !searchLoading && (
+          <div className="px-6 py-3 bg-white border-b border-[#f0f0ee]">
+            <p className="text-[13px] text-red-600">{searchError}</p>
+          </div>
+        )}
 
         {/* Loading state */}
         {searchLoading && (
