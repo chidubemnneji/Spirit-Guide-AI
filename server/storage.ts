@@ -31,7 +31,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
 
-  getPersona(userId?: number): Promise<UserPersona | undefined>;
+  getPersona(userId: number): Promise<UserPersona | undefined>;
   createPersona(persona: InsertUserPersona): Promise<UserPersona>;
   updatePersona(id: number, updates: Partial<InsertUserPersona>): Promise<UserPersona | undefined>;
 
@@ -98,19 +98,12 @@ export class DrizzleStorage implements IStorage {
     return updated;
   }
 
-  async getPersona(userId?: number): Promise<UserPersona | undefined> {
-    if (userId) {
-      const rows = await db
-        .select()
-        .from(userPersonas)
-        .where(eq(userPersonas.userId, userId))
-        .limit(1);
-      return rows[0];
-    }
+  async getPersona(userId: number): Promise<UserPersona | undefined> {
+    if (!Number.isInteger(userId)) return undefined;
     const rows = await db
       .select()
       .from(userPersonas)
-      .orderBy(desc(userPersonas.createdAt))
+      .where(eq(userPersonas.userId, userId))
       .limit(1);
     return rows[0];
   }

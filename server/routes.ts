@@ -31,6 +31,11 @@ import { trustTrackingService } from "./services/trustTrackingService";
 import { modeTransitionService } from "./services/modeTransitionService";
 import { shameLoggingService } from "./services/shameLoggingService";
 import { registerVoiceRoutes } from "./voiceRoutes";
+import {
+  requireAuth,
+  requireOwnedConversation,
+  requireOwnedRecommendation,
+} from "./middleware/auth";
 
 // Rate limiters for API protection
 const chatLimiter = rateLimit({
@@ -218,7 +223,10 @@ export async function registerRoutes(
         verificationTokenExpiry,
       }).returning();
 
-      // Set session
+      // Regenerate session to prevent session fixation, then set the user
+      await new Promise<void>((resolve, reject) =>
+        req.session.regenerate((err) => (err ? reject(err) : resolve())),
+      );
       (req.session as SessionWithUser).userId = user.id;
 
       // Send verification email only if feature is enabled (non-blocking)
@@ -339,7 +347,19 @@ export async function registerRoutes(
       // Update last active
       await storage.updateUser(user.id, { lastActive: new Date() });
 
-      // Set session
+      // Enforce email verification when the feature is enabled
+      if (isEnabled("EMAIL_VERIFICATION") && !(user as any).emailVerified) {
+        return res.status(403).json({
+          success: false,
+          requiresVerification: true,
+          error: "Please verify your email before signing in.",
+        });
+      }
+
+      // Regenerate session to prevent session fixation, then set the user
+      await new Promise<void>((resolve, reject) =>
+        req.session.regenerate((err) => (err ? reject(err) : resolve())),
+      );
       (req.session as SessionWithUser).userId = user.id;
 
       // Get persona if exists
@@ -540,10 +560,9 @@ export async function registerRoutes(
   });
 
   // Get current persona
-  app.get("/api/persona", async (req: Request, res: Response) => {
+  app.get("/api/persona", requireAuth, async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionWithUser;
-      const userId = session.userId;
+      const userId = req.userId!;
       const persona = await storage.getPersona(userId);
       if (!persona) {
         return res.status(404).json({
@@ -601,7 +620,7 @@ export async function registerRoutes(
   });
 
   // Get all conversations for the logged-in user
-  app.get("/api/conversations", async (req: Request, res: Response) => {
+  app.get("/api/conversations", requireAuth, async (req: Request, res: Response) => {
     try {
       const session = req.session as SessionWithUser;
       const userId = session.userId;
@@ -617,20 +636,10 @@ export async function registerRoutes(
   });
 
   // Get single conversation with messages
-  app.get("/api/conversations/:id", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:id", requireOwnedConversation, async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionWithUser;
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid conversation ID" });
-      }
-      const conversation = await storage.getConversation(id);
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-      if (conversation.userId !== session.userId) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
+      const id = req.conversation!.id;
+      const conversation = req.conversation!;
       const messages = await storage.getMessages(id);
       
       // Batch fetch recommendation cards in one query
@@ -649,7 +658,7 @@ export async function registerRoutes(
   });
 
   // Create new conversation
-  app.post("/api/conversations", async (req: Request, res: Response) => {
+  app.post("/api/conversations", requireAuth, async (req: Request, res: Response) => {
     try {
       const parseResult = conversationSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -660,10 +669,9 @@ export async function registerRoutes(
       }
 
       const { title } = parseResult.data;
-      const sessionUserId = (req.session as SessionWithUser).userId ?? null;
       const conversation = await storage.createConversation({
         title: title || "New Conversation",
-        userId: sessionUserId,
+        userId: req.userId!,
         channel: "general",
       });
       res.status(201).json(conversation);
@@ -695,20 +703,9 @@ export async function registerRoutes(
   });
 
   // Get messages for a conversation
-  app.get("/api/conversations/:id/messages", async (req: Request, res: Response) => {
+  app.get("/api/conversations/:id/messages", requireOwnedConversation, async (req: Request, res: Response) => {
     try {
-      const session = req.session as SessionWithUser;
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid conversation ID" });
-      }
-      const conversation = await storage.getConversation(id);
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-      if (session.userId && conversation.userId !== session.userId) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
+      const id = req.conversation!.id;
       const messages = await storage.getMessages(id);
       
       // Batch fetch recommendation cards in one query
@@ -832,24 +829,10 @@ Write the check-in opening.`;
   });
 
   // Save a system/AI-generated message without triggering AI response
-  app.post("/api/conversations/:id/system-message", async (req: Request, res: Response) => {
+  app.post("/api/conversations/:id/system-message", requireOwnedConversation, async (req: Request, res: Response) => {
     try {
-      const conversationId = parseInt(req.params.id);
-      if (isNaN(conversationId)) {
-        return res.status(400).json({ error: "Invalid conversation ID" });
-      }
-      
-      const session = req.session as SessionWithUser;
-      const userId = session.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      
-      const conversation = await storage.getConversation(conversationId);
-      if (!conversation || conversation.userId !== userId) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-      
+      const conversationId = req.conversation!.id;
+
       const { content } = req.body;
       if (!content || typeof content !== "string") {
         return res.status(400).json({ error: "Content is required" });
@@ -869,12 +852,9 @@ Write the check-in opening.`;
   });
 
   // Send message and get AI response (streaming)
-  app.post("/api/conversations/:id/messages", chatLimiter, async (req: Request, res: Response) => {
+  app.post("/api/conversations/:id/messages", chatLimiter, requireOwnedConversation, async (req: Request, res: Response) => {
     try {
-      const conversationId = parseInt(req.params.id);
-      if (isNaN(conversationId)) {
-        return res.status(400).json({ error: "Invalid conversation ID" });
-      }
+      const conversationId = req.conversation!.id;
 
       const parseResult = messageSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -886,15 +866,10 @@ Write the check-in opening.`;
 
       const { content, mood } = parseResult.data;
 
-      // Verify conversation exists
-      const conversation = await storage.getConversation(conversationId);
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
+      const conversation = req.conversation!;
 
       // Get user and persona for system prompt — cached
-      const session = req.session as SessionWithUser;
-      const userId = session.userId;
+      const userId = req.userId!;
 
       const userKey = `user:${userId}`;
       let user = userCache.get(userKey);
@@ -1380,13 +1355,20 @@ I'm here to listen whenever you're ready to talk.`;
   });
 
   // Recommendation Card API routes
-  app.get("/api/messages/:messageId/recommendations", async (req: Request, res: Response) => {
+  app.get("/api/messages/:messageId/recommendations", requireAuth, async (req: Request, res: Response) => {
     try {
       const messageId = parseInt(req.params.messageId);
       if (isNaN(messageId)) {
         return res.status(400).json({ error: "Invalid message ID" });
       }
       const cards = await storage.getRecommendationCardsForMessage(messageId);
+      // Ownership: verify the cards' conversation belongs to the caller.
+      if (cards.length > 0 && cards[0].conversationId != null) {
+        const conversation = await storage.getConversation(cards[0].conversationId);
+        if (!conversation || conversation.userId !== req.userId) {
+          return res.status(404).json({ error: "Not found" });
+        }
+      }
       res.json({ cards });
     } catch (error) {
       console.error("Error fetching recommendation cards:", error);
@@ -1394,16 +1376,9 @@ I'm here to listen whenever you're ready to talk.`;
     }
   });
 
-  app.post("/api/recommendations/:cardId/click", async (req: Request, res: Response) => {
+  app.post("/api/recommendations/:cardId/click", requireOwnedRecommendation, async (req: Request, res: Response) => {
     try {
-      const cardId = parseInt(req.params.cardId);
-      if (isNaN(cardId)) {
-        return res.status(400).json({ error: "Invalid card ID" });
-      }
-      const card = await storage.getRecommendationCard(cardId);
-      if (!card) {
-        return res.status(404).json({ error: "Card not found" });
-      }
+      const cardId = req.recommendationCard!.id;
       await storage.clickRecommendationCard(cardId);
       res.json({ success: true });
     } catch (error) {
@@ -1412,33 +1387,23 @@ I'm here to listen whenever you're ready to talk.`;
     }
   });
 
-  app.post("/api/recommendations/:cardId/complete", async (req: Request, res: Response) => {
+  app.post("/api/recommendations/:cardId/complete", requireOwnedRecommendation, async (req: Request, res: Response) => {
     try {
-      const cardId = parseInt(req.params.cardId);
-      if (isNaN(cardId)) {
-        return res.status(400).json({ error: "Invalid card ID" });
-      }
-      const card = await storage.getRecommendationCard(cardId);
-      if (!card) {
-        return res.status(404).json({ error: "Card not found" });
-      }
+      const card = req.recommendationCard!;
+      const cardId = card.id;
       await storage.completeRecommendationCard(cardId);
-      
+
       // Track accepted suggestion for trust building
-      const session = req.session as SessionWithUser;
-      if (session.userId) {
-        try {
-          
-          await trustTrackingService.recordTrustEvent(session.userId, "accepted_suggestion", {
-            cardId,
-            practiceType: card.practiceType,
-            title: card.title
-          });
-        } catch (trustError) {
-          console.error("Trust tracking error (continuing):", trustError);
-        }
+      try {
+        await trustTrackingService.recordTrustEvent(req.userId!, "accepted_suggestion", {
+          cardId,
+          practiceType: card.practiceType,
+          title: card.title
+        });
+      } catch (trustError) {
+        console.error("Trust tracking error (continuing):", trustError);
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Error tracking card completion:", error);
@@ -1446,43 +1411,33 @@ I'm here to listen whenever you're ready to talk.`;
     }
   });
 
-  app.post("/api/recommendations/:cardId/rate", async (req: Request, res: Response) => {
+  app.post("/api/recommendations/:cardId/rate", requireOwnedRecommendation, async (req: Request, res: Response) => {
     try {
-      const cardId = parseInt(req.params.cardId);
+      const card = req.recommendationCard!;
+      const cardId = card.id;
       const { rating } = req.body;
-      if (isNaN(cardId)) {
-        return res.status(400).json({ error: "Invalid card ID" });
-      }
       if (typeof rating !== "number" || rating < 1 || rating > 5) {
         return res.status(400).json({ error: "Rating must be between 1 and 5" });
       }
-      const card = await storage.getRecommendationCard(cardId);
-      if (!card) {
-        return res.status(404).json({ error: "Card not found" });
-      }
       await storage.rateRecommendationCard(cardId, rating);
-      
+
       // Track feedback for trust building
-      const session = req.session as SessionWithUser;
-      if (session.userId) {
-        try {
-          
-          if (rating >= 4) {
-            await trustTrackingService.recordTrustEvent(session.userId, "gave_positive_feedback", {
-              cardId,
-              rating,
-              practiceType: card.practiceType
-            });
-          } else if (rating <= 2) {
-            await trustTrackingService.recordTrustEvent(session.userId, "gave_constructive_feedback", {
-              cardId,
-              rating,
-              practiceType: card.practiceType
-            });
-          }
-        } catch (trustError) {
-          console.error("Trust tracking error (continuing):", trustError);
+      try {
+        if (rating >= 4) {
+          await trustTrackingService.recordTrustEvent(req.userId!, "gave_positive_feedback", {
+            cardId,
+            rating,
+            practiceType: card.practiceType
+          });
+        } else if (rating <= 2) {
+          await trustTrackingService.recordTrustEvent(req.userId!, "gave_constructive_feedback", {
+            cardId,
+            rating,
+            practiceType: card.practiceType
+          });
         }
+      } catch (trustError) {
+        console.error("Trust tracking error (continuing):", trustError);
       }
       
       res.json({ success: true });
