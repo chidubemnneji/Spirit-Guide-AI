@@ -77,12 +77,13 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#111]">
+    <div className="min-h-screen bg-[#EBEAE5]">
       <BottomNav />
       {/* Mobile: centered phone column with bottom-nav clearance.
-          Desktop: content sits to the right of the 220px sidebar. */}
-      <div className="md:ml-[220px] flex justify-center">
-        <div className="w-full max-w-[430px] md:max-w-[720px] relative bg-[#EBEAE5] min-h-screen shadow-2xl overflow-hidden pb-[64px] md:pb-0">
+          Desktop: content fills the space beside the fixed 220px sidebar,
+          centered within it with a comfortable max width. */}
+      <div className="md:pl-[220px]">
+        <div className="mx-auto w-full max-w-[430px] md:max-w-[860px] relative bg-[#EBEAE5] min-h-screen md:shadow-none shadow-2xl overflow-hidden pb-[64px] md:pb-0">
           <Router />
         </div>
       </div>

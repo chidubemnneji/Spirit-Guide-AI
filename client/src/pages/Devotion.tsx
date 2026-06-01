@@ -128,7 +128,145 @@ export default function Devotion() {
   const weekRange = (() => { const ws = startOfWeek(new Date(), { weekStartsOn: 1 }); return `${format(ws, "MMM d")} - ${format(addDays(ws, 6), "d")}`; })();
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
+    <>
+      {/* ─────────────────────────  DESKTOP: EDITORIAL BROADSHEET  ───────────────────────── */}
+      <div className="hidden md:block min-h-screen" style={{ background: "#EBEAE5" }}>
+        {/* Masthead */}
+        <header className="flex items-stretch border-b-2 border-black bg-[#EBEAE5]">
+          <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
+            <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
+          </div>
+          <div className="flex-1 flex items-center px-8">
+            <span className="font-serif text-[18px] italic text-[#73726C]">{greeting?.greeting || `Grace and peace, ${userName}.`}</span>
+          </div>
+          <button
+            className="px-8 flex items-center justify-center border-l border-[#D8D7D2] relative"
+            onClick={() => setShowNotifications(true)}
+          >
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">{format(new Date(), "MMMM d")}</span>
+            {(notifData?.unreadCount ?? 0) > 0 && <span className="absolute top-5 right-5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
+          </button>
+        </header>
+
+        {/* Three-column broadsheet */}
+        <div className="grid grid-cols-[1fr_1.4fr_1fr]">
+          {/* LEFT RAIL — Today's Readings */}
+          <section className="border-r border-black">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Today's Readings</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">
+                {journeyTasks.filter(t => t.isCompleted).length.toString().padStart(2, "0")}/{journeyTasks.length.toString().padStart(2, "0")}
+              </span>
+            </div>
+            {journeyTasks.map((task) => (
+              <button
+                key={task.id}
+                onClick={task.action}
+                className="w-full text-left px-6 py-7 border-b border-[#D8D7D2] block transition-colors hover:bg-white/50"
+              >
+                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{task.duration}</span>
+                <p className="font-serif text-[26px] leading-[1.1] text-black mt-2 mb-3">{task.title}</p>
+                <p className="text-[14px] leading-[1.55] text-[#545454] mb-4">{task.subtitle}</p>
+                {task.isCompleted ? (
+                  <span className="inline-block text-[10px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] rounded-full px-3 py-1">Completed</span>
+                ) : (
+                  <span className="inline-block text-[10px] font-semibold tracking-[0.15em] uppercase text-white bg-[#1b291d] rounded-full px-3 py-1">Begin →</span>
+                )}
+              </button>
+            ))}
+          </section>
+
+          {/* CENTER — Featured Devotion */}
+          <section className="border-r border-black">
+            <div className="px-7 py-4 border-b border-black">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Morning Devotion</span>
+            </div>
+            <div className="relative w-full aspect-[16/10] overflow-hidden border-b border-black">
+              <img
+                src="https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1000&auto=format&fit=crop&q=80"
+                alt="Peaceful morning nature"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="px-7 py-7">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">
+                {struggle ? struggle : "Today's Reflection"}
+              </span>
+              <h2 className="font-serif text-[44px] leading-[1.08] text-black mt-3 mb-5">
+                {devotional?.title || `${userName}'s Journey`}
+              </h2>
+              <p className="text-[17px] leading-[1.65] text-[#444] mb-7 max-w-[46ch]">
+                {devotional?.scriptureText
+                  ? `"${devotional.scriptureText.slice(0, 160)}${devotional.scriptureText.length > 160 ? "…" : ""}"`
+                  : "A space to be still, reflect, and reconnect with what matters most."}
+              </p>
+              <button
+                onClick={() => { handleComplete(); setLocation("/devotional"); }}
+                className="inline-flex items-center gap-3 bg-black text-white text-[12px] font-semibold tracking-[0.15em] uppercase rounded-full px-7 py-3.5"
+              >
+                Read Devotion →
+              </button>
+            </div>
+          </section>
+
+          {/* RIGHT RAIL — This Week + Verse */}
+          <section>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">This Week</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{weekRange}</span>
+            </div>
+            <div className="px-6 py-6 border-b border-[#D8D7D2]">
+              <div className="flex justify-between gap-1">
+                {(() => {
+                  const ws = startOfWeek(new Date(), { weekStartsOn: 1 });
+                  return Array.from({ length: 7 }, (_, i) => {
+                    const date = addDays(ws, i);
+                    const done = completedDays.includes(format(date, "yyyy-MM-dd"));
+                    const today = isToday(date);
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                        <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#73726C]">{format(date, "EEEEE")}</span>
+                        <div
+                          className="w-full aspect-square flex items-center justify-center text-[12px] font-semibold"
+                          style={{
+                            background: done ? "#1b291d" : "transparent",
+                            color: done ? "#fff" : "#111",
+                            border: done ? "none" : today ? "2px solid #1b291d" : "1px solid #D8D7D2",
+                          }}
+                        >
+                          {format(date, "d")}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+              {currentStreak > 0 && (
+                <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] mt-5 text-center">{currentStreak} day streak</p>
+              )}
+            </div>
+
+            {devotional && (
+              <div className="px-6 py-6">
+                <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Verse of the Day</span>
+                <p className="font-serif text-[24px] italic leading-[1.4] text-black mt-4 mb-3">
+                  "{devotional.scriptureText}"
+                </p>
+                <p className="text-[12px] font-semibold tracking-[0.12em] uppercase text-[#73726C] mb-5">— {devotional.scriptureReference}</p>
+                <button
+                  onClick={() => setLocation(buildBibleLink(devotional.scriptureReference || ""))}
+                  className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] rounded-full px-5 py-2.5"
+                >
+                  Read in Context
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* ─────────────────────────  MOBILE: ORIGINAL COLUMN (UNTOUCHED)  ───────────────────────── */}
+      <div className="md:hidden min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2]">
         <div className="flex-1 py-6 px-6 flex items-center">
@@ -238,6 +376,7 @@ export default function Devotion() {
 
       <StreakCelebration visible={showCelebration} milestone={celebrationMilestone} onClose={() => setShowCelebration(false)} />
       <AnimatePresence>{showNotifications && <NotificationDrawer onClose={() => setShowNotifications(false)} />}</AnimatePresence>
-    </div>
+      </div>
+    </>
   );
 }
