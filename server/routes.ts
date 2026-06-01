@@ -1884,7 +1884,7 @@ Respond ONLY with valid JSON in this exact format, no other text:
     }
   ]
 }`,
-        maxTokens: 1024,
+        maxTokens: 2048,
         jsonMode: true,
       });
 
