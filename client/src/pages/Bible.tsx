@@ -861,7 +861,42 @@ export default function Bible() {
 
   // Bible Reader View
   return (
-    <div className="min-h-screen pb-20 md:pr-[360px]" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20 md:pr-[360px] md:pl-[280px]" style={{ background: "#EBEAE5" }}>
+      {/* Desktop left book-rail (matches comp) */}
+      <aside className="hidden md:flex flex-col fixed left-[220px] top-0 bottom-0 w-[280px] border-r border-black bg-[#EBEAE5] overflow-y-auto z-30">
+        <div className="px-6 pt-8 pb-5 border-b border-[#D8D7D2]">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (setShowReader(false), handleSearch())}
+            placeholder="Search scripture…"
+            className="w-full bg-transparent border-b border-[#C7C6C0] focus:border-[#1b291d] outline-none pb-2 text-[15px] text-black placeholder:text-[#9A9992]"
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto py-4">
+          {books.map((book) => (
+            <button
+              key={book.id}
+              onClick={() => handleSelectBook(book)}
+              className={cn(
+                "w-full flex items-center justify-between px-6 py-2.5 text-left transition-colors hover:bg-white/50",
+                currentBook?.id === book.id ? "font-bold text-black" : "text-[#333]"
+              )}
+            >
+              <span className="text-[16px] flex items-center gap-2">
+                {currentBook?.id === book.id && <span className="text-[10px]">▸</span>}
+                {book.name}
+              </span>
+              <span className="text-[12px] text-[#9A9992]">{book.chaptersCount ?? ""}</span>
+            </button>
+          ))}
+        </div>
+        <div className="px-6 py-6 border-t border-[#D8D7D2] text-[13px] text-[#73726C] space-y-1">
+          <p>SoulGuide</p>
+          <p className="text-[#9A9992]">{currentVersion?.abbreviation || "Scripture"}</p>
+        </div>
+      </aside>
+
       <header className="sticky top-0 z-40 bg-white border-b border-[#D8D7D2]">
         <div className="flex items-center">
           <button
@@ -1124,6 +1159,10 @@ export default function Bible() {
               transition={{ duration: 0.4 }}
               className="space-y-1"
             >
+              <h2 className="hidden md:block font-serif text-[64px] leading-none text-black mb-10">
+                {currentBook?.name || currentChapter?.reference?.split(" ").slice(0, -1).join(" ")}
+                <sup className="text-[28px] text-[#9A9992] ml-1">{currentChapter?.number}</sup>
+              </h2>
               {verses.map((verse, index) => (
                 <motion.p
                   key={verse.number}
@@ -1134,10 +1173,10 @@ export default function Bible() {
                   onClick={() => handleVerseClick(verse.number)}
                   className={cn(
                     "font-serif text-[19px] leading-[1.7] py-2 px-3 -mx-3 cursor-pointer transition-colors",
-                    highlightedVerses.has(verse.number) ? "bg-[#1b291d]/10" : "hover:bg-[#1b291d]/5"
+                    highlightedVerses.has(verse.number) ? "bg-[#111] text-white" : "hover:bg-[#1b291d]/5 text-black"
                   )}
                 >
-                  <span className="text-[#1b291d] font-bold text-[13px] mr-2">{verse.number}</span>
+                  <span className={cn("font-bold text-[13px] mr-2", highlightedVerses.has(verse.number) ? "text-white/70" : "text-[#1b291d]")}>{verse.number}</span>
                   {verse.text}
                 </motion.p>
               ))}
@@ -1259,11 +1298,10 @@ function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
         {crossRefs.length === 0 ? (
           <p className="text-[13px] text-[#73726C] italic leading-relaxed">No cross references for this passage yet.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-4">
             {crossRefs.map((c, i) => (
-              <button key={i} onClick={() => onNavigate(c.reference)}
-                className="block text-left text-[14px] font-serif text-[#1b291d] underline decoration-[#C7C6C0] hover:decoration-[#1b291d]">
-                {c.reference}
+              <button key={i} onClick={() => onNavigate(c.reference)} className="block text-left w-full group">
+                <p className="font-bold text-[15px] text-black group-hover:text-[#1b291d]">{c.reference}</p>
               </button>
             ))}
           </div>
@@ -1297,16 +1335,23 @@ function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
         {notes.length === 0 ? (
           <p className="px-6 py-5 text-[13px] text-[#73726C] italic">No notes on this chapter yet.</p>
         ) : (
-          notes.map((n) => (
-            <div key={n.id} className="px-6 py-4 border-b border-[#E6E5E0] group relative">
-              {n.title && <p className="font-serif text-[15px] font-bold text-black mb-1">{n.title}</p>}
-              <p className="text-[14px] text-[#333] leading-relaxed font-serif">{n.body}</p>
-              <button onClick={() => deleteNote(n.id)}
-                className="absolute top-4 right-5 opacity-0 group-hover:opacity-100 transition-opacity text-[#73726C] hover:text-red-600">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))
+          <div className="px-6 py-4 space-y-4">
+            {notes.map((n) => (
+              <div key={n.id} className="border border-[#C7C6C0] p-4 group relative">
+                {n.title && <p className="font-bold text-[15px] text-black mb-1">{n.title}</p>}
+                <p className="text-[14px] text-[#333] leading-relaxed">{n.body}</p>
+                <div className="flex justify-end mt-3">
+                  <span className="text-[10px] text-[#73726C] border border-[#C7C6C0] px-2 py-0.5">
+                    {n.createdAt ? new Date(n.createdAt).toLocaleDateString("en-GB").replace(/\//g, ".") : ""}
+                  </span>
+                </div>
+                <button onClick={() => deleteNote(n.id)}
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#73726C] hover:text-red-600">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </aside>
