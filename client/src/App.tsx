@@ -63,13 +63,28 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
-  const showBottomNav = !ONBOARDING_ROUTES.includes(location);
+  const showNav = !ONBOARDING_ROUTES.includes(location);
+
+  if (!showNav) {
+    // Onboarding / auth flows: simple centered phone column.
+    return (
+      <div className="min-h-screen bg-[#111] flex justify-center">
+        <div className="w-full max-w-[430px] relative bg-[#EBEAE5] min-h-screen shadow-2xl overflow-hidden">
+          <Router />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#111] flex justify-center">
-      <div className="w-full max-w-[430px] relative bg-[#EBEAE5] min-h-screen shadow-2xl overflow-hidden">
-        <Router />
-        {showBottomNav && <BottomNav />}
+    <div className="min-h-screen bg-[#111]">
+      <BottomNav />
+      {/* Mobile: centered phone column with bottom-nav clearance.
+          Desktop: content sits to the right of the 220px sidebar. */}
+      <div className="md:ml-[220px] flex justify-center">
+        <div className="w-full max-w-[430px] md:max-w-[720px] relative bg-[#EBEAE5] min-h-screen shadow-2xl overflow-hidden pb-[64px] md:pb-0">
+          <Router />
+        </div>
       </div>
     </div>
   );

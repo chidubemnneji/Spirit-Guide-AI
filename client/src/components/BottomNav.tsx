@@ -57,23 +57,43 @@ export function BottomNav() {
   const flags = useFlags();
   const { hideNav } = useScroll();
 
-  if (hideNav) return null;
-
   const navItems = flags["community-section"]
     ? [...BASE_NAV, COMMUNITY_NAV, PROFILE_NAV]
     : [...BASE_NAV, PROFILE_NAV];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#D8D7D2] flex items-center justify-between px-10 pb-2 pt-2 h-[64px]">
+    <nav
+      className={`
+        fixed z-50 bg-white border-[#D8D7D2]
+        ${hideNav ? "hidden md:flex" : "flex"}
+        bottom-0 left-0 right-0 h-[64px] border-t items-center justify-between px-10 pb-2 pt-2
+        md:top-0 md:bottom-0 md:right-auto md:h-screen md:w-[220px] md:border-t-0 md:border-r
+        md:flex-col md:justify-start md:items-stretch md:px-0 md:py-8 md:gap-1
+      `}
+      aria-label="Primary"
+    >
+      <div className="hidden md:block px-6 mb-8">
+        <span className="font-serif text-[20px] text-[#1b291d]">SoulGuide</span>
+      </div>
       {navItems.map((item) => {
         const isActive = location === item.path ||
           (item.path === "/chat" && location === "/transition");
         return (
           <Link key={item.path} href={item.path}>
-            <button className="flex flex-col items-center gap-2.5 bg-transparent border-none p-0 cursor-pointer">
+            <button
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className="
+                flex flex-col items-center gap-2.5 bg-transparent border-none cursor-pointer
+                p-0
+                md:flex-row md:gap-4 md:items-center md:w-full md:px-6 md:py-3 md:min-h-[48px]
+                md:hover:bg-[#f2f1ec] transition-colors
+              "
+              style={isActive ? { background: undefined } : undefined}
+            >
               {item.icon(isActive)}
               <span
-                className="text-[10px] font-semibold tracking-[0.15em] uppercase"
+                className="text-[10px] md:text-[13px] font-semibold tracking-[0.15em] uppercase"
                 style={{ color: isActive ? "#1b291d" : "#73726C" }}
               >
                 {item.label}
