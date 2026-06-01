@@ -36,6 +36,7 @@ import {
   requireOwnedConversation,
   requireOwnedRecommendation,
 } from "./middleware/auth";
+import { extractJson } from "./utils/extractJson";
 
 // Rate limiters for API protection
 const chatLimiter = rateLimit({
@@ -1890,9 +1891,11 @@ Respond ONLY with valid JSON in this exact format, no other text:
         }]
       });
 
-      const raw = response.content[0].type === "text" ? response.content[0].text : "";
-      const cleaned = raw.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
+      const parsed = extractJson<{ results: any[] }>(response);
+      if (!parsed) {
+        console.error("[bible ai-search] FAILED to parse model output");
+        return res.json({ results: [] });
+      }
       res.json(parsed);
     } catch (error) {
       console.error("AI Bible search error:", error);

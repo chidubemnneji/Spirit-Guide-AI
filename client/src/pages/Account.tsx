@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, addDays, isToday } from "date-fns";
@@ -52,6 +53,7 @@ export default function Account() {
   const { data: journeyData } = useQuery<{ success: boolean; data: any[] }>({ queryKey: ["/api/devotional/journey"] });
 
   const handleLogout = async () => { await logout(); setLocation("/"); };
+  const { theme, toggleTheme } = useTheme();
 
   const userName = user?.name || "Friend";
   const userInitials = userName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -209,6 +211,26 @@ export default function Account() {
           <span className="text-[11px] font-semibold text-[#1b291d] border border-[#1b291d] px-3 py-1 uppercase tracking-wider">Free forever</span>
         </div>
       </section>
+
+      {/* Appearance */}
+      <div className="section-band"><span>Appearance</span></div>
+      <div className="px-6 py-5 bg-white border-b border-[#f0f0ee] flex items-center justify-between">
+        <span className="text-[14px] text-black">Dark mode</span>
+        <button
+          onClick={toggleTheme}
+          role="switch"
+          aria-checked={theme === "dark"}
+          aria-label="Toggle dark mode"
+          className="relative w-12 h-7 transition-colors"
+          style={{ background: theme === "dark" ? "#1b291d" : "#D8D7D2" }}
+          data-testid="button-theme-toggle"
+        >
+          <span
+            className="absolute top-1 w-5 h-5 bg-white transition-all"
+            style={{ left: theme === "dark" ? "26px" : "4px" }}
+          />
+        </button>
+      </div>
 
       {/* Logout */}
       <div className="p-6 mt-4">

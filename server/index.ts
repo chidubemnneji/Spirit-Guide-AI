@@ -6,6 +6,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { isEnabled } from "./flags";
+import { initSentry, Sentry, isSentryEnabled } from "./sentry";
+
+initSentry();
 const app = express();
 app.set('trust proxy', 1);
 const httpServer = createServer(app);
@@ -96,6 +99,9 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
     console.error("[error]", status, message, err.stack || "");
+    if (isSentryEnabled() && status >= 500) {
+      Sentry.captureException(err);
+    }
     if (!res.headersSent) {
       res.status(status).json({ message });
     }

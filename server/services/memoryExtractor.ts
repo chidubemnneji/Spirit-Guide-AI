@@ -1,4 +1,5 @@
 import { anthropic } from "./anthropicClient";
+import { extractJson } from "../utils/extractJson";
 
 interface ConversationInsights {
   topics: string[];
@@ -51,9 +52,12 @@ Be concise. Focus on what matters for continuing this person's journey.`,
         max_tokens: 1500,
       });
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      return JSON.parse(cleaned);
+      const parsed = extractJson<ConversationInsights>(response);
+      if (!parsed) {
+        console.error("[memoryExtractor] FAILED to parse model output");
+        return null;
+      }
+      return parsed;
     } catch (error) {
       console.error("Memory extraction error:", error);
       return null;

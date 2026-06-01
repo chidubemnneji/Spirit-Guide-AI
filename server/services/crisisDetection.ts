@@ -1,5 +1,6 @@
 import type { CrisisAssessment } from "@shared/schema";
 import { anthropic } from "./anthropicClient";
+import { extractJson } from "../utils/extractJson";
 
 export class CrisisDetection {
   async detectCrisis(message: string, conversationHistory: string[] = []): Promise<CrisisAssessment> {
@@ -34,9 +35,17 @@ Be accurate but cautious - err on the side of detecting crisis when uncertain.`,
         max_tokens: 400,
       });
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      return JSON.parse(cleaned);
+      const parsed = extractJson<CrisisAssessment>(response);
+      if (!parsed) {
+        console.error("[crisisDetection] FAILED to parse model output — treating as non-crisis but this is a detection gap");
+        return {
+          crisisLevel: "none",
+          indicators: [],
+          immediateActionNeeded: false,
+          recommendedResponse: "normal",
+        };
+      }
+      return parsed;
     } catch (error) {
       console.error("Crisis detection error:", error);
       return {

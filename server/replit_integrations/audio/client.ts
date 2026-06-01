@@ -78,6 +78,25 @@ export async function voiceChatStream(
 }
 
 /**
+ * Text-to-Speech using the dedicated audio speech API (not an LLM prompt).
+ * Reliable, verbatim, and not prompt-injectable.
+ */
+export async function synthesizeSpeech(
+  text: string,
+  voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "nova",
+  format: "mp3" | "wav" | "opus" | "flac" = "mp3"
+): Promise<Buffer> {
+  const response = await openai.audio.speech.create({
+    model: "gpt-4o-mini-tts",
+    voice,
+    input: text,
+    response_format: format,
+  });
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+/**
  * Text-to-Speech: Converts text to speech verbatim.
  * Uses gpt-audio-mini model via Replit AI Integrations.
  */

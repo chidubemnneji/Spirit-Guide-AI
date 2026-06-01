@@ -4,6 +4,20 @@ import { emotionalIntelligence } from "../services/emotionalIntelligence";
 import { detectShame, getRandomNormalization, ARCHETYPES, MODES, TRUST_BEHAVIORS } from "../services/gracePersonaSystem";
 import type { Archetype, TrustLevel, InteractionMode } from "@shared/gracePersona";
 
+/**
+ * Sanitize a user-controlled display name before interpolating it into a
+ * system prompt. Strips newlines and instruction-like phrasing and caps
+ * length, so a crafted name cannot inject prompt instructions.
+ */
+function sanitizeName(name: string): string {
+  return name
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[`<>{}]/g, "")
+    .replace(/\b(ignore|disregard|forget|system|assistant|instruction|prompt)\b/gi, "")
+    .trim()
+    .slice(0, 60);
+}
+
 const LEGACY_TO_GRACE_MAP: Record<PersonaType, Archetype> = {
   seeker_in_void: "wounded_seeker",
   doubter_in_crisis: "wounded_seeker",
@@ -52,7 +66,7 @@ function getPhaseFromUserTurns(userTurnCount: number): ConversationPhase {
 }
 
 function getPhaseInstructions(phase: ConversationPhase, userName?: string): string {
-  const name = userName || "this person";
+  const name = userName ? sanitizeName(userName) || "this person" : "this person";
   
   const instructions: Record<ConversationPhase, string> = {
     acknowledgment: `
@@ -255,10 +269,13 @@ export function buildAISystemPrompt(
 Your communication style is based on renowned pastoral voices like Tim Keller, Richard Rohr, and Eugene Peterson.`;
 
   if (userName) {
-    prompt += `
+    const safeName = sanitizeName(userName);
+    if (safeName) {
+      prompt += `
 
-USER'S NAME: ${userName}
+USER'S NAME: "${safeName}"
 Use their name naturally in conversation (not every message, but when it feels warm and personal).`;
+    }
   }
 
   if (crisisProtocol) {

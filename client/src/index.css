@@ -6,7 +6,6 @@
 
 /* ── Design tokens ── */
 :root {
-  color-scheme: light only;
 
   /* Palette from Variant designs */
   --app-bg:        #EBEAE5;
@@ -46,6 +45,43 @@
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono:  'Fira Code', monospace;
 }
+
+/* Dark theme — core surfaces. Per-page hardcoded hex still uses these vars
+   where it references them; full per-page dark coverage is follow-on work. */
+.dark {
+  --app-bg:        #16181c;
+  --app-bg-warm:   #1c1f24;
+  --app-bg-inner:  #14161a;
+  --app-white:     #1f2228;
+  --app-dark:      #f2f1ec;
+  --app-green:     #8fb89a;
+  --app-border:    #2c2f36;
+  --app-gray:      #b8b7b2;
+  --app-gray-lt:   #9a9994;
+
+  --background:          222 13% 10%;
+  --foreground:          40 10% 93%;
+  --card:                222 12% 14%;
+  --card-foreground:     40 10% 93%;
+  --card-border:         222 9% 20%;
+  --border:              222 9% 20%;
+  --input:               222 9% 20%;
+  --primary:             130 22% 64%;
+  --primary-foreground:  222 13% 10%;
+  --secondary:           222 12% 16%;
+  --secondary-foreground:40 10% 93%;
+  --muted:               222 12% 16%;
+  --muted-foreground:    40 5% 65%;
+  --accent:              222 12% 18%;
+  --accent-foreground:   40 10% 93%;
+  --ring:                130 22% 64%;
+}
+
+.dark body {
+  background-color: var(--app-bg);
+  color: var(--app-dark);
+}
+
 
 * { box-sizing: border-box; }
 

@@ -1,5 +1,6 @@
 import type { EmotionalState } from "@shared/schema";
 import { anthropic } from "./anthropicClient";
+import { extractJson } from "../utils/extractJson";
 
 export class EmotionalIntelligence {
   async detectEmotion(message: string, recentHistory: string[] = []): Promise<EmotionalState> {
@@ -26,9 +27,18 @@ Be concise and accurate. Focus on the dominant emotional state.`,
         max_tokens: 300,
       });
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      return JSON.parse(cleaned);
+      const parsed = extractJson<EmotionalState>(response);
+      if (!parsed) {
+        console.error("[emotionalIntelligence] FAILED to parse model output — using neutral default");
+        return {
+          primaryEmotion: "unknown",
+          intensity: 5,
+          urgency: "low",
+          needs: ["validation"],
+          toneRecommendation: "gentle",
+        };
+      }
+      return parsed;
     } catch (error) {
       console.error("Emotion detection error:", error);
       return {
