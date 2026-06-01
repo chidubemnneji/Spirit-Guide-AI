@@ -136,8 +136,9 @@ export async function hybridComplete(options: {
   prompt: string;
   maxTokens?: number;
   model?: string;
+  jsonMode?: boolean;
 }): Promise<string> {
-  const { systemPrompt, prompt, maxTokens = 1024, model } = options;
+  const { systemPrompt, prompt, maxTokens = 1024, model, jsonMode = false } = options;
   try {
     const response = await anthropic.messages.create({
       model: model || process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5",
@@ -155,6 +156,7 @@ export async function hybridComplete(options: {
     const completion = await openai.chat.completions.create({
       model: process.env.FALLBACK_AI_MODEL || "gpt-4o-mini",
       max_tokens: maxTokens,
+      response_format: jsonMode ? { type: "json_object" } : undefined,
       messages: [
         ...(systemPrompt ? [{ role: "system" as const, content: systemPrompt }] : []),
         { role: "user" as const, content: prompt },

@@ -1885,11 +1885,12 @@ Respond ONLY with valid JSON in this exact format, no other text:
   ]
 }`,
         maxTokens: 1024,
+        jsonMode: true,
       });
 
       const parsed = extractJsonFromText<{ results: any[] }>(text);
       if (!parsed) {
-        console.error("[bible ai-search] FAILED to parse model output");
+        console.error("[bible ai-search] FAILED to parse model output. Raw:", JSON.stringify(text?.slice(0, 500)));
         return res.json({ results: [] });
       }
       res.json(parsed);
