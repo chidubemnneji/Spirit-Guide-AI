@@ -1,5 +1,18 @@
-# Pin Node 20 for the Railway/Nixpacks build (vite 7, p-limit 7, etc. require >=20)
+# Pin Node 20 (vite 7, p-limit 7, etc. require >=20).
 providers = ["node"]
 
 [variables]
 NIXPACKS_NODE_VERSION = "20"
+# Keep npm's cache out of node_modules/.cache to avoid the EBUSY rmdir race
+# with Nixpacks' cache mount during `npm ci`.
+NPM_CONFIG_CACHE = "/tmp/.npm"
+
+# Explicit install phase WITHOUT the default node_modules/.cache mount,
+# which conflicts with npm ci's directory removal on Railway.
+[phases.install]
+cmds = ["npm ci --no-audit --no-fund"]
+cacheDirectories = []
+
+[phases.build]
+cmds = ["npm run build"]
+cacheDirectories = []
