@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Plus, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,26 @@ export function ConversationSidebar({
   onNewChat,
 }: ConversationSidebarProps) {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
     refetchOnWindowFocus: true,
   });
+
+  // When the history opens, backfill titles for any conversations still
+  // showing "New Conversation", then refresh the list.
+  useEffect(() => {
+    if (!open) return;
+    const hasUntitled = conversations.some((c) => c.title === "New Conversation");
+    if (!hasUntitled) return;
+    fetch("/api/conversations/backfill-titles", { method: "POST", credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.updated > 0) queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      })
+      .catch(() => {});
+  }, [open]);
 
   const handleSelect = (id: number) => {
     onSelect(id);

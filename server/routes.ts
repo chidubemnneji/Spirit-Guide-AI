@@ -2385,6 +2385,47 @@ RULES:
     }
   });
 
+  // Backfill titles for any of the user's conversations still named "New Conversation".
+  app.post("/api/conversations/backfill-titles", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const conversations = await storage.getConversationsByUser(userId);
+      const untitled = conversations.filter((c: any) => c.title === "New Conversation");
+
+      let updated = 0;
+      for (const conv of untitled) {
+        try {
+          const messages = await storage.getMessages(conv.id);
+          const userMessages = messages.filter((m) => m.role === "user").slice(0, 4);
+          if (userMessages.length < 1) continue;
+
+          const excerpt = userMessages.map((m) => m.content.slice(0, 120)).join(" / ");
+          let title = "";
+          for await (const chunk of hybridAIClient.streamChat({
+            systemPrompt: `Generate a 3-5 word title for this spiritual conversation. Return ONLY the title, nothing else. No quotes, no punctuation at the end. Sentence case.`,
+            messages: [{ role: "user", content: excerpt }],
+            maxTokens: 20,
+          })) {
+            if (!chunk.done && chunk.content) title += chunk.content;
+            if (chunk.done) break;
+          }
+          title = title.trim().replace(/["'.]+$/, "").slice(0, 60);
+          if (title) {
+            await db.update(schema.conversations).set({ title }).where(eq(schema.conversations.id, conv.id));
+            updated++;
+          }
+        } catch (convErr) {
+          console.error("Backfill title error for conversation", conv.id, convErr);
+        }
+      }
+
+      res.json({ updated, total: untitled.length });
+    } catch (error) {
+      console.error("Backfill titles error:", error);
+      res.status(500).json({ error: "Failed to backfill titles" });
+    }
+  });
+
   // Auto-generate conversation title after enough turns
   app.post("/api/conversations/:id/title", async (req: Request, res: Response) => {
     try {
