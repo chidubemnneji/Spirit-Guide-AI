@@ -495,3 +495,13 @@ export const communityPrayers = pgTable("community_prayers", {
 
 export type CommunityPost = typeof communityPosts.$inferSelect;
 export type CommunityPrayer = typeof communityPrayers.$inferSelect;
+
+// Session table for connect-pg-simple (standard schema). Created by migration
+// so we don't depend on the library's bundled table.sql at runtime.
+export const userSessions = pgTable("user_sessions", {
+  sid: varchar("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+}, (t) => ({
+  expireIdx: index("user_sessions_expire_idx").on(t.expire),
+}));

@@ -40,7 +40,7 @@ app.use(
     store: new PgSession({
       pool: sessionPool,
       tableName: "user_sessions",
-      createTableIfMissing: true,
+      createTableIfMissing: false,
     }),
     cookie: {
       secure: process.env.NODE_ENV === "production",
