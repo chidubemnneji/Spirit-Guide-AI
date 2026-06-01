@@ -36,7 +36,7 @@ import {
   requireOwnedConversation,
   requireOwnedRecommendation,
 } from "./middleware/auth";
-import { extractJson } from "./utils/extractJson";
+import { extractJson, extractJsonFromText } from "./utils/extractJson";
 
 // Rate limiters for API protection
 const chatLimiter = rateLimit({
@@ -1866,12 +1866,8 @@ Write an evening prayer to help them release the day and rest in God's peace.`;
         return res.status(400).json({ error: "Query is required" });
       }
 
-      const response = await anthropic.messages.create({
-        model: process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5",
-        max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: `You are a Bible scholar. The user is searching for: "${query}"
+      const text = await hybridAIClient.complete({
+        prompt: `You are a Bible scholar. The user is searching for: "${query}"
 
 Return 4-5 highly relevant Bible verses. For each verse provide:
 - The exact verse text (NIV translation preferred)
@@ -1887,11 +1883,11 @@ Respond ONLY with valid JSON in this exact format, no other text:
       "relevance": "This verse speaks directly to..."
     }
   ]
-}`
-        }]
+}`,
+        maxTokens: 1024,
       });
 
-      const parsed = extractJson<{ results: any[] }>(response);
+      const parsed = extractJsonFromText<{ results: any[] }>(text);
       if (!parsed) {
         console.error("[bible ai-search] FAILED to parse model output");
         return res.json({ results: [] });

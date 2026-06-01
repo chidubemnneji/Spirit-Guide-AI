@@ -122,4 +122,44 @@ export async function* hybridStreamChat(
 export const hybridAIClient = {
   streamChat: hybridStreamChat,
   isTransientError: isAnthropicTransientError,
+  complete: hybridComplete,
 };
+
+/**
+ * Non-streaming single-shot completion with Claude -> OpenAI fallback.
+ * Returns the model's text output. Used for one-shot tasks like Bible search
+ * that expect a JSON string back. Falls back to OpenAI on transient/credit
+ * errors, the same policy as the streaming chat path.
+ */
+export async function hybridComplete(options: {
+  systemPrompt?: string;
+  prompt: string;
+  maxTokens?: number;
+  model?: string;
+}): Promise<string> {
+  const { systemPrompt, prompt, maxTokens = 1024, model } = options;
+  try {
+    const response = await anthropic.messages.create({
+      model: model || process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5",
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const block = response.content.find((b: any) => b.type === "text") as any;
+    return block?.text || "";
+  } catch (error) {
+    if (!isAnthropicTransientError(error)) {
+      throw error;
+    }
+    console.log("[HybridAI] Claude unavailable for completion, falling back to OpenAI...");
+    const completion = await openai.chat.completions.create({
+      model: process.env.FALLBACK_AI_MODEL || "gpt-4o-mini",
+      max_tokens: maxTokens,
+      messages: [
+        ...(systemPrompt ? [{ role: "system" as const, content: systemPrompt }] : []),
+        { role: "user" as const, content: prompt },
+      ],
+    });
+    return completion.choices[0]?.message?.content || "";
+  }
+}

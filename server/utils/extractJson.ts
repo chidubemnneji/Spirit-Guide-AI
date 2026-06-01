@@ -18,10 +18,18 @@ export function extractJson<T = any>(response: { content?: Array<any> } | null |
   const textBlock = response.content.find((b) => b?.type === "text" && typeof b.text === "string");
   if (!textBlock) return null;
 
-  let raw: string = textBlock.text;
+  return extractJsonFromText<T>(textBlock.text);
+}
+
+/**
+ * Extract JSON from a raw text string (e.g. the output of a non-streaming
+ * completion). Strips code fences and pulls the first balanced object/array.
+ */
+export function extractJsonFromText<T = any>(input: string | null | undefined): T | null {
+  if (!input || typeof input !== "string") return null;
 
   // Strip code fences.
-  raw = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+  let raw = input.replace(/```json/gi, "").replace(/```/g, "").trim();
 
   // Fast path: whole string is JSON.
   try {
