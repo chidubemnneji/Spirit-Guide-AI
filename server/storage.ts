@@ -335,55 +335,62 @@ export class DrizzleStorage implements IStorage {
 
     const practicesCompleted = cardRows.length;
 
+    // Format a timestamp as a local-day key (YYYY-MM-DD in the server's local
+    // time), not UTC, so day boundaries match the user's calendar day.
+    const toLocalDay = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    const dayBefore = (key: string): string => {
+      const [y, m, d] = key.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() - 1);
+      return toLocalDay(dt);
+    };
+
     const activityDates = new Set<string>();
     for (const m of msgRows) {
-      if (m.createdAt) activityDates.add(new Date(m.createdAt).toISOString().split("T")[0]);
+      if (m.createdAt) activityDates.add(toLocalDay(new Date(m.createdAt)));
     }
     for (const c of cardRows) {
-      if (c.createdAt) activityDates.add(new Date(c.createdAt).toISOString().split("T")[0]);
+      if (c.createdAt) activityDates.add(toLocalDay(new Date(c.createdAt)));
     }
 
+    // Most-recent-first list of unique active days.
     const sortedDates = Array.from(activityDates).sort().reverse();
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    const today = toLocalDay(new Date());
+    const yesterday = dayBefore(today);
 
     let currentStreak = 0;
     let longestStreak = 0;
 
     if (sortedDates.length > 0) {
-      let tempStreak = 0;
-      const mostRecent = sortedDates[0];
+      // Current streak: only counts if the most recent activity is today or
+      // yesterday, then walks backward over consecutive days.
+      if (sortedDates[0] === today || sortedDates[0] === yesterday) {
+        let expected = sortedDates[0];
+        for (const dateStr of sortedDates) {
+          if (dateStr === expected) {
+            currentStreak++;
+            expected = dayBefore(expected);
+          } else {
+            break;
+          }
+        }
+      }
 
-      if (mostRecent === today || mostRecent === yesterday) {
-        let expectedDate = new Date(mostRecent);
-        for (const dateStr of sortedDates) {
-          const expectedStr = expectedDate.toISOString().split("T")[0];
-          if (dateStr === expectedStr) {
-            tempStreak++;
-            expectedDate = new Date(expectedDate.getTime() - 86400000);
-          } else {
-            if (tempStreak > longestStreak) longestStreak = tempStreak;
-            tempStreak = 1;
-            expectedDate = new Date(new Date(dateStr).getTime() - 86400000);
-          }
+      // Longest streak: scan all runs of consecutive days independently.
+      let run = 1;
+      longestStreak = 1;
+      for (let i = 1; i < sortedDates.length; i++) {
+        if (sortedDates[i] === dayBefore(sortedDates[i - 1])) {
+          run++;
+        } else {
+          run = 1;
         }
-        currentStreak = tempStreak;
-        if (tempStreak > longestStreak) longestStreak = tempStreak;
-      } else {
-        let expectedDate = new Date(sortedDates[0]);
-        for (const dateStr of sortedDates) {
-          const expectedStr = expectedDate.toISOString().split("T")[0];
-          if (dateStr === expectedStr) {
-            tempStreak++;
-            expectedDate = new Date(expectedDate.getTime() - 86400000);
-          } else {
-            if (tempStreak > longestStreak) longestStreak = tempStreak;
-            tempStreak = 1;
-            expectedDate = new Date(new Date(dateStr).getTime() - 86400000);
-          }
-        }
-        if (tempStreak > longestStreak) longestStreak = tempStreak;
-        currentStreak = 0;
+        if (run > longestStreak) longestStreak = run;
       }
     }
 

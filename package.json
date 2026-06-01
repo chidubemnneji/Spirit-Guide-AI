@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
-    "start": "node scripts/seedLDContext.js; NODE_ENV=production node dist/index.cjs",
+    "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "seed:ld": "LAUNCHDARKLY_SDK_KEY=$LAUNCHDARKLY_SDK_KEY npx ts-node --project tsconfig.json scripts/seedLDContext.ts"
   },

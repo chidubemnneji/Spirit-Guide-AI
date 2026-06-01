@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -122,7 +122,7 @@ export const crisisAlerts = pgTable("crisis_alerts", {
 export const memorableMoments = pgTable("memorable_moments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
-  conversationId: integer("conversation_id").references(() => conversations.id),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
   momentType: varchar("moment_type", { length: 50 }), // "breakthrough", "insight", "commitment"
   summary: text("summary"),
   emotionalState: varchar("emotional_state", { length: 50 }),
@@ -133,7 +133,7 @@ export const memorableMoments = pgTable("memorable_moments", {
 export const recommendationCards = pgTable("recommendation_cards", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
-  messageId: integer("message_id").references(() => messages.id),
+  messageId: integer("message_id").references(() => messages.id, { onDelete: "cascade" }),
   practiceType: varchar("practice_type", { length: 100 }),
   title: varchar("title", { length: 200 }).notNull(),
   description: text("description"),
@@ -323,7 +323,7 @@ export const devotionals = pgTable("devotionals", {
   closingPrayer: text("closing_prayer").notNull(),
   themes: text("themes").array(),
   estimatedReadTime: integer("estimated_read_time").default(5),
-  generatedForUserId: integer("generated_for_user_id").references(() => users.id),
+  generatedForUserId: integer("generated_for_user_id").references(() => users.id, { onDelete: "cascade" }),
   isActive: integer("is_active").default(1),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -346,7 +346,7 @@ export const userDevotionalProgress = pgTable("user_devotional_progress", {
 export const dailyDevotionalAssignments = pgTable("daily_devotional_assignments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  devotionalId: integer("devotional_id").references(() => devotionals.id),
+  devotionalId: integer("devotional_id").references(() => devotionals.id, { onDelete: "cascade" }),
   assignedDate: varchar("assigned_date", { length: 10 }).notNull(), // YYYY-MM-DD format
   isCompleted: integer("is_completed").default(0),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -368,7 +368,7 @@ export const devotionalStreaks = pgTable("devotional_streaks", {
 export const conversationMemories = pgTable("conversation_memories", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  conversationId: integer("conversation_id").references(() => conversations.id),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
   keyTopics: text("key_topics").array(),
   emotionalPatterns: text("emotional_patterns").array(),
   struggles: text("struggles").array(),
@@ -490,7 +490,7 @@ export const communityPrayers = pgTable("community_prayers", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (t) => ({
-  uniquePrayer: index("community_prayers_unique_idx").on(t.postId, t.userId),
+  uniquePrayer: uniqueIndex("community_prayers_unique_idx").on(t.postId, t.userId),
 }));
 
 export type CommunityPost = typeof communityPosts.$inferSelect;

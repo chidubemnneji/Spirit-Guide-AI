@@ -921,11 +921,14 @@ Write the check-in opening.`;
           crisisProtocol = crisisDetection.getCrisisProtocol(crisisAssessment);
           // Log crisis alert
           if (userId) {
+            // Store only a short triage snippet, not a full transcript, to
+            // minimize retention of highly sensitive verbatim content.
+            const snippet = content.replace(/\s+/g, " ").trim().slice(0, 160);
             await storage.saveCrisisAlert(
               userId,
               crisisAssessment.crisisLevel,
               crisisAssessment.indicators,
-              content.substring(0, 500)
+              snippet
             );
           }
         }
