@@ -55,6 +55,7 @@ export interface IStorage {
 
   saveMoment(userId: number, conversationId: number, momentType: string, summary: string, emotionalState: string): Promise<void>;
   getRecentMoments(userId: number, limit?: number): Promise<Array<{ summary: string | null; createdAt: Date }>>;
+  getMomentsForRanking(userId: number, limit?: number): Promise<Array<{ summary: string | null; momentType: string | null; emotionalState: string | null; createdAt: Date }>>;
 
   createRecommendationCard(card: InsertRecommendationCard): Promise<RecommendationCard>;
   getRecommendationCardsForMessage(messageId: number): Promise<RecommendationCard[]>;
@@ -237,6 +238,21 @@ export class DrizzleStorage implements IStorage {
   async getRecentMoments(userId: number, limit = 5): Promise<Array<{ summary: string | null; createdAt: Date }>> {
     return db
       .select({ summary: memorableMoments.summary, createdAt: memorableMoments.createdAt })
+      .from(memorableMoments)
+      .where(eq(memorableMoments.userId, userId))
+      .orderBy(desc(memorableMoments.createdAt))
+      .limit(limit);
+  }
+
+  // Full moment fields for significance-based ranking/decay.
+  async getMomentsForRanking(userId: number, limit = 50): Promise<Array<{ summary: string | null; momentType: string | null; emotionalState: string | null; createdAt: Date }>> {
+    return db
+      .select({
+        summary: memorableMoments.summary,
+        momentType: memorableMoments.momentType,
+        emotionalState: memorableMoments.emotionalState,
+        createdAt: memorableMoments.createdAt,
+      })
       .from(memorableMoments)
       .where(eq(memorableMoments.userId, userId))
       .orderBy(desc(memorableMoments.createdAt))

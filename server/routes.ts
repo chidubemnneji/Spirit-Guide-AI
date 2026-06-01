@@ -20,6 +20,8 @@ import { getCountryFromRequest } from "./middleware/geoContext";
 import { emotionalIntelligence } from "./services/emotionalIntelligence";
 import { crisisDetection } from "./services/crisisDetection";
 import { memoryExtractor } from "./services/memoryExtractor";
+import { buildRankedMemoryContext } from "./services/memoryRanking";
+import { archetypeReassessment } from "./services/archetypeReassessment";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { eq, desc, and, gt, gte, asc, sql, inArray } from "drizzle-orm";
@@ -964,9 +966,9 @@ Write the check-in opening.`;
         } else {
           try {
             const topics = await storage.getTopicsForUser(userId);
-            const moments = await storage.getRecentMoments(userId);
-            if (topics.length > 0 || moments.length > 0) {
-              memoryContext = memoryExtractor.formatMemoryForPrompt(topics, moments);
+            const rankedMoments = await storage.getMomentsForRanking(userId);
+            if (topics.length > 0 || rankedMoments.length > 0) {
+              memoryContext = buildRankedMemoryContext(topics, rankedMoments);
             }
           } catch (memoryError) {
             console.error("Memory context error (continuing):", memoryError);
@@ -1285,6 +1287,12 @@ I'm here to listen whenever you're ready to talk.`;
               console.error("Memory extraction error (non-blocking):", memErr);
             }
           });
+        }
+
+        // Periodic, conservative archetype re-assessment (log-only, non-blocking).
+        // Runs less often than memory extraction since it's a heavier judgment.
+        if (userId && userTurnCount >= 24 && userTurnCount % 24 === 0) {
+          setImmediate(() => { archetypeReassessment.reassess(userId); });
         }
 
         res.write(`data: ${JSON.stringify({ 
