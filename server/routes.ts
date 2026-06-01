@@ -1890,7 +1890,11 @@ Respond ONLY with valid JSON in this exact format, no other text:
 
       const parsed = extractJsonFromText<{ results: any[] }>(text);
       if (!parsed) {
-        console.error("[bible ai-search] FAILED to parse model output. Raw:", JSON.stringify(text?.slice(0, 500)));
+        console.error(
+          "[bible ai-search] FAILED to parse. len=", text?.length,
+          "head=", JSON.stringify(text?.slice(0, 200)),
+          "tail=", JSON.stringify(text?.slice(-200)),
+        );
         return res.json({ results: [] });
       }
       res.json(parsed);
