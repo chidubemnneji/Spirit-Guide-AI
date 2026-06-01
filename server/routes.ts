@@ -1471,6 +1471,83 @@ I'm here to listen whenever you're ready to talk.`;
     }
   });
 
+  // ── Verse Notes (personal study notes) ──────────────────────────────────
+  // List notes for the user, optionally filtered by a reference prefix (e.g. "John 3").
+  app.get("/api/bible/notes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const refPrefix = typeof req.query.ref === "string" ? req.query.ref : undefined;
+      let rows = await db
+        .select()
+        .from(schema.verseNotes)
+        .where(eq(schema.verseNotes.userId, userId))
+        .orderBy(desc(schema.verseNotes.createdAt));
+      if (refPrefix) rows = rows.filter((n) => (n.reference || "").startsWith(refPrefix));
+      res.json({ notes: rows });
+    } catch (error) {
+      console.error("Error fetching verse notes:", error);
+      res.status(500).json({ error: "Failed to fetch notes" });
+    }
+  });
+
+  app.post("/api/bible/notes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const { reference, bookId, chapter, verse, title, body } = req.body || {};
+      if (!reference || !body || !String(body).trim()) {
+        return res.status(400).json({ error: "reference and body are required" });
+      }
+      const [created] = await db.insert(schema.verseNotes).values({
+        userId,
+        reference: String(reference).slice(0, 120),
+        bookId: bookId ? String(bookId).slice(0, 60) : null,
+        chapter: typeof chapter === "number" ? chapter : null,
+        verse: typeof verse === "number" ? verse : null,
+        title: title ? String(title).slice(0, 200) : null,
+        body: String(body),
+      }).returning();
+      res.json({ note: created });
+    } catch (error) {
+      console.error("Error creating verse note:", error);
+      res.status(500).json({ error: "Failed to create note" });
+    }
+  });
+
+  app.delete("/api/bible/notes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+      // Ownership-scoped delete.
+      await db.delete(schema.verseNotes).where(and(eq(schema.verseNotes.id, id), eq(schema.verseNotes.userId, userId)));
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("Error deleting verse note:", error);
+      res.status(500).json({ error: "Failed to delete note" });
+    }
+  });
+
+  // ── Cross References (curated dataset lookup; never AI-generated) ─────────
+  // Returns curated verse-to-verse references for a given reference, if the
+  // dataset has been imported. Returns an empty list (not fabricated links)
+  // when no data exists.
+  app.get("/api/bible/cross-references", async (req: Request, res: Response) => {
+    try {
+      const ref = typeof req.query.ref === "string" ? req.query.ref : "";
+      if (!ref) return res.json({ references: [] });
+      const rows = await db
+        .select()
+        .from(schema.crossReferences)
+        .where(eq(schema.crossReferences.fromRef, ref))
+        .orderBy(desc(schema.crossReferences.votes))
+        .limit(12);
+      res.json({ references: rows.map((r) => ({ reference: r.toRef, votes: r.votes ?? 0 })) });
+    } catch (error) {
+      console.error("Error fetching cross references:", error);
+      res.status(500).json({ error: "Failed to fetch cross references" });
+    }
+  });
+
   app.get("/api/bible/:bibleId/books", async (req: Request, res: Response) => {
     try {
       const { bibleId } = req.params;

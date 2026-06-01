@@ -129,6 +129,33 @@ export const memorableMoments = pgTable("memorable_moments", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+// Personal notes attached to a verse or a whole chapter (reference like "John 3" or "John 3:16").
+export const verseNotes = pgTable("verse_notes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  reference: varchar("reference", { length: 120 }).notNull(),
+  bookId: varchar("book_id", { length: 60 }),
+  chapter: integer("chapter"),
+  verse: integer("verse"),
+  title: varchar("title", { length: 200 }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+  userRefIdx: index("verse_notes_user_ref_idx").on(t.userId, t.reference),
+}));
+
+// Curated verse-to-verse cross references (e.g. imported from a public-domain dataset
+// such as the Treasury of Scripture Knowledge). NOT generated at runtime.
+export const crossReferences = pgTable("cross_references", {
+  id: serial("id").primaryKey(),
+  fromRef: varchar("from_ref", { length: 60 }).notNull(),
+  toRef: varchar("to_ref", { length: 60 }).notNull(),
+  votes: integer("votes").default(0),
+}, (t) => ({
+  fromIdx: index("cross_references_from_idx").on(t.fromRef),
+}));
+
 // Recommendation Cards - Interactive practice suggestions
 export const recommendationCards = pgTable("recommendation_cards", {
   id: serial("id").primaryKey(),
@@ -250,7 +277,6 @@ export type User = typeof users.$inferSelect;
 
 export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 export type UserPersona = typeof userPersonas.$inferSelect;
-
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 
@@ -505,3 +531,7 @@ export const userSessions = pgTable("user_sessions", {
 }, (t) => ({
   expireIdx: index("user_sessions_expire_idx").on(t.expire),
 }));
+
+export type VerseNote = typeof verseNotes.$inferSelect;
+export type InsertVerseNote = typeof verseNotes.$inferInsert;
+export type CrossReference = typeof crossReferences.$inferSelect;

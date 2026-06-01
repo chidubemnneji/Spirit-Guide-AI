@@ -1007,7 +1007,7 @@ export default function Bible() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-6 max-w-2xl mx-auto">
+      <main className="px-4 py-6 max-w-2xl mx-auto md:mr-[360px] md:max-w-2xl md:ml-auto md:px-10">
         {!currentChapter && !chapterLoading && (
           <motion.div 
             className="text-center py-16"
@@ -1195,6 +1195,120 @@ export default function Bible() {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      {/* Desktop study rail: real personal notes + curated cross references */}
+      {currentChapter && (
+        <ReaderStudyRail
+          reference={currentChapter.reference || ""}
+          bookId={currentBook?.id}
+          chapter={Number(currentChapter.number) || undefined}
+          onNavigate={navigateToVerse}
+        />
+      )}
     </div>
+  );
+}
+
+// ── Reader study rail: personal notes (real CRUD) + cross references (curated) ──
+function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
+  { reference: string; bookId?: string; chapter?: number; onNavigate: (ref: string) => void }) {
+  const [notes, setNotes] = useState<Array<{ id: number; title: string | null; body: string; reference: string; createdAt: string }>>([]);
+  const [crossRefs, setCrossRefs] = useState<Array<{ reference: string; votes: number }>>([]);
+  const [draft, setDraft] = useState("");
+  const [draftTitle, setDraftTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const loadNotes = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/bible/notes?ref=${encodeURIComponent(reference)}`, { credentials: "include" });
+      if (res.ok) { const d = await res.json(); setNotes(d.notes || []); }
+    } catch {}
+  }, [reference]);
+
+  useEffect(() => { loadNotes(); }, [loadNotes]);
+
+  useEffect(() => {
+    if (!reference) return;
+    fetch(`/api/bible/cross-references?ref=${encodeURIComponent(reference)}`, { credentials: "include" })
+      .then((r) => r.json()).then((d) => setCrossRefs(d.references || [])).catch(() => setCrossRefs([]));
+  }, [reference]);
+
+  const saveNote = async () => {
+    if (!draft.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/bible/notes", {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ reference, bookId, chapter, title: draftTitle || null, body: draft }),
+      });
+      if (res.ok) { setDraft(""); setDraftTitle(""); await loadNotes(); }
+    } catch {} finally { setSaving(false); }
+  };
+
+  const deleteNote = async (id: number) => {
+    try { await fetch(`/api/bible/notes/${id}`, { method: "DELETE", credentials: "include" }); await loadNotes(); } catch {}
+  };
+
+  return (
+    <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-[360px] border-l border-black bg-[#EBEAE5] overflow-y-auto pt-[120px]">
+      {/* Cross references */}
+      <div className="px-6 py-4 border-b border-black">
+        <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-black">Cross References</span>
+      </div>
+      <div className="px-6 py-4 border-b border-[#D8D7D2]">
+        {crossRefs.length === 0 ? (
+          <p className="text-[13px] text-[#73726C] italic leading-relaxed">No cross references for this passage yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {crossRefs.map((c, i) => (
+              <button key={i} onClick={() => onNavigate(c.reference)}
+                className="block text-left text-[14px] font-serif text-[#1b291d] underline decoration-[#C7C6C0] hover:decoration-[#1b291d]">
+                {c.reference}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Personal notes */}
+      <div className="px-6 py-4 border-b border-black">
+        <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-black">Personal Notes</span>
+      </div>
+      <div className="px-6 py-4 border-b border-[#D8D7D2]">
+        <input
+          value={draftTitle}
+          onChange={(e) => setDraftTitle(e.target.value)}
+          placeholder="Note title (optional)"
+          className="w-full bg-white border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-3 py-2 text-[14px] font-serif text-black mb-2 rounded"
+        />
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={`Write a note on ${reference}…`}
+          rows={3}
+          className="w-full bg-white border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-3 py-2 text-[14px] font-serif text-black resize-none rounded mb-2"
+        />
+        <button onClick={saveNote} disabled={!draft.trim() || saving}
+          className="w-full bg-[#1b291d] text-white text-[10px] font-semibold tracking-[0.18em] uppercase py-2.5 rounded disabled:opacity-40">
+          {saving ? "Saving…" : "Save Note"}
+        </button>
+      </div>
+      <div className="flex-1">
+        {notes.length === 0 ? (
+          <p className="px-6 py-5 text-[13px] text-[#73726C] italic">No notes on this chapter yet.</p>
+        ) : (
+          notes.map((n) => (
+            <div key={n.id} className="px-6 py-4 border-b border-[#E6E5E0] group relative">
+              {n.title && <p className="font-serif text-[15px] font-bold text-black mb-1">{n.title}</p>}
+              <p className="text-[14px] text-[#333] leading-relaxed font-serif">{n.body}</p>
+              <button onClick={() => deleteNote(n.id)}
+                className="absolute top-4 right-5 opacity-0 group-hover:opacity-100 transition-opacity text-[#73726C] hover:text-red-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </aside>
   );
 }
