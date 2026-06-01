@@ -79,7 +79,144 @@ export default function Account() {
   const dashArray = `${circumference * progressPct} ${circumference}`;
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
+    <>
+      {/* ─────────────  DESKTOP: EDITORIAL THREE-ZONE ACCOUNT  ───────────── */}
+      <div className="hidden md:block min-h-screen" style={{ background: "#EBEAE5" }}>
+        <header className="flex items-stretch border-b-2 border-black max-w-[1600px] mx-auto w-full">
+          <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
+            <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
+          </div>
+          <div className="flex-1 flex items-center px-8">
+            <span className="font-serif text-[18px] italic text-[#73726C]">Profile</span>
+          </div>
+          <button onClick={handleLogout} className="px-8 flex items-center">
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#9a3b3b]">Sign Out</span>
+          </button>
+        </header>
+
+        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto">
+          {/* LEFT — Profile + Journey Statistics */}
+          <section className="border-r border-black">
+            <div className="px-6 py-4 border-b border-black">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Profile</span>
+            </div>
+            <div className="flex flex-col items-center px-6 py-10 border-b border-[#D8D7D2]">
+              <div className="relative w-[116px] h-[116px] flex items-center justify-center">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 116 116"><circle cx="58" cy="58" r="56" fill="none" stroke="#d8d7d2" strokeWidth="3" /></svg>
+                <svg className="absolute inset-0 w-full h-full -rotate-[110deg]" viewBox="0 0 116 116"><circle cx="58" cy="58" r="56" fill="none" stroke="#1b291d" strokeWidth="3" strokeDasharray={dashArray} /></svg>
+                <div className="absolute inset-[11px] rounded-full flex items-center justify-center" style={{ background: "#dcdbd5" }}>
+                  <span className="font-serif text-[32px] text-black">{userInitials}</span>
+                </div>
+              </div>
+              <h2 className="font-serif text-[28px] text-black mt-6 text-center">{userName}</h2>
+              {memberSince && <p className="text-[10px] font-semibold tracking-[0.15em] text-[#73726C] mt-2 uppercase">Member Since {memberSince}</p>}
+              {archetype && <p className="text-[13px] text-[#1b291d] mt-3 text-center font-medium">{archetype.name}</p>}
+            </div>
+            <div className="px-6 py-4 border-b border-[#D8D7D2]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Journey Statistics</span>
+            </div>
+            <div className="grid grid-cols-2">
+              {[
+                { n: currentStreak, l: "Day Streak" },
+                { n: stats?.practicesCompleted ?? 0, l: "Practices" },
+                { n: stats?.longestStreak ?? 0, l: "Longest Streak" },
+                { n: stats?.conversationCount ?? 0, l: "Sessions" },
+              ].map((s, i) => (
+                <div key={i} className={`px-6 py-8 border-b border-[#D8D7D2] ${i % 2 === 0 ? "border-r border-[#D8D7D2]" : ""}`}>
+                  <span className="font-serif text-[44px] leading-none text-black">{s.n}</span>
+                  <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#73726C] mt-3">{s.l}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* CENTER — Favorite Scripture + Settings */}
+          <section className="border-r border-black">
+            <div className="px-7 py-4 border-b border-black">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Favorite Scripture</span>
+            </div>
+            <div className="px-7 py-10 border-b border-[#D8D7D2]">
+              {savedPassages?.passages?.length ? (
+                <div className="border border-[#D8D7D2] bg-white px-8 py-10 relative">
+                  <p className="font-serif text-[26px] italic leading-[1.4] text-black text-center">"{savedPassages.passages[0].text}"</p>
+                  <p className="text-[12px] font-semibold tracking-[0.15em] uppercase text-[#73726C] mt-6 text-center">— {savedPassages.passages[0].reference}</p>
+                </div>
+              ) : (
+                <p className="font-serif text-[20px] italic text-[#73726C] text-center py-8">Highlight verses in the reader to save your favorites here.</p>
+              )}
+            </div>
+            <div className="px-7 py-4 border-b border-[#D8D7D2]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Account Settings</span>
+            </div>
+            {/* Beta */}
+            <div className="px-7 py-6 border-b border-[#D8D7D2] flex justify-between items-center">
+              <div>
+                <p className="font-serif text-[18px] text-black">Beta Access</p>
+                <p className="text-[13px] text-[#73726C] mt-0.5">{isBetaUser ? "Enrolled in early features" : "Not enrolled"}</p>
+              </div>
+              <button onClick={toggleBeta} disabled={betaLoading || isBetaUser} className="w-12 h-6 rounded-full relative transition-colors" style={{ background: isBetaUser ? "#1b291d" : "#D8D7D2" }}>
+                <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all" style={{ left: isBetaUser ? "calc(100% - 20px)" : "4px" }} />
+              </button>
+            </div>
+            {/* Dark mode */}
+            <div className="px-7 py-6 border-b border-[#D8D7D2] flex justify-between items-center">
+              <div>
+                <p className="font-serif text-[18px] text-black">Dark Mode</p>
+                <p className="text-[13px] text-[#73726C] mt-0.5">Switch the app to a darker palette</p>
+              </div>
+              <button onClick={toggleTheme} role="switch" aria-checked={theme === "dark"} aria-label="Toggle dark mode" className="w-12 h-6 rounded-full relative transition-colors" style={{ background: theme === "dark" ? "#1b291d" : "#D8D7D2" }}>
+                <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all" style={{ left: theme === "dark" ? "calc(100% - 20px)" : "4px" }} />
+              </button>
+            </div>
+            {/* Plan */}
+            <div className="px-7 py-6 border-b border-[#D8D7D2] flex justify-between items-center">
+              <div>
+                <p className="font-serif text-[18px] text-black">Current Plan</p>
+                <p className="text-[13px] text-[#73726C] mt-0.5">Free forever</p>
+              </div>
+              <span className="text-[11px] font-semibold text-[#1b291d] border border-[#1b291d] rounded-full px-4 py-1.5 uppercase tracking-wider">Free</span>
+            </div>
+          </section>
+
+          {/* RIGHT — This Week + Saved Passages */}
+          <section>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">This Week</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{weekRange}</span>
+            </div>
+            <div className="px-6 py-6 border-b border-[#D8D7D2]">
+              <div className="flex justify-between gap-1">
+                {weekDays.map((d, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                    <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#73726C]">{d.letter}</span>
+                    <div className="w-full aspect-square flex items-center justify-center text-[12px] font-semibold"
+                      style={{ background: d.isComplete ? "#1b291d" : "transparent", color: d.isComplete ? "#fff" : "#111", border: d.isComplete ? "none" : d.isToday ? "2px solid #1b291d" : "1px solid #D8D7D2" }}>
+                      {format(addDays(weekStart, i), "d")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#D8D7D2]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Saved Passages</span>
+              <button onClick={() => setLocation("/bible")} className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">View All</button>
+            </div>
+            {savedPassages?.passages?.length ? (
+              savedPassages.passages.slice(0, 4).map((p, i) => (
+                <div key={i} className="px-6 py-5 border-b border-[#D8D7D2]">
+                  <p className="font-serif text-[16px] text-black mb-1">{p.reference}</p>
+                  <p className="text-[13px] text-[#73726C] leading-relaxed" style={{ WebkitLineClamp: 2, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>{p.text}</p>
+                </div>
+              ))
+            ) : (
+              <div className="px-6 py-6"><p className="text-[14px] text-[#73726C] italic">No saved passages yet.</p></div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* ─────────────  MOBILE: ORIGINAL (UNTOUCHED)  ───────────── */}
+      <div className="md:hidden min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2]">
         <div className="flex-1 py-6 px-6 flex items-center">
@@ -243,6 +380,7 @@ export default function Account() {
           Sign out
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
