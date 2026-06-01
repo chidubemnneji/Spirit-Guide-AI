@@ -261,6 +261,39 @@ export default function Devotion() {
                 </button>
               </div>
             )}
+
+            {/* Recent Devotions — real completed journey entries */}
+            {(() => {
+              const recent = (journeyQuery.data?.data || [])
+                .filter((e) => e.completedAt && e.devotional)
+                .slice(0, 5);
+              if (recent.length === 0) return null;
+              return (
+                <div className="border-t border-black">
+                  <div className="px-6 py-4 border-b border-[#D8D7D2]">
+                    <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Recent Devotions</span>
+                  </div>
+                  {recent.map((e, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setLocation(buildBibleLink(e.devotional.scriptureReference || ""))}
+                      className="w-full text-left px-6 py-5 border-b border-[#D8D7D2] block transition-colors hover:bg-white/50"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C]">
+                          {e.completedAt ? format(new Date(e.completedAt as string), "MMM d") : ""}
+                        </span>
+                        {e.rating ? (
+                          <span className="text-[11px] text-[#1b291d]">{"★".repeat(e.rating)}</span>
+                        ) : null}
+                      </div>
+                      <p className="font-serif text-[18px] leading-[1.2] text-black">{e.devotional.title}</p>
+                      <p className="text-[12px] text-[#73726C] mt-1">{e.devotional.scriptureReference}</p>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </section>
         </div>
       </div>
