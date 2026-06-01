@@ -861,7 +861,7 @@ export default function Bible() {
 
   // Bible Reader View
   return (
-    <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20 md:pr-[360px]" style={{ background: "#EBEAE5" }}>
       <header className="sticky top-0 z-40 bg-white border-b border-[#D8D7D2]">
         <div className="flex items-center">
           <button
@@ -1007,7 +1007,7 @@ export default function Bible() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-6 max-w-2xl mx-auto md:mr-[360px] md:max-w-2xl md:ml-auto md:px-10">
+      <main className="px-4 py-6 max-w-2xl mx-auto md:px-10">
         {!currentChapter && !chapterLoading && (
           <motion.div 
             className="text-center py-16"
