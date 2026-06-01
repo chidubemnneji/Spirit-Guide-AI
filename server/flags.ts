@@ -76,16 +76,20 @@ export async function isEnabledForUser(
 // Core use case: A/B test Sonnet vs Haiku per user
 export async function getAIModel(
   user?: { id: number | string; email?: string; name?: string; createdAt?: string | Date; country?: string; primaryStruggle?: string; messageCount?: number; isBetaUser?: boolean }
-): Promise<'claude-sonnet-4-20250514' | 'claude-haiku-4-5-20251001'> {
+): Promise<string> {
   const context: LDContext = user ? buildContext(user) : ANONYMOUS_CONTEXT;
+  const fallback = process.env.PRIMARY_AI_MODEL || "claude-sonnet-4-5";
 
   try {
     const variant = await getFlag('ai-model-version', context);
-    return (variant as string) === 'sonnet'
-      ? 'claude-sonnet-4-20250514'
-      : 'claude-haiku-4-5-20251001';
+    // Only switch to an alternate model if one is explicitly configured;
+    // otherwise use the known-good primary model for this endpoint.
+    if ((variant as string) === 'haiku' && process.env.FALLBACK_ANTHROPIC_MODEL) {
+      return process.env.FALLBACK_ANTHROPIC_MODEL;
+    }
+    return fallback;
   } catch {
-    return 'claude-haiku-4-5-20251001'; // default to cheaper model
+    return fallback;
   }
 }
 
