@@ -304,7 +304,7 @@ export default function Bible() {
         const res = await fetch("/api/bible/ai-search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: searchQuery }),
+          body: JSON.stringify({ query: searchQuery, versionId: currentVersion?.id }),
           credentials: "include",
         });
         if (!res.ok) throw new Error(`Search failed: ${res.status}`);
@@ -345,7 +345,7 @@ export default function Bible() {
       const res = await fetch("/api/bible/ai-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: `verses about feeling ${feeling}` }),
+        body: JSON.stringify({ query: `verses about feeling ${feeling}`, versionId: currentVersion?.id }),
         credentials: "include",
       });
       const data = await res.json();

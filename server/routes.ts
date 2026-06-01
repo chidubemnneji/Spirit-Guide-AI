@@ -1861,24 +1861,25 @@ Write an evening prayer to help them release the day and rest in God's peace.`;
   // AI Bible Search
   app.post("/api/bible/ai-search", async (req: Request, res: Response) => {
     try {
-      const { query } = req.body;
+      const { query, versionId } = req.body;
       if (!query?.trim()) {
         return res.status(400).json({ error: "Query is required" });
       }
 
+      // Step 1: model returns only references + a short reason. This output is
+      // tiny, so it can never truncate the way full verse text did.
       const text = await hybridAIClient.complete({
         prompt: `A person searching scripture says: "${query}"
 
-Return exactly 3 relevant Bible verses (NIV). For each: the reference, a SHORT preview of the verse (first 12-15 words only, end with "..."), and a short reason (under 12 words) it fits.
+Return exactly 3 relevant Bible verse references. Give ONLY the reference and a short reason (under 12 words) each fits. Do not include verse text.
 
 Respond with ONLY valid JSON, no preamble or markdown:
-{"results":[{"reference":"Philippians 4:6","text":"Do not be anxious about anything, but in every situation...","relevance":"bringing anxiety to God in prayer"}]}`,
-        maxTokens: 1024,
-        jsonMode: true,
+{"results":[{"reference":"Philippians 4:6","relevance":"bringing anxiety to God in prayer"}]}`,
+        maxTokens: 512,
       });
 
-      const parsed = extractJsonFromText<{ results: any[] }>(text);
-      if (!parsed) {
+      const parsed = extractJsonFromText<{ results: Array<{ reference: string; relevance?: string }> }>(text);
+      if (!parsed?.results?.length) {
         console.error(
           "[bible ai-search] FAILED to parse. len=", text?.length,
           "head=", JSON.stringify(text?.slice(0, 200)),
@@ -1886,7 +1887,31 @@ Respond with ONLY valid JSON, no preamble or markdown:
         );
         return res.json({ results: [] });
       }
-      res.json(parsed);
+
+      // Step 2: resolve a Bible version, then fetch authoritative text for each
+      // reference so previews are exact (not model-paraphrased).
+      let bibleId = versionId;
+      if (!bibleId) {
+        try {
+          const versions = await bibleAPI.getVersions();
+          bibleId = versions[0]?.id;
+        } catch { /* fall through — references still returned without text */ }
+      }
+
+      const enriched = await Promise.all(
+        parsed.results.slice(0, 3).map(async (r) => {
+          let verseText = "";
+          if (bibleId && r.reference) {
+            try {
+              const hits = await bibleAPI.search(bibleId, r.reference, 1);
+              verseText = hits[0]?.text || "";
+            } catch { /* leave preview empty; tap still opens the reference */ }
+          }
+          return { reference: r.reference, text: verseText, relevance: r.relevance };
+        })
+      );
+
+      res.json({ results: enriched });
     } catch (error) {
       console.error("AI Bible search error:", error);
       res.status(500).json({ error: "Search failed" });
