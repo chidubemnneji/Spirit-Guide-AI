@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { queryClient } from "@/lib/queryClient";
-import { Loader2, AlertTriangle, Mic, MicOff, Volume2, RotateCcw } from "lucide-react";
+import { Loader2, AlertTriangle, Mic, MicOff, Volume2, RotateCcw, Plus } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { useScroll } from "@/context/ScrollContext";
 import RecommendationCards from "@/components/RecommendationCards";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
@@ -84,12 +85,12 @@ function MessageBubble({ message, isStreaming = false, onPlayAudio, isPlaying = 
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}
       data-testid={`message-${message.role}-${message.id}`}>
       {isUser ? (
-        <div className="max-w-[85%] px-5 py-3.5 font-serif text-[17px] leading-relaxed rounded-2xl rounded-br-sm"
+        <div className="max-w-[78%] px-5 py-3.5 font-serif text-[17px] leading-relaxed rounded-2xl rounded-br-sm"
           style={{ background: "#1b291d", color: "#fff" }}>
           {parseContentWithVerseLinks(message.content, navigate, true)}
         </div>
       ) : (
-        <div className="max-w-[90%]">
+        <div className="max-w-[82%]">
           <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#73726C] mb-2">Soul Care</p>
           <div className="px-6 py-5 bg-white border border-[#E8E0D8] rounded-2xl rounded-tl-sm font-serif text-[18px] leading-[1.7] text-[#111]">
             {parseContentWithVerseLinks(message.content, navigate, false)}
@@ -150,6 +151,7 @@ export default function Chat() {
   const { setHideNav, hideNav } = useScroll();
 
   const { data: persona, isLoading: personaLoading } = useQuery<{ primaryPersona?: string }>({ queryKey: ["/api/persona"] });
+  const { data: conversations = [] } = useQuery<Array<{ id: number; title: string | null; updatedAt: string | Date | null }>>({ queryKey: ["/api/conversations"] });
 
   useEffect(() => { return () => { if (mediaRecorderRef.current?.state === "recording") { mediaRecorderRef.current.stop(); mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop()); } if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }; }, []);
 
@@ -384,7 +386,49 @@ export default function Chat() {
   );
 
   return (
-    <div className={`h-dvh flex flex-col ${hideNav ? "" : "pb-[64px]"}`} style={{ background: "#EBEAE5" }}>
+    <div className={`h-dvh flex ${hideNav ? "" : "pb-[64px] md:pb-0"}`} style={{ background: "#EBEAE5" }}>
+      {/* Desktop: persistent conversation history rail */}
+      <aside className="hidden md:flex flex-col w-[300px] flex-shrink-0 border-r border-black">
+        <div className="px-6 h-[89px] flex items-center border-b-2 border-black">
+          <h1 className="font-serif text-[26px] italic leading-none text-black">SoulGuide</h1>
+        </div>
+        <div className="px-4 py-4 border-b border-[#D8D7D2]">
+          <button
+            onClick={handleNewChat}
+            className="w-full flex items-center justify-center gap-2 bg-[#1b291d] text-white text-[11px] font-semibold tracking-[0.18em] uppercase rounded-full py-3"
+            data-testid="button-new-chat-desktop"
+          >
+            <Plus size={14} /> New Conversation
+          </button>
+        </div>
+        <div className="px-6 py-3 border-b border-[#D8D7D2]">
+          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">Conversations</span>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <p className="px-6 py-6 text-[13px] text-[#73726C] italic">No conversations yet.</p>
+          ) : (
+            conversations.map((conv) => (
+              <button
+                key={conv.id}
+                onClick={async () => { const loaded = await loadExistingConversation(conv.id); if (loaded) { setPendingMood(null); setShowMoodCheckIn(false); } }}
+                className={`w-full text-left px-6 py-4 border-b border-[#E6E5E0] transition-colors hover:bg-white/50 ${conversationId === conv.id ? "bg-white" : ""}`}
+                data-testid={`button-conversation-${conv.id}`}
+              >
+                <p className={`font-serif text-[16px] leading-snug truncate ${conversationId === conv.id ? "text-[#1b291d]" : "text-black"}`}>
+                  {conv.title || "New Conversation"}
+                </p>
+                {conv.updatedAt && (
+                  <p className="text-[11px] text-[#73726C] mt-1">{formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}</p>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* Main column */}
+      <div className="flex-1 flex flex-col min-w-0">
       {/* Header — mobile (original) */}
       <header className="md:hidden bg-white border-b border-[#D8D7D2] flex items-center">
         <div className="py-5 px-4 flex items-center border-r border-[#D8D7D2]">
@@ -402,37 +446,22 @@ export default function Chat() {
         </button>
       </header>
 
-      {/* Header — desktop editorial masthead */}
-      <header className="hidden md:flex items-stretch border-b-2 border-black">
-        <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
-          <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
-        </div>
-        <div className="flex items-center px-6 border-r border-[#D8D7D2]">
-          <ConversationSidebar
-            currentConversationId={conversationId}
-            onSelect={async (id) => { const loaded = await loadExistingConversation(id); if (loaded) { setPendingMood(null); setShowMoodCheckIn(false); } }}
-            onNewChat={handleNewChat}
-          />
-        </div>
-        <div className="flex-1 flex items-center px-8">
-          <span className="font-serif text-[18px] italic text-[#73726C]">Soul Care — a space to think and pray</span>
-        </div>
-        <button onClick={handleNewChat} className="px-8 flex items-center gap-2 border-l border-[#D8D7D2] text-[11px] font-semibold tracking-[0.18em] uppercase text-[#1b291d]" data-testid="button-new-chat-desktop">
-          <RotateCcw size={14} /> New
-        </button>
+      {/* Header — desktop (slim, within main column) */}
+      <header className="hidden md:flex items-center h-[89px] border-b-2 border-black px-8 flex-shrink-0">
+        <span className="font-serif text-[20px] italic text-[#73726C]">Soul Care — a space to think and pray</span>
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto px-4 py-6">
+      <main className="flex-1 overflow-y-auto px-4 py-6 flex flex-col">
         {initError ? (
-          <div className="h-full flex flex-col items-center justify-center text-center px-4">
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
             <AlertTriangle className="w-8 h-8 text-red-500 mb-4" />
             <h2 className="font-serif text-[24px] text-black mb-3">Connection Issue</h2>
             <p className="text-[15px] text-[#73726C] mb-6">{initError}</p>
             <button onClick={handleNewChat} className="px-8 py-3 font-semibold text-[13px] tracking-[0.2em] uppercase" style={{ background: "#1b291d", color: "#fff" }} data-testid="button-retry">Try Again</button>
           </div>
         ) : messages.length === 0 && !streamingContent ? (
-          <div className="h-full flex flex-col items-center justify-center text-center px-6">
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             {isInitializing ? (
               <Loader2 className="w-6 h-6 animate-spin text-[#1b291d]" />
             ) : (
@@ -442,7 +471,7 @@ export default function Chat() {
                 <div className="w-full max-w-sm space-y-2">
                   {STARTERS.map((s, i) => (
                     <button key={i} onClick={() => { setInput(s); textareaRef.current?.focus(); }}
-                      className="w-full text-left px-5 py-4 bg-white border border-[#D8D7D2] flex items-center justify-between"
+                      className="w-full text-left px-5 py-4 bg-white border border-[#D8D7D2] rounded-2xl flex items-center justify-between"
                       data-testid={`button-starter-${i}`}>
                       <span className="font-serif text-[17px] text-black">{s}</span>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
@@ -453,7 +482,7 @@ export default function Chat() {
             )}
           </div>
         ) : (
-          <div className="space-y-6 max-w-2xl md:max-w-3xl mx-auto md:py-4">
+          <div className="space-y-6 max-w-2xl mx-auto w-full mt-auto">
             {messages.map(msg => (
               <MessageBubble key={msg.id} message={msg} onPlayAudio={playMessageAudio} isPlaying={playingMessageId === msg.id} />
             ))}
@@ -464,13 +493,13 @@ export default function Chat() {
       </main>
 
       {/* Input area */}
-      <div className="border-t border-[#D8D7D2] bg-white flex-shrink-0">
+      <div className="border-t border-[#D8D7D2] flex-shrink-0" style={{ background: "#EBEAE5" }}>
         <MoodCheckIn
           visible={showMoodCheckIn}
           onSelect={mood => { setPendingMood(mood); pendingMoodRef.current = mood; setShowMoodCheckIn(false); setTimeout(() => sendMessage(), 50); }}
           onSkip={() => { setPendingMood(null); pendingMoodRef.current = null; setShowMoodCheckIn(false); setTimeout(() => sendMessage(), 50); }}
         />
-        <div className="flex items-end gap-2 px-4 py-3 max-w-2xl md:max-w-3xl mx-auto w-full">
+        <div className="flex items-end gap-2 px-4 py-4 max-w-2xl mx-auto w-full">
           <textarea
             ref={textareaRef}
             value={input}
@@ -480,13 +509,13 @@ export default function Chat() {
             onBlur={() => { setIsInputFocused(false); if (!input.trim()) setHideNav(false); }}
             placeholder="Share what's on your heart..."
             rows={1}
-            className="flex-1 resize-none bg-[#EBEAE5] border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-4 py-3 font-serif text-[16px] md:text-[17px] text-black max-h-[140px] transition-colors rounded-full"
+            className="flex-1 resize-none bg-white border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-5 py-3 font-serif text-[16px] md:text-[17px] text-black max-h-[140px] transition-colors rounded-full"
             style={{ minHeight: "48px" }}
             data-testid="input-message"
           />
           <button onClick={handleMicClick} disabled={isStreaming || isTranscribing || !conversationId || isInitializing}
-            className="w-11 h-11 flex items-center justify-center border border-[#D8D7D2] rounded-full disabled:opacity-40 transition-colors flex-shrink-0"
-            style={{ background: isRecording ? "#b7453b" : "transparent", color: isRecording ? "#fff" : "#73726C" }}
+            className="w-11 h-11 flex items-center justify-center border border-[#D8D7D2] bg-white rounded-full disabled:opacity-40 transition-colors flex-shrink-0"
+            style={{ background: isRecording ? "#b7453b" : "#fff", color: isRecording ? "#fff" : "#73726C" }}
             data-testid="button-mic">
             {isTranscribing ? <Loader2 size={16} className="animate-spin" /> : isRecording ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
@@ -497,8 +526,9 @@ export default function Chat() {
             {isStreaming ? <Loader2 size={16} className="animate-spin" /> : "↑"}
           </button>
         </div>
-        {sendError && <p className="text-[12px] text-red-600 px-4 pb-2">{sendError}</p>}
+        {sendError && <p className="text-[12px] text-red-600 px-4 pb-2 text-center">{sendError}</p>}
         <p className="text-[10px] text-[#73726C] text-center pb-3 tracking-wide">Your conversations are private and meant to support, not replace, spiritual community.</p>
+      </div>
       </div>
     </div>
   );
