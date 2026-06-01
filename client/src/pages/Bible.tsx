@@ -650,7 +650,9 @@ export default function Bible() {
                     onClick={() => navigateToVerse(result.reference)}
                   >
                     <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1b291d] mb-1.5">{result.reference}</p>
-                    <p className="font-serif text-[17px] text-black leading-relaxed">{result.text}</p>
+                    {result.text && (
+                      <p className="font-serif text-[17px] text-black leading-relaxed">{result.text}</p>
+                    )}
                     {result.relevance && (
                       <p className="text-[12px] text-[#73726C] mt-2 italic">{result.relevance}</p>
                     )}

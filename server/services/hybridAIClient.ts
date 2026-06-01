@@ -161,6 +161,8 @@ export async function hybridComplete(options: {
         { role: "user" as const, content: prompt },
       ],
     });
-    return completion.choices[0]?.message?.content || "";
+    const choice = completion.choices[0];
+    console.log("[HybridAI] OpenAI fallback finish_reason:", choice?.finish_reason);
+    return choice?.message?.content || "";
   }
 }

@@ -1867,24 +1867,13 @@ Write an evening prayer to help them release the day and rest in God's peace.`;
       }
 
       const text = await hybridAIClient.complete({
-        prompt: `You are a Bible scholar. The user is searching for: "${query}"
+        prompt: `A person searching scripture says: "${query}"
 
-Return 4-5 highly relevant Bible verses. For each verse provide:
-- The exact verse text (NIV translation preferred)
-- The reference (e.g. John 3:16)
-- One sentence explaining why it's relevant to the query
+Return exactly 3 relevant Bible verses (NIV). For each: the reference, a SHORT preview of the verse (first 12-15 words only, end with "..."), and a short reason (under 12 words) it fits.
 
-Respond ONLY with valid JSON in this exact format, no other text:
-{
-  "results": [
-    {
-      "reference": "John 3:16",
-      "text": "For God so loved the world...",
-      "relevance": "This verse speaks directly to..."
-    }
-  ]
-}`,
-        maxTokens: 2048,
+Respond with ONLY valid JSON, no preamble or markdown:
+{"results":[{"reference":"Philippians 4:6","text":"Do not be anxious about anything, but in every situation...","relevance":"bringing anxiety to God in prayer"}]}`,
+        maxTokens: 1024,
         jsonMode: true,
       });
 
