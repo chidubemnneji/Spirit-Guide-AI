@@ -1,0 +1,5 @@
+# Pin Node 20 for the Railway/Nixpacks build (vite 7, p-limit 7, etc. require >=20)
+providers = ["node"]
+
+[variables]
+NIXPACKS_NODE_VERSION = "20"
