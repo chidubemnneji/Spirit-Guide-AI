@@ -84,14 +84,14 @@ function MessageBubble({ message, isStreaming = false, onPlayAudio, isPlaying = 
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}
       data-testid={`message-${message.role}-${message.id}`}>
       {isUser ? (
-        <div className="max-w-[85%] px-5 py-3.5 font-serif text-[17px] leading-relaxed"
+        <div className="max-w-[85%] px-5 py-3.5 font-serif text-[17px] leading-relaxed rounded-2xl rounded-br-sm"
           style={{ background: "#1b291d", color: "#fff" }}>
           {parseContentWithVerseLinks(message.content, navigate, true)}
         </div>
       ) : (
         <div className="max-w-[90%]">
-          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] mb-2">Soul Care</p>
-          <div className="px-5 py-4 bg-white border border-[#E8E0D8] font-serif text-[18px] leading-[1.65] text-[#111]">
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#73726C] mb-2">Soul Care</p>
+          <div className="px-6 py-5 bg-white border border-[#E8E0D8] rounded-2xl rounded-tl-sm font-serif text-[18px] leading-[1.7] text-[#111]">
             {parseContentWithVerseLinks(message.content, navigate, false)}
             {isStreaming && (
               <span className="inline-flex items-center gap-1 ml-2">
@@ -385,8 +385,8 @@ export default function Chat() {
 
   return (
     <div className={`h-dvh flex flex-col ${hideNav ? "" : "pb-[64px]"}`} style={{ background: "#EBEAE5" }}>
-      {/* Header */}
-      <header className="bg-white border-b border-[#D8D7D2] flex items-center">
+      {/* Header — mobile (original) */}
+      <header className="md:hidden bg-white border-b border-[#D8D7D2] flex items-center">
         <div className="py-5 px-4 flex items-center border-r border-[#D8D7D2]">
           <ConversationSidebar
             currentConversationId={conversationId}
@@ -399,6 +399,26 @@ export default function Chat() {
         </div>
         <button onClick={handleNewChat} className="border-l border-[#D8D7D2] py-5 px-6 text-[#73726C]" data-testid="button-new-chat">
           <RotateCcw size={18} />
+        </button>
+      </header>
+
+      {/* Header — desktop editorial masthead */}
+      <header className="hidden md:flex items-stretch border-b-2 border-black">
+        <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
+          <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
+        </div>
+        <div className="flex items-center px-6 border-r border-[#D8D7D2]">
+          <ConversationSidebar
+            currentConversationId={conversationId}
+            onSelect={async (id) => { const loaded = await loadExistingConversation(id); if (loaded) { setPendingMood(null); setShowMoodCheckIn(false); } }}
+            onNewChat={handleNewChat}
+          />
+        </div>
+        <div className="flex-1 flex items-center px-8">
+          <span className="font-serif text-[18px] italic text-[#73726C]">Soul Care — a space to think and pray</span>
+        </div>
+        <button onClick={handleNewChat} className="px-8 flex items-center gap-2 border-l border-[#D8D7D2] text-[11px] font-semibold tracking-[0.18em] uppercase text-[#1b291d]" data-testid="button-new-chat-desktop">
+          <RotateCcw size={14} /> New
         </button>
       </header>
 
@@ -433,7 +453,7 @@ export default function Chat() {
             )}
           </div>
         ) : (
-          <div className="space-y-5 max-w-2xl mx-auto">
+          <div className="space-y-6 max-w-2xl md:max-w-3xl mx-auto md:py-4">
             {messages.map(msg => (
               <MessageBubble key={msg.id} message={msg} onPlayAudio={playMessageAudio} isPlaying={playingMessageId === msg.id} />
             ))}
@@ -450,7 +470,7 @@ export default function Chat() {
           onSelect={mood => { setPendingMood(mood); pendingMoodRef.current = mood; setShowMoodCheckIn(false); setTimeout(() => sendMessage(), 50); }}
           onSkip={() => { setPendingMood(null); pendingMoodRef.current = null; setShowMoodCheckIn(false); setTimeout(() => sendMessage(), 50); }}
         />
-        <div className="flex items-end gap-2 px-4 py-3">
+        <div className="flex items-end gap-2 px-4 py-3 max-w-2xl md:max-w-3xl mx-auto w-full">
           <textarea
             ref={textareaRef}
             value={input}
@@ -460,18 +480,18 @@ export default function Chat() {
             onBlur={() => { setIsInputFocused(false); if (!input.trim()) setHideNav(false); }}
             placeholder="Share what's on your heart..."
             rows={1}
-            className="flex-1 resize-none bg-[#EBEAE5] border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-4 py-3 font-serif text-[16px] text-black max-h-[140px] transition-colors"
+            className="flex-1 resize-none bg-[#EBEAE5] border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-4 py-3 font-serif text-[16px] md:text-[17px] text-black max-h-[140px] transition-colors rounded-full"
             style={{ minHeight: "48px" }}
             data-testid="input-message"
           />
           <button onClick={handleMicClick} disabled={isStreaming || isTranscribing || !conversationId || isInitializing}
-            className="w-11 h-11 flex items-center justify-center border border-[#D8D7D2] disabled:opacity-40 transition-colors flex-shrink-0"
+            className="w-11 h-11 flex items-center justify-center border border-[#D8D7D2] rounded-full disabled:opacity-40 transition-colors flex-shrink-0"
             style={{ background: isRecording ? "#b7453b" : "transparent", color: isRecording ? "#fff" : "#73726C" }}
             data-testid="button-mic">
             {isTranscribing ? <Loader2 size={16} className="animate-spin" /> : isRecording ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
           <button onClick={sendMessage} disabled={!input.trim() || isStreaming || !conversationId || isInitializing}
-            className="w-11 h-11 flex items-center justify-center disabled:opacity-40 flex-shrink-0 font-semibold text-[18px]"
+            className="w-11 h-11 flex items-center justify-center rounded-full disabled:opacity-40 flex-shrink-0 font-semibold text-[18px]"
             style={{ background: "#1b291d", color: "#fff" }}
             data-testid="button-send">
             {isStreaming ? <Loader2 size={16} className="animate-spin" /> : "↑"}
