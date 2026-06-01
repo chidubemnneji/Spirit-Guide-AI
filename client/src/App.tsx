@@ -66,7 +66,7 @@ function AppContent() {
   const showNav = !ONBOARDING_ROUTES.includes(location);
   // The home broadsheet is designed to span the full width; other pages stay
   // capped to a readable column.
-  const isWidePage = location === "/devotion";
+  const isWidePage = location === "/devotion" || location === "/journal";
 
   if (!showNav) {
     // Onboarding / auth flows: simple centered phone column.
