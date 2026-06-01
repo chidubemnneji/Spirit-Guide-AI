@@ -94,7 +94,7 @@ export default function Account() {
           </button>
         </header>
 
-        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto">
+        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
           {/* LEFT — Profile + Journey Statistics */}
           <section className="border-r border-black">
             <div className="px-6 py-4 border-b border-black">

@@ -149,11 +149,11 @@ export default function Devotion() {
         </header>
 
         {/* Three-column broadsheet */}
-        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto">
+        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
           {/* LEFT RAIL — Today's Readings */}
           <section className="border-r border-black">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Today's Readings</span>
+            <div className="flex items-center justify-between px-8 py-5 border-b border-black">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Today's Readings</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">
                 {journeyTasks.filter(t => t.isCompleted).length.toString().padStart(2, "0")}/{journeyTasks.length.toString().padStart(2, "0")}
               </span>
@@ -162,15 +162,15 @@ export default function Devotion() {
               <button
                 key={task.id}
                 onClick={task.action}
-                className="w-full text-left px-6 py-7 border-b border-[#D8D7D2] block transition-colors hover:bg-white/50"
+                className="w-full text-left px-8 py-10 border-b border-[#D8D7D2] block transition-colors hover:bg-white/50"
               >
-                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{task.duration}</span>
-                <p className="font-serif text-[26px] leading-[1.1] text-black mt-2 mb-3">{task.title}</p>
-                <p className="text-[14px] leading-[1.55] text-[#545454] mb-4">{task.subtitle}</p>
+                <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">{task.duration}</span>
+                <p className="font-serif text-[32px] leading-[1.1] text-black mt-3 mb-4">{task.title}</p>
+                <p className="text-[16px] leading-[1.55] text-[#545454] mb-5">{task.subtitle}</p>
                 {task.isCompleted ? (
-                  <span className="inline-block text-[10px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] rounded-full px-3 py-1">Completed</span>
+                  <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] rounded-full px-4 py-1.5">Completed</span>
                 ) : (
-                  <span className="inline-block text-[10px] font-semibold tracking-[0.15em] uppercase text-white bg-[#1b291d] rounded-full px-3 py-1">Begin →</span>
+                  <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-white bg-[#1b291d] rounded-full px-4 py-1.5">Begin →</span>
                 )}
               </button>
             ))}
@@ -178,8 +178,8 @@ export default function Devotion() {
 
           {/* CENTER — Featured Devotion */}
           <section className="border-r border-black">
-            <div className="px-7 py-4 border-b border-black">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Morning Devotion</span>
+            <div className="px-9 py-5 border-b border-black">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Morning Devotion</span>
             </div>
             <div className="relative w-full aspect-[16/10] overflow-hidden border-b border-black">
               <img
@@ -188,21 +188,21 @@ export default function Devotion() {
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="px-7 py-7">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">
+            <div className="px-9 py-9">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">
                 {struggle ? struggle : "Today's Reflection"}
               </span>
-              <h2 className="font-serif text-[44px] leading-[1.08] text-black mt-3 mb-5">
+              <h2 className="font-serif text-[56px] leading-[1.05] text-black mt-4 mb-6">
                 {devotional?.title || `${userName}'s Journey`}
               </h2>
-              <p className="text-[17px] leading-[1.65] text-[#444] mb-7 max-w-[46ch]">
+              <p className="text-[19px] leading-[1.7] text-[#444] mb-8 max-w-[48ch]">
                 {devotional?.scriptureText
                   ? `"${devotional.scriptureText.slice(0, 160)}${devotional.scriptureText.length > 160 ? "…" : ""}"`
                   : "A space to be still, reflect, and reconnect with what matters most."}
               </p>
               <button
                 onClick={() => { handleComplete(); setLocation("/devotional"); }}
-                className="inline-flex items-center gap-3 bg-black text-white text-[12px] font-semibold tracking-[0.15em] uppercase rounded-full px-7 py-3.5"
+                className="inline-flex items-center gap-3 bg-black text-white text-[13px] font-semibold tracking-[0.15em] uppercase rounded-full px-9 py-4"
               >
                 Read Devotion →
               </button>
@@ -211,8 +211,8 @@ export default function Devotion() {
 
           {/* RIGHT RAIL — This Week + Verse */}
           <section>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">This Week</span>
+            <div className="flex items-center justify-between px-8 py-5 border-b border-black">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">This Week</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{weekRange}</span>
             </div>
             <div className="px-6 py-6 border-b border-[#D8D7D2]">
@@ -248,7 +248,7 @@ export default function Devotion() {
 
             {devotional && (
               <div className="px-6 py-6">
-                <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Verse of the Day</span>
+                <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Verse of the Day</span>
                 <p className="font-serif text-[24px] italic leading-[1.4] text-black mt-4 mb-3">
                   "{devotional.scriptureText}"
                 </p>
@@ -271,7 +271,7 @@ export default function Devotion() {
               return (
                 <div className="border-t border-black">
                   <div className="px-6 py-4 border-b border-[#D8D7D2]">
-                    <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Recent Devotions</span>
+                    <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Recent Devotions</span>
                   </div>
                   {recent.map((e, i) => (
                     <button

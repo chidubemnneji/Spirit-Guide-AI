@@ -145,7 +145,7 @@ export default function Journal() {
           </div>
         </header>
 
-        <div className="grid grid-cols-[1fr_1.6fr] flex-1">
+        <div className="grid grid-cols-[1fr_1.6fr] flex-1 items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
           {/* LEFT — Past reflections */}
           <section className="border-r border-black overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-black">
