@@ -461,24 +461,24 @@ export default function Chat() {
             <button onClick={handleNewChat} className="px-8 py-3 font-semibold text-[13px] tracking-[0.2em] uppercase" style={{ background: "#1b291d", color: "#fff" }} data-testid="button-retry">Try Again</button>
           </div>
         ) : messages.length === 0 && !streamingContent ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 w-full">
             {isInitializing ? (
               <Loader2 className="w-6 h-6 animate-spin text-[#1b291d]" />
             ) : (
-              <>
-                <p className="font-serif text-[32px] text-black mb-3 leading-tight">How are you feeling?</p>
-                <p className="text-[16px] text-[#73726C] mb-10 leading-relaxed max-w-xs">{getWelcomeMessage()}</p>
-                <div className="w-full max-w-sm space-y-2">
+              <div className="w-full max-w-xl mx-auto">
+                <p className="font-serif text-[44px] text-black mb-4 leading-tight">How are you feeling?</p>
+                <p className="text-[18px] text-[#73726C] mb-12 leading-relaxed max-w-md mx-auto">{getWelcomeMessage()}</p>
+                <div className="w-full space-y-3">
                   {STARTERS.map((s, i) => (
                     <button key={i} onClick={() => { setInput(s); textareaRef.current?.focus(); }}
-                      className="w-full text-left px-5 py-4 bg-white border border-[#D8D7D2] rounded-2xl flex items-center justify-between"
+                      className="w-full text-left px-7 py-6 bg-white border border-[#D8D7D2] rounded-2xl flex items-center justify-between transition-colors hover:border-[#1b291d]"
                       data-testid={`button-starter-${i}`}>
-                      <span className="font-serif text-[17px] text-black">{s}</span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+                      <span className="font-serif text-[21px] text-black">{s}</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C7C6C0" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
                     </button>
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
         ) : (
