@@ -859,11 +859,12 @@ export default function Bible() {
     );
   }
 
-  // Bible Reader View
+  // Bible Reader View — escapes the shell's 220px nav padding on desktop so the
+  // three-column layout can own the full viewport width predictably.
   return (
-    <div className="min-h-screen pb-20 md:pr-[360px] md:pl-[280px]" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20 md:pr-[340px] md:pl-[280px] md:-ml-[220px] md:w-screen" style={{ background: "#EBEAE5" }}>
       {/* Desktop left book-rail (matches comp) */}
-      <aside className="hidden md:flex flex-col fixed left-[220px] top-0 bottom-0 w-[280px] border-r border-black bg-[#EBEAE5] overflow-y-auto z-30">
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[280px] border-r border-black bg-[#EBEAE5] overflow-y-auto z-30">
         <div className="px-6 pt-8 pb-5 border-b border-[#D8D7D2]">
           <input
             value={searchQuery}
@@ -1042,7 +1043,7 @@ export default function Bible() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-6 max-w-2xl mx-auto md:px-10">
+      <main className="px-4 py-6 max-w-2xl mx-auto md:px-16 md:max-w-3xl">
         {!currentChapter && !chapterLoading && (
           <motion.div 
             className="text-center py-16"
@@ -1289,7 +1290,7 @@ function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
   };
 
   return (
-    <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-[360px] border-l border-black bg-[#EBEAE5] overflow-y-auto pt-[120px]">
+    <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-[340px] border-l border-black bg-[#EBEAE5] overflow-y-auto pt-8">
       {/* Cross references */}
       <div className="px-6 py-4 border-b border-black">
         <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-black">Cross References</span>
