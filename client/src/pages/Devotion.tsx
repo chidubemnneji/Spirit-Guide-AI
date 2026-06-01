@@ -132,7 +132,7 @@ export default function Devotion() {
       {/* ─────────────────────────  DESKTOP: EDITORIAL BROADSHEET  ───────────────────────── */}
       <div className="hidden md:block min-h-screen" style={{ background: "#EBEAE5" }}>
         {/* Masthead */}
-        <header className="flex items-stretch border-b-2 border-black bg-[#EBEAE5]">
+        <header className="flex items-stretch border-b-2 border-black bg-[#EBEAE5] max-w-[1600px] mx-auto w-full">
           <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
             <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
           </div>
@@ -149,7 +149,7 @@ export default function Devotion() {
         </header>
 
         {/* Three-column broadsheet */}
-        <div className="grid grid-cols-[1fr_1.4fr_1fr]">
+        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto">
           {/* LEFT RAIL — Today's Readings */}
           <section className="border-r border-black">
             <div className="flex items-center justify-between px-6 py-4 border-b border-black">

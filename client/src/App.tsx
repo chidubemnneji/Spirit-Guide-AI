@@ -64,6 +64,9 @@ function Router() {
 function AppContent() {
   const [location] = useLocation();
   const showNav = !ONBOARDING_ROUTES.includes(location);
+  // The home broadsheet is designed to span the full width; other pages stay
+  // capped to a readable column.
+  const isWidePage = location === "/devotion";
 
   if (!showNav) {
     // Onboarding / auth flows: simple centered phone column.
@@ -80,10 +83,10 @@ function AppContent() {
     <div className="min-h-screen bg-[#EBEAE5]">
       <BottomNav />
       {/* Mobile: centered phone column with bottom-nav clearance.
-          Desktop: content fills the space beside the fixed 220px sidebar,
-          centered within it with a comfortable max width. */}
+          Desktop: content fills the space beside the fixed 220px sidebar.
+          Home (/devotion) spans full width; other pages stay capped. */}
       <div className="md:pl-[220px]">
-        <div className="mx-auto w-full max-w-[430px] md:max-w-[860px] relative bg-[#EBEAE5] min-h-screen md:shadow-none shadow-2xl overflow-hidden pb-[64px] md:pb-0">
+        <div className={`mx-auto w-full max-w-[430px] relative bg-[#EBEAE5] min-h-screen md:shadow-none shadow-2xl overflow-hidden pb-[64px] md:pb-0 ${isWidePage ? "md:max-w-none" : "md:max-w-[860px]"}`}>
           <Router />
         </div>
       </div>
