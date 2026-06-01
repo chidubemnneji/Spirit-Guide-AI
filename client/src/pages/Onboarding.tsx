@@ -52,7 +52,7 @@ export default function Onboarding() {
       }
       case 3: return <GoalsStep onNext={() => setPhase(4)} onBack={handleBack} />;
       case 4: return <SignupStep onComplete={() => submitMutation.mutate()} onBack={handleBack} isSubmitting={submitMutation.isPending} />;
-      default: return null;
+      default: return <Phase1 onNext={() => setPhase(2)} onBack={handleBack} />;
     }
   };
 

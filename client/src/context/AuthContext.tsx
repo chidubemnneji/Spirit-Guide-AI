@@ -7,6 +7,7 @@ interface User {
   email: string;
   hasCompletedOnboarding: boolean;
   emailVerified: boolean;
+  createdAt?: string;
 }
 
 interface AuthContextType {

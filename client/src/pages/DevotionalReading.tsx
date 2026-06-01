@@ -281,6 +281,10 @@ export default function DevotionalReading() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
+  // Audio player overlay state (used by the Listen button + overlay below)
+  const [showAudioPlayer, setShowAudioPlayer] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+
   const { data, isLoading } = useQuery<{ success: boolean; data: Devotional; completedTaskIds: string[] }>({
     queryKey: ["/api/devotional/today"],
     enabled: !!user,

@@ -70,7 +70,7 @@ export default function Login() {
           <div className="px-6 py-5 bg-white border-b border-[#f0f0ee]">
             <div className="flex items-center justify-between mb-1">
               <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase">Password</label>
-              <button type="button" className="text-[10px] font-semibold tracking-[0.08em] uppercase text-[#1b291d]" data-testid="link-forgot-password">
+              <button type="button" onClick={() => toast({ title: "Password reset", description: "Password reset is coming soon. For now, contact support to reset your password." })} className="text-[10px] font-semibold tracking-[0.08em] uppercase text-[#1b291d]" data-testid="link-forgot-password">
                 Forgot?
               </button>
             </div>
@@ -97,7 +97,7 @@ export default function Login() {
             </button>
             <p className="text-[12px] text-[#73726C] text-center">
               No account?{" "}
-              <button type="button" className="font-semibold text-[#1b291d]" onClick={() => setLocation("/onboarding")} data-testid="link-signup">
+              <button type="button" className="font-semibold text-[#1b291d]" onClick={() => setLocation("/signup")} data-testid="link-signup">
                 Create one
               </button>
             </p>

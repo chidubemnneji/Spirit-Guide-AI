@@ -110,7 +110,14 @@ export const bibleAPI = {
       throw new Error(`Failed to search: ${response.status}`);
     }
     const data = await response.json();
-    
-    return data.data?.verses || [];
+
+    const verses = data.data?.verses || [];
+    // Normalize to the shape the client renders: { reference, text }.
+    // The search API returns `text`, but fall back to `content` defensively.
+    return verses.map((v: any) => ({
+      id: v.id,
+      reference: v.reference,
+      text: (v.text ?? v.content ?? "").trim(),
+    }));
   },
 };

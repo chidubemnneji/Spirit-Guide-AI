@@ -436,6 +436,7 @@ export async function registerRoutes(
           email: user.email,
           hasCompletedOnboarding: !!user.hasCompletedOnboarding,
           emailVerified: !!(user as any).emailVerified,
+          createdAt: user.createdAt,
         },
         persona: persona || null,
       });

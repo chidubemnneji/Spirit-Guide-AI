@@ -58,7 +58,7 @@ export default function Account() {
   const currentStreak = stats?.currentStreak ?? 0;
   const archetypeKey = personaData?.graceArchetype || "";
   const archetype = ARCHETYPE_DISPLAY[archetypeKey];
-  const memberSince = user?.createdAt ? format(new Date(user.createdAt as string), "MMM yyyy") : "";
+  const memberSince = user?.createdAt ? format(new Date(user.createdAt), "MMM yyyy") : "";
 
   // Week calendar data
   const today = new Date();

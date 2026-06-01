@@ -92,7 +92,7 @@ function EntryCard({ entry, onDelete }: { entry: PrayerJournalEntry; onDelete: (
       <button className="w-full text-left px-6 py-6" onClick={() => setExpanded(v => !v)}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C]">
-            {format(new Date(entry.createdAt as string), "MMM d, yyyy")}
+            {format(new Date(entry.createdAt), "MMM d, yyyy")}
           </span>
           {mood && <span className="text-[12px]">{mood.emoji} {mood.label}</span>}
         </div>

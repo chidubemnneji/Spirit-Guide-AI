@@ -23,7 +23,7 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(defaultOnboardingData);
-  const [currentPhase, setCurrentPhase] = useState(0);
+  const [currentPhase, setCurrentPhase] = useState(1);
 
   const updateOnboarding = useCallback((updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
@@ -35,7 +35,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const resetOnboarding = useCallback(() => {
     setData(defaultOnboardingData);
-    setCurrentPhase(0);
+    setCurrentPhase(1);
   }, []);
 
   const isComplete = data.transformationGoals.length > 0;

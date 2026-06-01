@@ -206,7 +206,24 @@ export default function Chat() {
       const res = await fetch(`/api/conversations/${convId}/messages`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }), credentials: "include" });
       if (!res.ok) throw new Error();
       const reader = res.body?.getReader(); const decoder = new TextDecoder(); let full = "";
-      if (reader) { while (true) { const { done, value } = await reader.read(); if (done) break; const lines = decoder.decode(value).split("\n"); for (const line of lines) { if (line.startsWith("data: ")) { try { const d = JSON.parse(line.slice(6)); if (d.content) { full += d.content; setStreamingContent(full); } if (d.done) { setMessages(prev => [...prev, { id: d.messageId || Date.now() + 1, role: "assistant", content: full, createdAt: new Date().toISOString(), hasRecommendations: d.hasRecommendations }]); setStreamingContent(""); } } catch {} } } } }
+      if (reader) {
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const d = JSON.parse(line.slice(6));
+              if (d.content) { full += d.content; setStreamingContent(full); }
+              if (d.done) { setMessages(prev => [...prev, { id: d.messageId || Date.now() + 1, role: "assistant", content: full, createdAt: new Date().toISOString(), hasRecommendations: d.hasRecommendations }]); setStreamingContent(""); }
+            } catch {}
+          }
+        }
+      }
     } catch { setSendError("Could not send message."); }
     finally { setIsStreaming(false); }
   }, [isStreaming]);
@@ -265,7 +282,24 @@ export default function Chat() {
       const res = await fetch(`/api/conversations/${conversationId}/messages`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content, mood }), credentials: "include" });
       if (!res.ok) throw new Error();
       const reader = res.body?.getReader(); const decoder = new TextDecoder(); let full = "";
-      if (reader) { while (true) { const { done, value } = await reader.read(); if (done) break; const lines = decoder.decode(value).split("\n"); for (const line of lines) { if (line.startsWith("data: ")) { try { const d = JSON.parse(line.slice(6)); if (d.content) { full += d.content; setStreamingContent(full); } if (d.done) { const msg: ChatMessage = { id: d.messageId || Date.now() + 1, role: "assistant", content: full, createdAt: new Date().toISOString(), hasRecommendations: d.hasRecommendations }; if (d.hasRecommendations && d.messageId) { try { const cr = await fetch(`/api/messages/${d.messageId}/recommendations`, { credentials: "include" }); if (cr.ok) { const cd = await cr.json(); msg.recommendationCards = cd.cards; } } catch {} } setMessages(prev => { const updated = [...prev, msg]; const uc = updated.filter(m => m.role === "user").length; if (uc === 2 && conversationId) fetch(`/api/conversations/${conversationId}/title`, { method: "POST", credentials: "include" }).then(r => r.json()).then(d => { if (d.title && !d.skipped) queryClient.invalidateQueries({ queryKey: ["/api/conversations"] }); }).catch(() => {}); return updated; }); setStreamingContent(""); } } catch {} } } } }
+      if (reader) {
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const d = JSON.parse(line.slice(6));
+              if (d.content) { full += d.content; setStreamingContent(full); }
+              if (d.done) { const msg: ChatMessage = { id: d.messageId || Date.now() + 1, role: "assistant", content: full, createdAt: new Date().toISOString(), hasRecommendations: d.hasRecommendations }; if (d.hasRecommendations && d.messageId) { try { const cr = await fetch(`/api/messages/${d.messageId}/recommendations`, { credentials: "include" }); if (cr.ok) { const cd = await cr.json(); msg.recommendationCards = cd.cards; } } catch {} } setMessages(prev => { const updated = [...prev, msg]; const uc = updated.filter(m => m.role === "user").length; if (uc === 2 && conversationId) fetch(`/api/conversations/${conversationId}/title`, { method: "POST", credentials: "include" }).then(r => r.json()).then(d => { if (d.title && !d.skipped) queryClient.invalidateQueries({ queryKey: ["/api/conversations"] }); }).catch(() => {}); return updated; }); setStreamingContent(""); }
+            } catch {}
+          }
+        }
+      }
     } catch { setSendError("Couldn't send your message. Please try again."); setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", content: "I'm sorry, I had trouble with that. Please try again.", createdAt: new Date().toISOString() }]); }
     finally { setIsStreaming(false); setStreamingContent(""); }
   };
