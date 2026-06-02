@@ -1,0 +1,63 @@
+diff --git a/client/src/pages/Welcome.tsx b/client/src/pages/Welcome.tsx
+index 4d31b9e..0dff020 100644
+--- a/client/src/pages/Welcome.tsx
++++ b/client/src/pages/Welcome.tsx
+@@ -16,7 +16,7 @@ export default function Welcome() {
+   return (
+     <>
+     {/* ───────────── DESKTOP: editorial split landing ───────────── */}
+-    <div className="hidden md:flex min-h-screen flex-col" style={{ background: "#F3F0E7" }}>
++    <div className="hidden md:flex h-screen overflow-hidden flex-col" style={{ background: "#F3F0E7" }}>
+       {/* Masthead */}
+       <header className="flex items-stretch border-b-2 border-black">
+         <div className="px-10 py-6 flex items-center border-r border-[#D8D7D2]">
+@@ -33,9 +33,9 @@ export default function Welcome() {
+         </button>
+       </header>
+ 
+-      <div className="flex-1 grid grid-cols-2">
++      <div className="flex-1 grid grid-cols-2 min-h-0">
+         {/* Left: hero + CTAs */}
+-        <div className="flex flex-col justify-between px-16 py-14 border-r border-black">
++        <div className="flex flex-col justify-center px-16 py-10 border-r border-black overflow-y-auto">
+           <div>
+             <div className="flex items-center justify-between mb-8">
+               <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">Faith Companion</span>
+@@ -49,7 +49,7 @@ export default function Welcome() {
+             </p>
+           </div>
+ 
+-          <div className="mt-12 space-y-3 max-w-[440px]">
++          <div className="mt-10 space-y-3 max-w-[440px]">
+             <button
+               onClick={handleBegin}
+               data-testid="button-begin-transformation-desktop"
+@@ -69,8 +69,8 @@ export default function Welcome() {
+         </div>
+ 
+         {/* Right: image + verse + what's inside */}
+-        <div className="flex flex-col">
+-          <div className="relative h-[46%] overflow-hidden border-b border-black">
++        <div className="flex flex-col min-h-0">
++          <div className="relative h-[44%] flex-shrink-0 overflow-hidden border-b border-black">
+             <img
+               src="/welcome.jpg"
+               alt="A swan resting on still water"
+@@ -82,7 +82,7 @@ export default function Welcome() {
+               </p>
+             </div>
+           </div>
+-          <div className="px-12 py-6 border-b border-[#D8D7D2]">
++          <div className="px-12 py-4 border-b border-[#D8D7D2] flex-shrink-0">
+             <h3 className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">What's inside</h3>
+           </div>
+           {[
+@@ -90,7 +90,7 @@ export default function Welcome() {
+             { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
+             { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
+           ].map((item, i) => (
+-            <div key={i} className="flex-1 px-12 py-6 border-b border-[#E6E5E0] flex items-center justify-between">
++            <div key={i} className="px-12 py-5 border-b border-[#E6E5E0] flex items-center justify-between">
+               <div>
+                 <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#73726C] block mb-1">{item.tag}</span>
+                 <p className="font-serif text-[24px] text-black mb-1">{item.title}</p>
