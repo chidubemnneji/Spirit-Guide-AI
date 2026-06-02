@@ -14,7 +14,99 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
+    <>
+    {/* ───────────── DESKTOP: editorial split landing ───────────── */}
+    <div className="hidden md:flex min-h-screen flex-col" style={{ background: "#F3F0E7" }}>
+      {/* Masthead */}
+      <header className="flex items-stretch border-b-2 border-black">
+        <div className="px-10 py-6 flex items-center border-r border-[#D8D7D2]">
+          <span className="font-serif italic text-[30px] text-[#1b291d]">SoulGuide</span>
+        </div>
+        <div className="flex-1 flex items-center px-10">
+          <span className="font-serif text-[18px] italic text-[#73726C]">A space to think and pray</span>
+        </div>
+        <button
+          onClick={() => setLocation("/login")}
+          className="px-10 flex items-center border-l border-[#D8D7D2] text-[12px] font-semibold tracking-[0.18em] uppercase text-[#1b291d] hover:bg-white/40 transition-colors"
+        >
+          Sign in
+        </button>
+      </header>
+
+      <div className="flex-1 grid grid-cols-2">
+        {/* Left: hero + CTAs */}
+        <div className="flex flex-col justify-between px-16 py-14 border-r border-black">
+          <div>
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">Faith Companion</span>
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#111]">Matthew 11:28</span>
+            </div>
+            <h1 className="font-serif text-[72px] leading-[1.05] text-black mb-8">
+              A companion<br />for your faith.
+            </h1>
+            <p className="text-[20px] leading-[1.6] text-[#545454] max-w-[42ch]">
+              Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
+            </p>
+          </div>
+
+          <div className="mt-12 space-y-3 max-w-[440px]">
+            <button
+              onClick={handleBegin}
+              data-testid="button-begin-transformation-desktop"
+              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase transition-opacity hover:opacity-90"
+              style={{ background: "#1b291d", color: "#fff" }}
+            >
+              Begin your journey
+            </button>
+            <button
+              onClick={() => setLocation("/login")}
+              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase border border-[#1b291d] text-[#1b291d] hover:bg-white/40 transition-colors"
+            >
+              I already have an account
+            </button>
+            <p className="text-[12px] text-[#73726C] text-center tracking-wide pt-1">Free. No ads. No data selling.</p>
+          </div>
+        </div>
+
+        {/* Right: image + verse + what's inside */}
+        <div className="flex flex-col">
+          <div className="relative h-[46%] overflow-hidden border-b border-black">
+            <img
+              src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&auto=format&fit=crop&q=80"
+              alt="Peaceful mountain landscape at dawn"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
+              <p className="font-serif text-[18px] italic text-white leading-relaxed">
+                "Come to me, all who are weary and burdened, and I will give you rest." — Matthew 11:28
+              </p>
+            </div>
+          </div>
+          <div className="px-12 py-6 border-b border-[#D8D7D2]">
+            <h3 className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">What's inside</h3>
+          </div>
+          {[
+            { tag: "Daily", title: "Personalised Devotionals", sub: "Scripture matched to your struggle, every morning." },
+            { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
+            { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
+          ].map((item, i) => (
+            <div key={i} className="flex-1 px-12 py-6 border-b border-[#E6E5E0] flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#73726C] block mb-1">{item.tag}</span>
+                <p className="font-serif text-[24px] text-black mb-1">{item.title}</p>
+                <p className="text-[15px] text-[#73726C]">{item.sub}</p>
+              </div>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C7C6C0" strokeWidth="1.5" strokeLinecap="square">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* ───────────── MOBILE: original layout (unchanged) ───────────── */}
+    <div className="md:hidden min-h-screen flex flex-col" style={{ background: "#F3F0E7" }}>
       {/* Header */}
       <header className="flex bg-white border-b border-[#D8D7D2]">
         <div className="flex-1 py-6 px-6 flex items-center">
@@ -95,5 +187,6 @@ export default function Welcome() {
         </div>
       </main>
     </div>
+    </>
   );
 }

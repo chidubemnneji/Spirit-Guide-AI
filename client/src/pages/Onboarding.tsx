@@ -57,13 +57,34 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#F3F0E7" }}>
+      {/* Desktop masthead */}
+      <header className="hidden md:flex items-stretch border-b-2 border-black">
+        <div className="px-10 py-5 flex items-center border-r border-[#D8D7D2]">
+          <span className="font-serif italic text-[26px] text-[#1b291d]">SoulGuide</span>
+        </div>
+        <div className="flex-1 flex items-center px-10">
+          <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">
+            Step {String(currentPhase).padStart(2, "0")} — Shape your journey
+          </span>
+        </div>
+      </header>
+
       <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
-      <main className="pt-[90px] pb-12">
-        <div className="max-w-lg mx-auto px-5">
+      <main className="flex-1 pt-[90px] pb-12 md:pt-12 md:px-12 md:flex md:items-center">
+        <div className="max-w-lg md:max-w-[1100px] mx-auto px-5 md:px-0 w-full">
           {renderStep()}
         </div>
       </main>
+
+      {/* Desktop ticker */}
+      <div className="hidden md:block border-t-2 border-black overflow-hidden">
+        <div className="py-3 px-10 flex items-center gap-10 whitespace-nowrap">
+          {["Start small.", "Be consistent.", "Stay present.", "Practice gratitude.", "Find peace.", "Start small.", "Be consistent."].map((t, i) => (
+            <span key={i} className="font-serif italic text-[16px] text-[#73726C]">{t}</span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,232 @@
+diff --git a/client/src/components/onboarding/Phase1.tsx b/client/src/components/onboarding/Phase1.tsx
+index 0865976..36cf65f 100644
+--- a/client/src/components/onboarding/Phase1.tsx
++++ b/client/src/components/onboarding/Phase1.tsx
+@@ -60,8 +60,52 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
+   };
+ 
+   return (
++    <>
++    {/* ───── DESKTOP: editorial split ───── */}
+     <motion.div
+-      className="space-y-6"
++      className="hidden md:grid grid-cols-2 gap-0 min-h-[calc(100vh-180px)]"
++      initial={{ opacity: 0 }}
++      animate={{ opacity: 1 }}
++      transition={{ duration: 0.4 }}
++    >
++      {/* Left: orientation headline */}
++      <div className="flex flex-col justify-center pr-14 border-r border-black">
++        <span className="text-[12px] font-semibold tracking-[0.25em] uppercase text-[#73726C] mb-6">Orientation</span>
++        <h1 className="font-serif text-[56px] leading-[1.05] text-black mb-7">
++          What brings<br />you here today?
++        </h1>
++        <p className="text-[19px] leading-[1.6] text-[#545454] max-w-[40ch]">
++          This is a space for intentional faith. Pick the one that feels most true right now, and we'll shape your journey around it.
++        </p>
++        <div className="mt-12">
++          <BackButton onClick={onBack} />
++        </div>
++      </div>
++
++      {/* Right: struggle options */}
++      <div className="flex flex-col justify-center pl-14">
++        <div className="space-y-3">
++          {options.map((option, index) => (
++            <OptionCard
++              key={option.id}
++              id={option.id}
++              text={option.text}
++              icon={option.icon}
++              selected={selected === option.id}
++              onClick={() => handleSelect(option.id)}
++              index={index}
++            />
++          ))}
++        </div>
++        <div className="mt-8">
++          <ContinueButton onClick={handleNext} disabled={!selected} />
++        </div>
++      </div>
++    </motion.div>
++
++    {/* ───── MOBILE: original (unchanged) ───── */}
++    <motion.div
++      className="md:hidden space-y-6"
+       initial={{ opacity: 0 }}
+       animate={{ opacity: 1 }}
+       transition={{ duration: 0.4 }}
+@@ -98,5 +142,6 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
+ 
+       <ContinueButton onClick={handleNext} disabled={!selected} />
+     </motion.div>
++    </>
+   );
+ }
+diff --git a/client/src/components/onboarding/ProgressBar.tsx b/client/src/components/onboarding/ProgressBar.tsx
+index e04a2b4..e867ae4 100644
+--- a/client/src/components/onboarding/ProgressBar.tsx
++++ b/client/src/components/onboarding/ProgressBar.tsx
+@@ -5,7 +5,7 @@ const stepLabels = ["Your story", "Tell us more", "Your goals", "Create account"
+ export function ProgressBar({ currentPhase, totalPhases }: ProgressBarProps) {
+   const pct = ((currentPhase - 1) / (totalPhases - 1)) * 100;
+   return (
+-    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#D8D7D2]">
++    <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#D8D7D2]">
+       <div className="flex items-center justify-between px-6 py-5">
+         <h1 className="font-serif text-[22px] leading-none text-black tracking-wide">SoulGuide</h1>
+         <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#73726C]">
+diff --git a/client/src/pages/Onboarding.tsx b/client/src/pages/Onboarding.tsx
+index 7643dd3..cc655be 100644
+--- a/client/src/pages/Onboarding.tsx
++++ b/client/src/pages/Onboarding.tsx
+@@ -57,13 +57,34 @@ export default function Onboarding() {
+   };
+ 
+   return (
+-    <div className="min-h-screen" style={{ background: "#EBEAE5" }}>
++    <div className="min-h-screen flex flex-col" style={{ background: "#F3F0E7" }}>
++      {/* Desktop masthead */}
++      <header className="hidden md:flex items-stretch border-b-2 border-black">
++        <div className="px-10 py-5 flex items-center border-r border-[#D8D7D2]">
++          <span className="font-serif italic text-[26px] text-[#1b291d]">SoulGuide</span>
++        </div>
++        <div className="flex-1 flex items-center px-10">
++          <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">
++            Step {String(currentPhase).padStart(2, "0")} — Shape your journey
++          </span>
++        </div>
++      </header>
++
+       <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />
+-      <main className="pt-[90px] pb-12">
+-        <div className="max-w-lg mx-auto px-5">
++      <main className="flex-1 pt-[90px] pb-12 md:pt-12 md:px-12 md:flex md:items-center">
++        <div className="max-w-lg md:max-w-[1100px] mx-auto px-5 md:px-0 w-full">
+           {renderStep()}
+         </div>
+       </main>
++
++      {/* Desktop ticker */}
++      <div className="hidden md:block border-t-2 border-black overflow-hidden">
++        <div className="py-3 px-10 flex items-center gap-10 whitespace-nowrap">
++          {["Start small.", "Be consistent.", "Stay present.", "Practice gratitude.", "Find peace.", "Start small.", "Be consistent."].map((t, i) => (
++            <span key={i} className="font-serif italic text-[16px] text-[#73726C]">{t}</span>
++          ))}
++        </div>
++      </div>
+     </div>
+   );
+ }
+diff --git a/client/src/pages/Welcome.tsx b/client/src/pages/Welcome.tsx
+index 05939e4..c219616 100644
+--- a/client/src/pages/Welcome.tsx
++++ b/client/src/pages/Welcome.tsx
+@@ -14,7 +14,99 @@ export default function Welcome() {
+   };
+ 
+   return (
+-    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
++    <>
++    {/* ───────────── DESKTOP: editorial split landing ───────────── */}
++    <div className="hidden md:flex min-h-screen flex-col" style={{ background: "#F3F0E7" }}>
++      {/* Masthead */}
++      <header className="flex items-stretch border-b-2 border-black">
++        <div className="px-10 py-6 flex items-center border-r border-[#D8D7D2]">
++          <span className="font-serif italic text-[30px] text-[#1b291d]">SoulGuide</span>
++        </div>
++        <div className="flex-1 flex items-center px-10">
++          <span className="font-serif text-[18px] italic text-[#73726C]">A space to think and pray</span>
++        </div>
++        <button
++          onClick={() => setLocation("/login")}
++          className="px-10 flex items-center border-l border-[#D8D7D2] text-[12px] font-semibold tracking-[0.18em] uppercase text-[#1b291d] hover:bg-white/40 transition-colors"
++        >
++          Sign in
++        </button>
++      </header>
++
++      <div className="flex-1 grid grid-cols-2">
++        {/* Left: hero + CTAs */}
++        <div className="flex flex-col justify-between px-16 py-14 border-r border-black">
++          <div>
++            <div className="flex items-center justify-between mb-8">
++              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">Faith Companion</span>
++              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#111]">Matthew 11:28</span>
++            </div>
++            <h1 className="font-serif text-[72px] leading-[1.05] text-black mb-8">
++              A companion<br />for your faith.
++            </h1>
++            <p className="text-[20px] leading-[1.6] text-[#545454] max-w-[42ch]">
++              Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
++            </p>
++          </div>
++
++          <div className="mt-12 space-y-3 max-w-[440px]">
++            <button
++              onClick={handleBegin}
++              data-testid="button-begin-transformation-desktop"
++              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase transition-opacity hover:opacity-90"
++              style={{ background: "#1b291d", color: "#fff" }}
++            >
++              Begin your journey
++            </button>
++            <button
++              onClick={() => setLocation("/login")}
++              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase border border-[#1b291d] text-[#1b291d] hover:bg-white/40 transition-colors"
++            >
++              I already have an account
++            </button>
++            <p className="text-[12px] text-[#73726C] text-center tracking-wide pt-1">Free. No ads. No data selling.</p>
++          </div>
++        </div>
++
++        {/* Right: image + verse + what's inside */}
++        <div className="flex flex-col">
++          <div className="relative h-[46%] overflow-hidden border-b border-black">
++            <img
++              src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&auto=format&fit=crop&q=80"
++              alt="Peaceful mountain landscape at dawn"
++              className="w-full h-full object-cover"
++            />
++            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
++              <p className="font-serif text-[18px] italic text-white leading-relaxed">
++                "Come to me, all who are weary and burdened, and I will give you rest." — Matthew 11:28
++              </p>
++            </div>
++          </div>
++          <div className="px-12 py-6 border-b border-[#D8D7D2]">
++            <h3 className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">What's inside</h3>
++          </div>
++          {[
++            { tag: "Daily", title: "Personalised Devotionals", sub: "Scripture matched to your struggle, every morning." },
++            { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
++            { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
++          ].map((item, i) => (
++            <div key={i} className="flex-1 px-12 py-6 border-b border-[#E6E5E0] flex items-center justify-between">
++              <div>
++                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#73726C] block mb-1">{item.tag}</span>
++                <p className="font-serif text-[24px] text-black mb-1">{item.title}</p>
++                <p className="text-[15px] text-[#73726C]">{item.sub}</p>
++              </div>
++              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C7C6C0" strokeWidth="1.5" strokeLinecap="square">
++                <path d="M9 18l6-6-6-6" />
++              </svg>
++            </div>
++          ))}
++        </div>
++      </div>
++    </div>
++
++    {/* ───────────── MOBILE: original layout (unchanged) ───────────── */}
++    <div className="md:hidden min-h-screen flex flex-col" style={{ background: "#F3F0E7" }}>
+       {/* Header */}
+       <header className="flex bg-white border-b border-[#D8D7D2]">
+         <div className="flex-1 py-6 px-6 flex items-center">
+@@ -95,5 +187,6 @@ export default function Welcome() {
+         </div>
+       </main>
+     </div>
++    </>
+   );
+ }
