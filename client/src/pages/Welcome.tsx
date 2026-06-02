@@ -70,11 +70,11 @@ export default function Welcome() {
 
         {/* Right: image + verse + what's inside */}
         <div className="flex flex-col min-h-0">
-          <div className="relative h-[44%] flex-shrink-0 overflow-hidden border-b border-black">
+          <div className="relative h-[58%] flex-shrink-0 overflow-hidden border-b border-black flex items-center justify-center" style={{ background: "#1a1a1a" }}>
             <img
               src="/welcome.jpg"
               alt="A swan resting on still water"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
               <p className="font-serif text-[18px] italic text-white leading-relaxed">
@@ -90,7 +90,7 @@ export default function Welcome() {
             { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
             { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
           ].map((item, i) => (
-            <div key={i} className="px-12 py-5 border-b border-[#E6E5E0] flex items-center justify-between">
+            <div key={i} className="px-12 py-3.5 border-b border-[#E6E5E0] flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#73726C] block mb-1">{item.tag}</span>
                 <p className="font-serif text-[24px] text-black mb-1">{item.title}</p>
