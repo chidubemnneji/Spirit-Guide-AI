@@ -71,8 +71,8 @@ function AppContent() {
   if (!showNav) {
     // Onboarding / auth flows: simple centered phone column.
     return (
-      <div className="min-h-screen bg-[#111] flex justify-center">
-        <div className="w-full max-w-[430px] relative bg-[#EBEAE5] min-h-screen shadow-2xl overflow-hidden">
+      <div className="min-h-screen bg-[#111] md:bg-[#F3F0E7] flex justify-center">
+        <div className="w-full max-w-[430px] md:max-w-none relative bg-[#F3F0E7] min-h-screen shadow-2xl md:shadow-none overflow-hidden">
           <Router />
         </div>
       </div>
