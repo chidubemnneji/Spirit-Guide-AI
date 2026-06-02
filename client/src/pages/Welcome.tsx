@@ -35,10 +35,11 @@ export default function Welcome() {
 
       <div className="flex-1 grid grid-cols-2 min-h-0">
         {/* Left: hero + CTAs */}
-        <div className="flex flex-col justify-center px-16 py-10 border-r border-black overflow-y-auto">
-          <div>
-            <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col justify-center items-center text-center px-16 py-10 border-r border-black overflow-y-auto">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-3 mb-8">
               <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">Faith Companion</span>
+              <span className="text-[#C7C6C0]">·</span>
               <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#111]">Matthew 11:28</span>
             </div>
             <h1 className="font-serif text-[72px] leading-[1.05] text-black mb-8">
@@ -49,7 +50,7 @@ export default function Welcome() {
             </p>
           </div>
 
-          <div className="mt-10 space-y-3 max-w-[440px]">
+          <div className="mt-10 space-y-3 w-full max-w-[440px]">
             <button
               onClick={handleBegin}
               data-testid="button-begin-transformation-desktop"
@@ -70,11 +71,11 @@ export default function Welcome() {
 
         {/* Right: image + verse + what's inside */}
         <div className="flex flex-col min-h-0">
-          <div className="relative h-[58%] flex-shrink-0 overflow-hidden border-b border-black flex items-center justify-center" style={{ background: "#1a1a1a" }}>
+          <div className="relative h-[58%] flex-shrink-0 overflow-hidden border-b border-black">
             <img
               src="/welcome.jpg"
               alt="A swan resting on still water"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover object-center"
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
               <p className="font-serif text-[18px] italic text-white leading-relaxed">
