@@ -98,23 +98,34 @@ export async function* hybridStreamChat(
     }
     console.log("[HybridAI] Claude completed successfully");
   } catch (error) {
-    if (isAnthropicTransientError(error)) {
-      if (hasYieldedContent) {
-        console.warn("[HybridAI] Claude failed mid-stream after yielding content.");
-      }
-      console.log("[HybridAI] Claude unavailable, falling back to GPT-4o-mini...");
-      try {
-        for await (const chunk of streamFromOpenAI(options)) {
-          yield chunk;
-        }
-        console.log("[HybridAI] OpenAI fallback completed successfully");
-      } catch (openaiError) {
-        console.error("[HybridAI] OpenAI fallback failed:", openaiError);
-        throw openaiError;
-      }
-    } else {
+    if (!isAnthropicTransientError(error)) {
       console.error("[HybridAI] Claude failed with non-transient error:", error);
       throw error;
+    }
+
+    if (hasYieldedContent) {
+      // Claude already streamed part of a response to the client before
+      // failing. We can't un-send what's already been rendered there, so
+      // falling back to OpenAI now would append a second, complete answer
+      // right after the partial one — a garbled, duplicated message. It's
+      // safer to end the stream cleanly and let the partial text stand as
+      // the final response than to silently corrupt it.
+      console.warn(
+        "[HybridAI] Claude failed mid-stream after yielding content — ending stream instead of falling back, to avoid a duplicated response."
+      );
+      yield { provider: "claude", content: "", done: true };
+      return;
+    }
+
+    console.log("[HybridAI] Claude unavailable, falling back to GPT-4o-mini...");
+    try {
+      for await (const chunk of streamFromOpenAI(options)) {
+        yield chunk;
+      }
+      console.log("[HybridAI] OpenAI fallback completed successfully");
+    } catch (openaiError) {
+      console.error("[HybridAI] OpenAI fallback failed:", openaiError);
+      throw openaiError;
     }
   }
 }

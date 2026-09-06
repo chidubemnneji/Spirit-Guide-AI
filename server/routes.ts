@@ -71,7 +71,7 @@ export interface SessionWithUser extends Session {
 
 // Secure password hashing with bcrypt
 async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
+  return bcrypt.hash(password, 12);
 }
 
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
@@ -257,12 +257,24 @@ export async function registerRoutes(
   });
 
   // Email verification
+  //
+  // The verification link in the email is a GET, but GET must stay
+  // side-effect-free — corporate email security scanners and link-preview
+  // bots routinely pre-fetch links in incoming mail with a plain HTTP
+  // client (no JS execution) before the recipient ever opens the message.
+  // If the GET itself consumed the token, that pre-fetch would burn it and
+  // the real user would land on "link expired or invalid" through no fault
+  // of their own. So GET only renders a page that checks the token
+  // read-only and confirms it via a POST fired from the page's own script;
+  // a bot that just fetches the URL never executes that. Only the POST
+  // actually consumes the token.
   app.get("/api/auth/verify-email", async (req: Request, res: Response) => {
     try {
       const token = req.query.token as string;
       if (!token) return res.status(400).send("Invalid verification link.");
 
-                        const [user] = await db.select().from(schema.users).where(
+      // Read-only check — does not consume the token.
+      const [user] = await db.select().from(schema.users).where(
         and(
           eq(schema.users.verificationToken, token),
           gt(schema.users.verificationTokenExpiry, new Date())
@@ -279,25 +291,75 @@ export async function registerRoutes(
         `);
       }
 
-      await db.update(schema.users)
-        .set({ emailVerified: 1, verificationToken: null, verificationTokenExpiry: null })
-        .where(eq(schema.users.id, user.id));
-
-      // Set session so they're logged in after verifying
-      (req.session as SessionWithUser).userId = user.id;
-
+      const safeToken = JSON.stringify(token);
       return res.send(`
         <html>
-        <head><meta http-equiv="refresh" content="2;url=/" /></head>
         <body style="font-family:sans-serif;text-align:center;padding:60px;background:#0f0d0a;color:#e8e2d8;">
-          <div style="font-size:48px;margin-bottom:16px;">✅</div>
-          <h2 style="color:#C8A96E;">Email confirmed!</h2>
-          <p style="color:#a09880;">Redirecting you to SoulGuide...</p>
+          <div id="icon" style="font-size:48px;margin-bottom:16px;">⏳</div>
+          <h2 id="heading" style="color:#C8A96E;">Confirming your email...</h2>
+          <p id="message" style="color:#a09880;">One moment.</p>
+          <script>
+            fetch("/api/auth/verify-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: ${safeToken} }),
+            })
+              .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+              .then(({ ok, data }) => {
+                if (ok && data.success) {
+                  document.getElementById("icon").textContent = "✅";
+                  document.getElementById("heading").textContent = "Email confirmed!";
+                  document.getElementById("message").textContent = "Redirecting you to SoulGuide...";
+                  setTimeout(() => { window.location.href = "/"; }, 1500);
+                } else {
+                  document.getElementById("icon").textContent = "⚠️";
+                  document.getElementById("heading").textContent = "Link expired or invalid";
+                  document.getElementById("message").textContent = "This verification link has expired or already been used.";
+                }
+              })
+              .catch(() => {
+                document.getElementById("icon").textContent = "⚠️";
+                document.getElementById("heading").textContent = "Something went wrong";
+                document.getElementById("message").textContent = "Please try again.";
+              });
+          </script>
         </body></html>
       `);
     } catch (error) {
       console.error("Verify email error:", error);
       res.status(500).send("Something went wrong. Please try again.");
+    }
+  });
+
+  // Consumes the verification token. Called by the script on the page
+  // above, not directly by the email link — see the comment there.
+  app.post("/api/auth/verify-email", async (req: Request, res: Response) => {
+    try {
+      const token = req.body?.token as string;
+      if (!token) return res.status(400).json({ success: false, error: "Invalid verification link." });
+
+      const [user] = await db
+        .update(schema.users)
+        .set({ emailVerified: 1, verificationToken: null, verificationTokenExpiry: null })
+        .where(
+          and(
+            eq(schema.users.verificationToken, token),
+            gt(schema.users.verificationTokenExpiry, new Date())
+          )
+        )
+        .returning();
+
+      if (!user) {
+        return res.status(400).json({ success: false, error: "Link expired or invalid." });
+      }
+
+      // Set session so they're logged in after verifying
+      (req.session as SessionWithUser).userId = user.id;
+
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Verify email (confirm) error:", error);
+      res.status(500).json({ success: false, error: "Something went wrong. Please try again." });
     }
   });
 

@@ -2,6 +2,65 @@ import type { CrisisAssessment } from "@shared/schema";
 import { anthropic } from "./anthropicClient";
 import { extractJson } from "../utils/extractJson";
 
+// ── Local keyword backstop ──────────────────────────────────────────────────
+// The AI classifier below is the primary detector, but it depends on a
+// network call that can fail (timeout, rate limit, outage) or return output
+// that fails to parse. Previously, any of those failure modes silently
+// resolved to crisisLevel "none" — meaning a real crisis message could slip
+// through undetected purely because of an API hiccup, with no safety net at
+// all. This keyword scan is that safety net: a small, deliberately
+// conservative pattern list that runs with no external dependency, used only
+// when the AI call itself couldn't produce a result. It is not meant to
+// replace or out-rank the AI assessment on the happy path — it errs toward
+// "high" rather than "immediate" precisely because it can't reason about
+// context the way the model can.
+const IMMEDIATE_RISK_PATTERNS: RegExp[] = [
+  /\bkill(ing)? myself\b/i,
+  /\bend(ing)? my (own )?life\b/i,
+  /\bsuicid(e|al)\b/i,
+  /\b(want|going|plan(ning)?) to die\b/i,
+  /\bdon'?t want to (be alive|live anymore|exist)\b/i,
+  /\bno reason to (live|go on)\b/i,
+  /\bbetter off (without me|dead)\b/i,
+];
+
+const HIGH_RISK_PATTERNS: RegExp[] = [
+  /\bhurt(ing)? myself\b/i,
+  /\bself[\s-]?harm\b/i,
+  /\bcutting myself\b/i,
+  /\bcan'?t (go on|do this anymore|take (it|this) anymore)\b/i,
+  /\bwish i (was|were) dead\b/i,
+];
+
+function keywordCrisisBackstop(message: string, conversationHistory: string[]): CrisisAssessment {
+  const haystack = [message, ...conversationHistory].join("\n");
+
+  if (IMMEDIATE_RISK_PATTERNS.some((p) => p.test(haystack))) {
+    return {
+      crisisLevel: "high",
+      indicators: ["suicidal_ideation"],
+      immediateActionNeeded: true,
+      recommendedResponse: "keyword_backstop_immediate",
+    };
+  }
+
+  if (HIGH_RISK_PATTERNS.some((p) => p.test(haystack))) {
+    return {
+      crisisLevel: "high",
+      indicators: ["self_harm"],
+      immediateActionNeeded: false,
+      recommendedResponse: "keyword_backstop_high",
+    };
+  }
+
+  return {
+    crisisLevel: "none",
+    indicators: [],
+    immediateActionNeeded: false,
+    recommendedResponse: "normal",
+  };
+}
+
 export class CrisisDetection {
   async detectCrisis(message: string, conversationHistory: string[] = []): Promise<CrisisAssessment> {
     try {
@@ -37,23 +96,13 @@ Be accurate but cautious - err on the side of detecting crisis when uncertain.`,
 
       const parsed = extractJson<CrisisAssessment>(response);
       if (!parsed) {
-        console.error("[crisisDetection] FAILED to parse model output — treating as non-crisis but this is a detection gap");
-        return {
-          crisisLevel: "none",
-          indicators: [],
-          immediateActionNeeded: false,
-          recommendedResponse: "normal",
-        };
+        console.error("[crisisDetection] FAILED to parse model output — falling back to keyword backstop");
+        return keywordCrisisBackstop(message, conversationHistory);
       }
       return parsed;
     } catch (error) {
-      console.error("Crisis detection error:", error);
-      return {
-        crisisLevel: "none",
-        indicators: [],
-        immediateActionNeeded: false,
-        recommendedResponse: "normal",
-      };
+      console.error("Crisis detection error — falling back to keyword backstop:", error);
+      return keywordCrisisBackstop(message, conversationHistory);
     }
   }
 
