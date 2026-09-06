@@ -4,21 +4,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ── */
+/* ── Design tokens ──────────────────────────────────────────────────────────
+   One editorial system, two modes. Light is the warm-cream broadsheet look
+   already used across most of the app (Welcome, Login, Devotion, Chat,
+   Journal, Account…). Dark is a deliberate second mode, not a mechanical
+   inversion — a near-black, candlelit palette with a warm gold accent,
+   built on the same masthead/hairline/serif language.
+
+   Every page should reference these vars (directly, or via the Tailwind
+   arbitrary-value classes like `bg-[var(--app-bg)]`) rather than hardcoding
+   hex, so the ThemeToggle actually changes something everywhere. */
 :root {
 
-  /* Palette from Variant designs */
-  --app-bg:        #EBEAE5;
-  --app-bg-warm:   #f2f1ec;
-  --app-bg-inner:  #e9e8e4;
-  --app-white:     #FFFFFF;
-  --app-dark:      #111111;
-  --app-green:     #1b291d;
-  --app-border:    #D8D7D2;
-  --app-gray:      #545454;
-  --app-gray-lt:   #73726C;
-  --app-amber:     #eab308;
-  --app-amber-border: #d8c3a5;
+  --app-bg:            #EBEAE5;  /* page background */
+  --app-bg-warm:       #f2f1ec;  /* section bands, subtle raised areas */
+  --app-bg-inner:      #e9e8e4;  /* nested/inner panels */
+  --app-white:         #FFFFFF;  /* card / row surfaces */
+  --app-dark:          #111111;  /* ink — primary text, masthead rules */
+  --app-green:         #1b291d;  /* accent — text, icons, borders, small fills */
+  --app-border:        #D8D7D2;  /* structural hairlines (masthead rules, panel edges) */
+  --app-border-soft:   #f0f0ee;  /* quiet row dividers on white cards */
+  --app-gray:          #545454;  /* body copy on cream */
+  --app-gray-lt:       #73726C;  /* muted labels/captions */
+  --app-amber:         #eab308;  /* decorative accent (community candles) */
+  --app-amber-border:  #d8c3a5;
+  --app-placeholder:   #c9c7c0;  /* input placeholder text */
+  --app-danger:        #9a3b3b;  /* destructive actions (sign out, delete) */
+
+  /* Primary CTA — solid accent fill + light text in light mode. Kept as its
+     own pair (not just --app-green + white) so dark mode can flip the whole
+     button to a light "glow" pill without a per-button contrast fix. */
+  --cta-bg:            var(--app-green);
+  --cta-fg:            #ffffff;
+
+  /* Fixed, never theme-flipped — for deliberately-dark interstitials (e.g.
+     the onboarding transition screen) that should stay a calm dark green
+     regardless of the app's light/dark mode. */
+  --scripture-bg:      #1b291d;
 
   /* Mapped to shadcn tokens */
   --background:          250 15% 91%;   /* #EBEAE5 */
@@ -46,42 +68,47 @@
   --font-mono:  'Fira Code', monospace;
 }
 
-/* Dark theme — core surfaces. Per-page hardcoded hex still uses these vars
-   where it references them; full per-page dark coverage is follow-on work. */
+/* Dark theme — a candlelit near-black second mode. Warm gold accent reserved
+   for text/icons/borders/glows (never as a large fill under white text —
+   the CTA pair below handles that by inverting instead). */
 .dark {
-  --app-bg:        #16181c;
-  --app-bg-warm:   #1c1f24;
-  --app-bg-inner:  #14161a;
-  --app-white:     #1f2228;
-  --app-dark:      #f2f1ec;
-  --app-green:     #8fb89a;
-  --app-border:    #2c2f36;
-  --app-gray:      #b8b7b2;
-  --app-gray-lt:   #9a9994;
+  --app-bg:            #0F0D0A;
+  --app-bg-warm:       #14110D;
+  --app-bg-inner:      #14110D;
+  --app-white:         #17140F;  /* card surfaces sit slightly above bg */
+  --app-dark:          #E8E2D8;  /* ink on dark — warm off-white */
+  --app-green:         #C8A96E;  /* accent — warm gold */
+  --app-border:        #2A2620;
+  --app-border-soft:   #211E19;
+  --app-gray:          #C7C0B0;  /* body copy on near-black */
+  --app-gray-lt:       #8B8471;  /* muted labels/captions */
+  --app-amber:         #D4A94F;
+  --app-amber-border:  #4a3f28;
+  --app-placeholder:   #4A453C;
+  --app-danger:        #C97A6E;
 
-  --background:          222 13% 10%;
-  --foreground:          40 10% 93%;
-  --card:                222 12% 14%;
-  --card-foreground:     40 10% 93%;
-  --card-border:         222 9% 20%;
-  --border:              222 9% 20%;
-  --input:               222 9% 20%;
-  --primary:             130 22% 64%;
-  --primary-foreground:  222 13% 10%;
-  --secondary:           222 12% 16%;
-  --secondary-foreground:40 10% 93%;
-  --muted:               222 12% 16%;
-  --muted-foreground:    40 5% 65%;
-  --accent:              222 12% 18%;
-  --accent-foreground:   40 10% 93%;
-  --ring:                130 22% 64%;
+  /* Inverted CTA: a pale glowing pill on near-black, rather than trying to
+     put white text on a light-gold fill. */
+  --cta-bg:            var(--app-dark);
+  --cta-fg:            var(--app-bg);
+
+  --background:          33 15% 5%;
+  --foreground:          40 25% 89%;
+  --card:                33 15% 7%;
+  --card-foreground:     40 25% 89%;
+  --card-border:         33 12% 13%;
+  --border:              33 12% 13%;
+  --input:               33 12% 13%;
+  --primary:             38 44% 62%;
+  --primary-foreground:  33 15% 5%;
+  --secondary:           33 12% 10%;
+  --secondary-foreground:40 25% 89%;
+  --muted:               33 12% 10%;
+  --muted-foreground:    35 15% 55%;
+  --accent:              33 12% 11%;
+  --accent-foreground:   40 25% 89%;
+  --ring:                38 44% 62%;
 }
-
-.dark body {
-  background-color: var(--app-bg);
-  color: var(--app-dark);
-}
-
 
 * { box-sizing: border-box; }
 
@@ -90,6 +117,7 @@ body {
   color: var(--app-dark);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .font-serif { font-family: var(--font-serif); }
@@ -103,7 +131,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #111;
+  color: var(--app-dark);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -112,8 +140,8 @@ body {
 /* Utility: editorial article card */
 .article-card {
   padding: 32px 24px;
-  border-bottom: 1px solid #f0f0ee;
-  background: #fff;
+  border-bottom: 1px solid var(--app-border-soft);
+  background: var(--app-white);
 }
 
 /* Remove all border-radius from shadcn components */

@@ -57,14 +57,14 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#F3F0E7" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--app-bg)" }}>
       {/* Desktop masthead */}
-      <header className="hidden md:flex items-stretch border-b-2 border-black">
-        <div className="px-10 py-5 flex items-center border-r border-[#D8D7D2]">
-          <span className="font-serif italic text-[26px] text-[#1b291d]">SoulGuide</span>
+      <header className="hidden md:flex items-stretch border-b-2 border-[var(--app-dark)]">
+        <div className="px-10 py-5 flex items-center border-r border-[var(--app-border)]">
+          <span className="font-serif italic text-[26px] text-[var(--app-green)]">SoulGuide</span>
         </div>
         <div className="flex-1 flex items-center px-10">
-          <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">
+          <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">
             Step {String(currentPhase).padStart(2, "0")} — Shape your journey
           </span>
         </div>
@@ -78,10 +78,10 @@ export default function Onboarding() {
       </main>
 
       {/* Desktop ticker */}
-      <div className="hidden md:block border-t-2 border-black overflow-hidden">
+      <div className="hidden md:block border-t-2 border-[var(--app-dark)] overflow-hidden">
         <div className="py-3 px-10 flex items-center gap-10 whitespace-nowrap">
           {["Start small.", "Be consistent.", "Stay present.", "Practice gratitude.", "Find peace.", "Start small.", "Be consistent."].map((t, i) => (
-            <span key={i} className="font-serif italic text-[16px] text-[#73726C]">{t}</span>
+            <span key={i} className="font-serif italic text-[16px] text-[var(--app-gray-lt)]">{t}</span>
           ))}
         </div>
       </div>

@@ -17,18 +17,18 @@ export default function MeetPrayerPartner() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--app-bg)" }}>
       {/* Header */}
-      <header className="flex bg-white border-b border-[#D8D7D2]">
+      <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex-1 py-6 px-6 flex items-center">
-          <h1 className="font-serif text-[26px] leading-none text-black tracking-wide">Your Companion</h1>
+          <h1 className="font-serif text-[26px] leading-none text-[var(--app-dark)] tracking-wide">Your Companion</h1>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col">
         {/* Intro */}
         <div className="p-6">
-          <div className="bg-white p-7">
+          <div className="bg-[var(--app-white)] p-7">
             <div className="w-full aspect-[4/3] mb-7 overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&auto=format&fit=crop&q=80"
@@ -37,38 +37,38 @@ export default function MeetPrayerPartner() {
               />
             </div>
             <div className="flex items-center justify-between mb-5">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Meet your guide</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Meet your guide</span>
             </div>
-            <h2 className="font-serif text-[36px] leading-[1.15] text-black mb-4">
+            <h2 className="font-serif text-[36px] leading-[1.15] text-[var(--app-dark)] mb-4">
               Your Personal<br />Prayer Partner
             </h2>
-            <p className="text-[17px] leading-[1.65] text-[#545454]">
+            <p className="text-[17px] leading-[1.65] text-[var(--app-gray)]">
               An AI companion that knows your faith journey and walks with you through every season.
             </p>
           </div>
         </div>
 
         {/* Features */}
-        <div className="border-y border-[#D8D7D2] py-5 px-8 bg-white">
-          <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-black">What to expect</h3>
+        <div className="border-y border-[var(--app-border)] py-5 px-8 bg-[var(--app-white)]">
+          <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-[var(--app-dark)]">What to expect</h3>
         </div>
         <div className="flex flex-col">
           {features.map((f, i) => (
-            <div key={i} className="px-6 py-6 bg-white border-b border-[#f0f0ee]">
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{f.tag}</span>
-              <p className="font-serif text-[20px] text-black mb-1">{f.title}</p>
-              <p className="text-[14px] text-[#73726C] leading-relaxed">{f.sub}</p>
+            <div key={i} className="px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] block mb-1">{f.tag}</span>
+              <p className="font-serif text-[20px] text-[var(--app-dark)] mb-1">{f.title}</p>
+              <p className="text-[14px] text-[var(--app-gray-lt)] leading-relaxed">{f.sub}</p>
             </div>
           ))}
         </div>
 
         {/* CTA */}
-        <div className="p-6 bg-white border-t border-[#D8D7D2] mt-4">
+        <div className="p-6 bg-[var(--app-white)] border-t border-[var(--app-border)] mt-4">
           <button
             onClick={handleContinue}
             data-testid="button-start-conversation"
             className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase"
-            style={{ background: "#1b291d", color: "#fff" }}
+            style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
           >
             Start your first conversation
           </button>

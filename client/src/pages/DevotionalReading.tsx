@@ -4,8 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, MessageCircle, Sparkles, Timer, Moon, Play, Pause } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, MessageCircle, Sparkles, Timer, Moon, Play, Pause, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Devotional } from "@shared/schema";
 import { useFlags } from "@/hooks/useFlags";
@@ -26,25 +25,16 @@ function SectionBlock({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + index * 0.08 }}
-      className={cn(
-        "rounded-2xl p-5",
-        accent
-          ? "bg-primary/8 border border-primary/20"
-          : "bg-card border border-border/50"
-      )}
+      className="px-6 py-6 border-b border-[var(--app-border-soft)]"
+      style={{ background: accent ? "var(--app-bg-warm)" : "var(--app-white)" }}
     >
       {label && (
-        <p className={cn(
-          "text-[10px] font-semibold uppercase tracking-widest mb-2",
-          accent ? "text-primary" : "text-muted-foreground"
-        )}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] mb-2"
+          style={{ color: accent ? "var(--app-green)" : "var(--app-gray-lt)" }}>
           {label}
         </p>
       )}
-      <p className={cn(
-        "leading-relaxed text-sm",
-        accent ? "font-serif text-base italic text-foreground" : "text-foreground/90"
-      )}>
+      <p className={accent ? "font-serif text-[18px] italic leading-relaxed text-[var(--app-dark)]" : "text-[15px] leading-relaxed text-[var(--app-gray)]"}>
         {content}
       </p>
     </motion.div>
@@ -57,15 +47,15 @@ function PracticeBlock({ content, index }: { content: string; index: number }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + index * 0.08 }}
-      className="bg-card border border-border/50 rounded-2xl p-5"
+      className="px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]"
     >
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="w-3.5 h-3.5 text-primary" />
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--app-green)" }} />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--app-gray-lt)" }}>
           Try this today
         </p>
       </div>
-      <p className="text-sm text-foreground/90 leading-relaxed">{content}</p>
+      <p className="text-[15px] text-[var(--app-gray)] leading-relaxed">{content}</p>
     </motion.div>
   );
 }
@@ -78,21 +68,22 @@ function PrayerBlock({ content, index }: { content: string; index: number }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + index * 0.08 }}
-      className="bg-primary/5 border border-primary/15 rounded-2xl overflow-hidden"
+      className="border-b border-[var(--app-border-soft)] overflow-hidden"
+      style={{ background: "var(--app-bg-warm)" }}
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-5 text-left"
+        className="w-full flex items-center justify-between px-6 py-5 text-left"
       >
         <div className="flex items-center gap-2">
-          <BookOpen className="w-3.5 h-3.5 text-primary" />
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+          <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--app-green)" }} />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--app-green)" }}>
             Closing prayer
           </p>
         </div>
         {expanded
-          ? <ChevronUp className="w-4 h-4 text-primary" />
-          : <ChevronDown className="w-4 h-4 text-primary" />
+          ? <ChevronUp className="w-4 h-4" style={{ color: "var(--app-green)" }} />
+          : <ChevronDown className="w-4 h-4" style={{ color: "var(--app-green)" }} />
         }
       </button>
       <AnimatePresence>
@@ -104,7 +95,7 @@ function PrayerBlock({ content, index }: { content: string; index: number }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <p className="font-serif text-sm italic text-foreground/90 leading-relaxed px-5 pb-5">
+            <p className="font-serif text-[16px] italic text-[var(--app-dark)] leading-relaxed px-6 pb-6">
               "{content}"
             </p>
           </motion.div>
@@ -185,16 +176,15 @@ function TimedModeSection() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
-      className="space-y-3 pt-2"
     >
       {/* Timed devotionals */}
       {flags.TIMED_DEVOTIONALS && !mode && (
-        <div className="bg-card border border-border/50 rounded-2xl p-5">
+        <div className="px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
           <div className="flex items-center gap-2 mb-1">
-            <Timer className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold">Guided Meditation</span>
+            <Timer className="w-4 h-4" style={{ color: "var(--app-green)" }} />
+            <span className="text-[15px] font-semibold text-[var(--app-dark)]">Guided Meditation</span>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-[13px] mb-4" style={{ color: "var(--app-gray-lt)" }}>
             A spoken devotional timed to your schedule
           </p>
           <div className="grid grid-cols-4 gap-2">
@@ -202,19 +192,19 @@ function TimedModeSection() {
               <button
                 key={d}
                 onClick={() => { setSelectedDuration(d); timedMutation.mutate(d); }}
-                className={cn(
-                  "py-2.5 rounded-xl text-sm font-semibold border transition-all",
+                className="py-2.5 text-[13px] font-semibold transition-colors"
+                style={
                   selectedDuration === d
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border/50 hover:border-primary/40"
-                )}
+                    ? { background: "var(--cta-bg)", color: "var(--cta-fg)" }
+                    : { border: "1px solid var(--app-border)", color: "var(--app-dark)" }
+                }
               >
                 {d}m
               </button>
             ))}
           </div>
           {timedMutation.isPending && (
-            <p className="text-xs text-muted-foreground text-center mt-3 animate-pulse">
+            <p className="text-[12px] text-center mt-3 animate-pulse" style={{ color: "var(--app-gray-lt)" }}>
               Preparing your meditation...
             </p>
           )}
@@ -226,13 +216,13 @@ function TimedModeSection() {
         <button
           onClick={() => eveningMutation.mutate()}
           disabled={eveningMutation.isPending}
-          className="w-full bg-card border border-border/50 rounded-2xl p-5 text-left hover:border-primary/30 transition-colors"
+          className="w-full px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] text-left transition-colors"
         >
           <div className="flex items-center gap-2 mb-1">
-            <Moon className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold">Evening Prayer</span>
+            <Moon className="w-4 h-4" style={{ color: "var(--app-green)" }} />
+            <span className="text-[15px] font-semibold text-[var(--app-dark)]">Evening Prayer</span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px]" style={{ color: "var(--app-gray-lt)" }}>
             {eveningMutation.isPending ? "Preparing your prayer..." : "A gentle prayer to close your day"}
           </p>
         </button>
@@ -243,31 +233,32 @@ function TimedModeSection() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-primary/5 border border-primary/20 rounded-2xl p-6"
+          className="px-6 py-7 border-b border-[var(--app-border-soft)]"
+          style={{ background: "var(--app-bg-warm)" }}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              {mode === "timed" ? <Timer className="w-4 h-4 text-primary" /> : <Moon className="w-4 h-4 text-primary" />}
-              <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+              {mode === "timed" ? <Timer className="w-4 h-4" style={{ color: "var(--app-green)" }} /> : <Moon className="w-4 h-4" style={{ color: "var(--app-green)" }} />}
+              <span className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--app-green)" }}>
                 {mode === "timed" ? `${selectedDuration}-Minute Meditation` : "Evening Prayer"}
               </span>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl gap-1.5"
+            <button
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide"
+              style={{ border: "1px solid var(--app-green)", color: "var(--app-green)" }}
               onClick={() => togglePlay((timedText || eveningText)!)}
             >
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
               {isPlaying ? "Pause" : "Listen"}
-            </Button>
+            </button>
           </div>
-          <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+          <p className="text-[15px] text-[var(--app-gray)] leading-relaxed whitespace-pre-line">
             {timedText || eveningText}
           </p>
           <button
             onClick={() => { setMode(null); setTimedText(null); setEveningText(null); setSelectedDuration(null); }}
-            className="text-xs text-muted-foreground mt-4 hover:text-foreground transition-colors"
+            className="text-[12px] mt-4 transition-colors"
+            style={{ color: "var(--app-gray-lt)" }}
           >
             ← Back
           </button>
@@ -294,19 +285,23 @@ export default function DevotionalReading() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--app-bg)" }}>
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--app-green)" }} />
       </div>
     );
   }
 
   if (!devotional) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-muted-foreground mb-4">Today's devotional isn't ready yet.</p>
-        <Button onClick={() => setLocation("/devotion")} variant="outline" className="rounded-xl">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center" style={{ background: "var(--app-bg)" }}>
+        <p className="mb-5" style={{ color: "var(--app-gray-lt)" }}>Today's devotional isn't ready yet.</p>
+        <button
+          onClick={() => setLocation("/devotion")}
+          className="px-6 py-3 text-[12px] font-semibold tracking-[0.15em] uppercase"
+          style={{ border: "1px solid var(--app-green)", color: "var(--app-green)" }}
+        >
           Go back
-        </Button>
+        </button>
       </div>
     );
   }
@@ -319,7 +314,7 @@ export default function DevotionalReading() {
   ].filter(Boolean) as Array<{ type: string; label?: string; content: string; accent?: boolean }>;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
       {/* Audio Player overlay */}
       {showAudioPlayer && (
         <AudioPlayer
@@ -332,49 +327,46 @@ export default function DevotionalReading() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border/50">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/devotion")}
-            className="rounded-full"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <span className="font-serif text-base font-semibold flex-1">Today's Devotional</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAudioPlayer(true)}
-            className="gap-1.5 text-xs font-semibold uppercase tracking-wider"
-          >
-            <Play className="w-3.5 h-3.5" />
-            Listen
-          </Button>
-        </div>
+      <header className="sticky top-0 z-10 flex items-stretch bg-[var(--app-white)] border-b border-[var(--app-border)]">
+        <button
+          onClick={() => setLocation("/devotion")}
+          className="py-5 px-5 border-r border-[var(--app-border)]"
+          style={{ color: "var(--app-gray-lt)" }}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="flex-1 flex items-center font-serif text-[18px] text-[var(--app-dark)] px-5">Today's Devotional</span>
+        <button
+          onClick={() => setShowAudioPlayer(true)}
+          className="flex items-center gap-1.5 px-5 text-[11px] font-semibold tracking-[0.15em] uppercase border-l border-[var(--app-border)]"
+          style={{ color: "var(--app-green)" }}
+        >
+          <Play className="w-3.5 h-3.5" />
+          Listen
+        </button>
       </header>
 
-      <main className="px-4 py-5 max-w-lg mx-auto space-y-4">
+      <main className="max-w-lg mx-auto">
         {/* Scripture card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-primary/8 border border-primary/20 rounded-2xl p-6"
+          className="px-6 py-7 border-b border-[var(--app-border-soft)]"
+          style={{ background: "var(--app-bg-warm)" }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">
+            <BookOpen className="w-4 h-4" style={{ color: "var(--app-green)" }} />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--app-green)" }}>
               Verse of the day
             </span>
           </div>
-          <p className="font-serif text-lg leading-relaxed italic text-foreground mb-3">
+          <p className="font-serif text-[20px] leading-relaxed italic text-[var(--app-dark)] mb-3">
             "{devotional.scriptureText}"
           </p>
-          <p className="text-sm font-medium text-primary">{devotional.scriptureReference}</p>
+          <p className="text-[13px] font-semibold" style={{ color: "var(--app-green)" }}>{devotional.scriptureReference}</p>
           {devotional.title && (
-            <p className="text-xs text-muted-foreground mt-3 border-t border-primary/10 pt-3">
+            <p className="text-[12px] mt-3 pt-3 border-t border-[var(--app-border-soft)]" style={{ color: "var(--app-gray-lt)" }}>
               {devotional.title}
             </p>
           )}
@@ -407,16 +399,17 @@ export default function DevotionalReading() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="pt-2"
+          className="px-6 py-7"
         >
-          <Button
-            className="w-full h-14 rounded-2xl gap-2 text-base font-semibold"
+          <button
+            className="w-full py-4 flex items-center justify-center gap-2 font-semibold text-[13px] tracking-[0.2em] uppercase"
+            style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
             onClick={() => setLocation("/chat?mode=devotional")}
           >
             <MessageCircle className="w-5 h-5" />
             Begin Prayer
-          </Button>
-          <p className="text-xs text-muted-foreground text-center mt-3">
+          </button>
+          <p className="text-[12px] text-center mt-3" style={{ color: "var(--app-gray-lt)" }}>
             Continue the reflection with your companion
           </p>
         </motion.div>

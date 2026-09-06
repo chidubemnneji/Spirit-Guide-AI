@@ -122,7 +122,7 @@ function PracticeCard({
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-gentle" />
-              <div className="relative w-12 h-12 rounded-full bg-white dark:bg-card shadow-subtle flex items-center justify-center">
+              <div className="relative w-12 h-12 rounded-full bg-[var(--app-white)] dark:bg-card shadow-subtle flex items-center justify-center">
                 <PracticeIcon iconName={card.iconEmoji} className="w-6 h-6 text-primary" />
               </div>
             </div>

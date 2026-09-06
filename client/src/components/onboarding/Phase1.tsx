@@ -69,12 +69,12 @@ export function Phase1({ onNext, onBack }: Phase1Props) {
       transition={{ duration: 0.4 }}
     >
       {/* Left: orientation headline */}
-      <div className="flex flex-col justify-center pr-14 border-r border-black">
-        <span className="text-[12px] font-semibold tracking-[0.25em] uppercase text-[#73726C] mb-6">Orientation</span>
-        <h1 className="font-serif text-[56px] leading-[1.05] text-black mb-7">
+      <div className="flex flex-col justify-center pr-14 border-r border-[var(--app-dark)]">
+        <span className="text-[12px] font-semibold tracking-[0.25em] uppercase text-[var(--app-gray-lt)] mb-6">Orientation</span>
+        <h1 className="font-serif text-[56px] leading-[1.05] text-[var(--app-dark)] mb-7">
           What brings<br />you here today?
         </h1>
-        <p className="text-[19px] leading-[1.6] text-[#545454] max-w-[40ch]">
+        <p className="text-[19px] leading-[1.6] text-[var(--app-gray)] max-w-[40ch]">
           This is a space for intentional faith. Pick the one that feels most true right now, and we'll shape your journey around it.
         </p>
         <div className="mt-12">

@@ -39,16 +39,16 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--app-bg)" }}>
       {/* Header */}
-      <header className="flex bg-white border-b border-[#D8D7D2]">
-        <button onClick={() => setLocation("/")} className="py-6 px-6 flex items-center border-r border-[#D8D7D2]" data-testid="button-back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
+        <button onClick={() => setLocation("/")} className="py-6 px-6 flex items-center border-r border-[var(--app-border)]" data-testid="button-back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-dark)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </button>
         <div className="flex-1 py-6 px-6 flex items-center justify-center">
-          <h1 className="font-serif text-[22px] leading-none text-black tracking-wide">Sign in</h1>
+          <h1 className="font-serif text-[22px] leading-none text-[var(--app-dark)] tracking-wide">Sign in</h1>
         </div>
       </header>
 
@@ -57,20 +57,20 @@ export default function Login() {
           {/* Section */}
           <div className="section-band"><span>Your Details</span></div>
 
-          <div className="px-6 py-5 bg-white border-b border-[#f0f0ee]">
-            <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block mb-1">Email</label>
+          <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+            <label className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase block mb-1">Email</label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="your@email.com" data-testid="input-email"
-              className="w-full font-serif text-[18px] text-black bg-transparent focus:outline-none"
+              className="w-full font-serif text-[18px] text-[var(--app-dark)] bg-transparent focus:outline-none"
             />
             {errors.email && <p className="text-[12px] text-red-600 mt-1">{errors.email}</p>}
           </div>
 
-          <div className="px-6 py-5 bg-white border-b border-[#f0f0ee]">
+          <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase">Password</label>
-              <button type="button" onClick={() => toast({ title: "Password reset", description: "Password reset is coming soon. For now, contact support to reset your password." })} className="text-[10px] font-semibold tracking-[0.08em] uppercase text-[#1b291d]" data-testid="link-forgot-password">
+              <label className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase">Password</label>
+              <button type="button" onClick={() => toast({ title: "Password reset", description: "Password reset is coming soon. For now, contact support to reset your password." })} className="text-[10px] font-semibold tracking-[0.08em] uppercase text-[var(--app-green)]" data-testid="link-forgot-password">
                 Forgot?
               </button>
             </div>
@@ -78,26 +78,26 @@ export default function Login() {
               <input
                 type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Your password" data-testid="input-password"
-                className="flex-1 font-serif text-[18px] text-black bg-transparent focus:outline-none"
+                className="flex-1 font-serif text-[18px] text-[var(--app-dark)] bg-transparent focus:outline-none"
               />
               <button type="button" onClick={() => setShowPassword(v => !v)} data-testid="button-toggle-password">
-                {showPassword ? <EyeOff size={18} className="text-[#73726C]" /> : <Eye size={18} className="text-[#73726C]" />}
+                {showPassword ? <EyeOff size={18} className="text-[var(--app-gray-lt)]" /> : <Eye size={18} className="text-[var(--app-gray-lt)]" />}
               </button>
             </div>
             {errors.password && <p className="text-[12px] text-red-600 mt-1">{errors.password}</p>}
           </div>
 
-          <div className="p-6 bg-white border-t border-[#D8D7D2] mt-4 space-y-3">
+          <div className="p-6 bg-[var(--app-white)] border-t border-[var(--app-border)] mt-4 space-y-3">
             <button
               type="submit" disabled={isLoading} data-testid="button-login"
               className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase disabled:opacity-40 flex items-center justify-center gap-2"
-              style={{ background: "#1b291d", color: "#fff" }}
+              style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
             >
               {isLoading ? <><Loader2 size={16} className="animate-spin" /> Signing in...</> : "Sign in"}
             </button>
-            <p className="text-[12px] text-[#73726C] text-center">
+            <p className="text-[12px] text-[var(--app-gray-lt)] text-center">
               No account?{" "}
-              <button type="button" className="font-semibold text-[#1b291d]" onClick={() => setLocation("/signup")} data-testid="link-signup">
+              <button type="button" className="font-semibold text-[var(--app-green)]" onClick={() => setLocation("/signup")} data-testid="link-signup">
                 Create one
               </button>
             </p>

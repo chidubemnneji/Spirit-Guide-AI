@@ -81,39 +81,39 @@ export default function Account() {
   return (
     <>
       {/* ─────────────  DESKTOP: EDITORIAL THREE-ZONE ACCOUNT  ───────────── */}
-      <div className="hidden md:block min-h-screen" style={{ background: "#EBEAE5" }}>
-        <header className="flex items-stretch border-b-2 border-black max-w-[1600px] mx-auto w-full">
-          <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
-            <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
+      <div className="hidden md:block min-h-screen" style={{ background: "var(--app-bg)" }}>
+        <header className="flex items-stretch border-b-2 border-[var(--app-dark)] max-w-[1600px] mx-auto w-full">
+          <div className="px-8 py-6 flex items-center border-r border-[var(--app-border)]">
+            <h1 className="font-serif text-[30px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
           </div>
           <div className="flex-1 flex items-center px-8">
-            <span className="font-serif text-[18px] italic text-[#73726C]">Profile</span>
+            <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">Profile</span>
           </div>
           <button onClick={handleLogout} className="px-8 flex items-center">
-            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#9a3b3b]">Sign Out</span>
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-danger)]">Sign Out</span>
           </button>
         </header>
 
         <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
           {/* LEFT — Profile + Journey Statistics */}
-          <section className="border-r border-black">
-            <div className="px-6 py-4 border-b border-black">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Profile</span>
+          <section className="border-r border-[var(--app-dark)]">
+            <div className="px-6 py-4 border-b border-[var(--app-dark)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Profile</span>
             </div>
-            <div className="flex flex-col items-center px-6 py-10 border-b border-[#D8D7D2]">
+            <div className="flex flex-col items-center px-6 py-10 border-b border-[var(--app-border)]">
               <div className="relative w-[116px] h-[116px] flex items-center justify-center">
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 116 116"><circle cx="58" cy="58" r="56" fill="none" stroke="#d8d7d2" strokeWidth="3" /></svg>
-                <svg className="absolute inset-0 w-full h-full -rotate-[110deg]" viewBox="0 0 116 116"><circle cx="58" cy="58" r="56" fill="none" stroke="#1b291d" strokeWidth="3" strokeDasharray={dashArray} /></svg>
-                <div className="absolute inset-[11px] rounded-full flex items-center justify-center" style={{ background: "#dcdbd5" }}>
-                  <span className="font-serif text-[32px] text-black">{userInitials}</span>
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 116 116"><circle cx="58" cy="58" r="56" fill="none" stroke="var(--app-border)" strokeWidth="3" /></svg>
+                <svg className="absolute inset-0 w-full h-full -rotate-[110deg]" viewBox="0 0 116 116"><circle cx="58" cy="58" r="56" fill="none" stroke="var(--app-green)" strokeWidth="3" strokeDasharray={dashArray} /></svg>
+                <div className="absolute inset-[11px] rounded-full flex items-center justify-center" style={{ background: "var(--app-bg-inner)" }}>
+                  <span className="font-serif text-[32px] text-[var(--app-dark)]">{userInitials}</span>
                 </div>
               </div>
-              <h2 className="font-serif text-[28px] text-black mt-6 text-center">{userName}</h2>
-              {memberSince && <p className="text-[10px] font-semibold tracking-[0.15em] text-[#73726C] mt-2 uppercase">Member Since {memberSince}</p>}
-              {archetype && <p className="text-[13px] text-[#1b291d] mt-3 text-center font-medium">{archetype.name}</p>}
+              <h2 className="font-serif text-[28px] text-[var(--app-dark)] mt-6 text-center">{userName}</h2>
+              {memberSince && <p className="text-[10px] font-semibold tracking-[0.15em] text-[var(--app-gray-lt)] mt-2 uppercase">Member Since {memberSince}</p>}
+              {archetype && <p className="text-[13px] text-[var(--app-green)] mt-3 text-center font-medium">{archetype.name}</p>}
             </div>
-            <div className="px-6 py-4 border-b border-[#D8D7D2]">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Journey Statistics</span>
+            <div className="px-6 py-4 border-b border-[var(--app-border)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Journey Statistics</span>
             </div>
             <div className="grid grid-cols-2">
               {[
@@ -122,145 +122,145 @@ export default function Account() {
                 { n: stats?.longestStreak ?? 0, l: "Longest Streak" },
                 { n: stats?.conversationCount ?? 0, l: "Sessions" },
               ].map((s, i) => (
-                <div key={i} className={`px-6 py-8 border-b border-[#D8D7D2] ${i % 2 === 0 ? "border-r border-[#D8D7D2]" : ""}`}>
-                  <span className="font-serif text-[44px] leading-none text-black">{s.n}</span>
-                  <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#73726C] mt-3">{s.l}</p>
+                <div key={i} className={`px-6 py-8 border-b border-[var(--app-border)] ${i % 2 === 0 ? "border-r border-[var(--app-border)]" : ""}`}>
+                  <span className="font-serif text-[44px] leading-none text-[var(--app-dark)]">{s.n}</span>
+                  <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[var(--app-gray-lt)] mt-3">{s.l}</p>
                 </div>
               ))}
             </div>
           </section>
 
           {/* CENTER — Favorite Scripture + Settings */}
-          <section className="border-r border-black">
-            <div className="px-7 py-4 border-b border-black">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Favorite Scripture</span>
+          <section className="border-r border-[var(--app-dark)]">
+            <div className="px-7 py-4 border-b border-[var(--app-dark)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Favorite Scripture</span>
             </div>
-            <div className="px-7 py-10 border-b border-[#D8D7D2]">
+            <div className="px-7 py-10 border-b border-[var(--app-border)]">
               {savedPassages?.passages?.length ? (
-                <div className="border border-[#D8D7D2] bg-white px-8 py-10 relative">
-                  <p className="font-serif text-[26px] italic leading-[1.4] text-black text-center">"{savedPassages.passages[0].text}"</p>
-                  <p className="text-[12px] font-semibold tracking-[0.15em] uppercase text-[#73726C] mt-6 text-center">— {savedPassages.passages[0].reference}</p>
+                <div className="border border-[var(--app-border)] bg-[var(--app-white)] px-8 py-10 relative">
+                  <p className="font-serif text-[26px] italic leading-[1.4] text-[var(--app-dark)] text-center">"{savedPassages.passages[0].text}"</p>
+                  <p className="text-[12px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] mt-6 text-center">— {savedPassages.passages[0].reference}</p>
                 </div>
               ) : (
-                <p className="font-serif text-[20px] italic text-[#73726C] text-center py-8">Highlight verses in the reader to save your favorites here.</p>
+                <p className="font-serif text-[20px] italic text-[var(--app-gray-lt)] text-center py-8">Highlight verses in the reader to save your favorites here.</p>
               )}
             </div>
-            <div className="px-7 py-4 border-b border-[#D8D7D2]">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Account Settings</span>
+            <div className="px-7 py-4 border-b border-[var(--app-border)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Account Settings</span>
             </div>
             {/* Beta */}
-            <div className="px-7 py-6 border-b border-[#D8D7D2] flex justify-between items-center">
+            <div className="px-7 py-6 border-b border-[var(--app-border)] flex justify-between items-center">
               <div>
-                <p className="font-serif text-[18px] text-black">Beta Access</p>
-                <p className="text-[13px] text-[#73726C] mt-0.5">{isBetaUser ? "Enrolled in early features" : "Not enrolled"}</p>
+                <p className="font-serif text-[18px] text-[var(--app-dark)]">Beta Access</p>
+                <p className="text-[13px] text-[var(--app-gray-lt)] mt-0.5">{isBetaUser ? "Enrolled in early features" : "Not enrolled"}</p>
               </div>
-              <button onClick={toggleBeta} disabled={betaLoading || isBetaUser} className="w-12 h-6 rounded-full relative transition-colors" style={{ background: isBetaUser ? "#1b291d" : "#D8D7D2" }}>
+              <button onClick={toggleBeta} disabled={betaLoading || isBetaUser} className="w-12 h-6 rounded-full relative transition-colors" style={{ background: isBetaUser ? "var(--app-green)" : "var(--app-border)" }}>
                 <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all" style={{ left: isBetaUser ? "calc(100% - 20px)" : "4px" }} />
               </button>
             </div>
             {/* Dark mode */}
-            <div className="px-7 py-6 border-b border-[#D8D7D2] flex justify-between items-center">
+            <div className="px-7 py-6 border-b border-[var(--app-border)] flex justify-between items-center">
               <div>
-                <p className="font-serif text-[18px] text-black">Dark Mode</p>
-                <p className="text-[13px] text-[#73726C] mt-0.5">Switch the app to a darker palette</p>
+                <p className="font-serif text-[18px] text-[var(--app-dark)]">Dark Mode</p>
+                <p className="text-[13px] text-[var(--app-gray-lt)] mt-0.5">Switch the app to a darker palette</p>
               </div>
-              <button onClick={toggleTheme} role="switch" aria-checked={theme === "dark"} aria-label="Toggle dark mode" className="w-12 h-6 rounded-full relative transition-colors" style={{ background: theme === "dark" ? "#1b291d" : "#D8D7D2" }}>
+              <button onClick={toggleTheme} role="switch" aria-checked={theme === "dark"} aria-label="Toggle dark mode" className="w-12 h-6 rounded-full relative transition-colors" style={{ background: theme === "dark" ? "var(--app-green)" : "var(--app-border)" }}>
                 <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all" style={{ left: theme === "dark" ? "calc(100% - 20px)" : "4px" }} />
               </button>
             </div>
             {/* Plan */}
-            <div className="px-7 py-6 border-b border-[#D8D7D2] flex justify-between items-center">
+            <div className="px-7 py-6 border-b border-[var(--app-border)] flex justify-between items-center">
               <div>
-                <p className="font-serif text-[18px] text-black">Current Plan</p>
-                <p className="text-[13px] text-[#73726C] mt-0.5">Free forever</p>
+                <p className="font-serif text-[18px] text-[var(--app-dark)]">Current Plan</p>
+                <p className="text-[13px] text-[var(--app-gray-lt)] mt-0.5">Free forever</p>
               </div>
-              <span className="text-[11px] font-semibold text-[#1b291d] border border-[#1b291d] rounded-full px-4 py-1.5 uppercase tracking-wider">Free</span>
+              <span className="text-[11px] font-semibold text-[var(--app-green)] border border-[var(--app-green)] rounded-full px-4 py-1.5 uppercase tracking-wider">Free</span>
             </div>
           </section>
 
           {/* RIGHT — This Week + Saved Passages */}
           <section>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">This Week</span>
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{weekRange}</span>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--app-dark)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">This Week</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">{weekRange}</span>
             </div>
-            <div className="px-6 py-6 border-b border-[#D8D7D2]">
+            <div className="px-6 py-6 border-b border-[var(--app-border)]">
               <div className="flex justify-between gap-1">
                 {weekDays.map((d, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                    <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#73726C]">{d.letter}</span>
+                    <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--app-gray-lt)]">{d.letter}</span>
                     <div className="w-full aspect-square flex items-center justify-center text-[12px] font-semibold"
-                      style={{ background: d.isComplete ? "#1b291d" : "transparent", color: d.isComplete ? "#fff" : "#111", border: d.isComplete ? "none" : d.isToday ? "2px solid #1b291d" : "1px solid #D8D7D2" }}>
+                      style={{ background: d.isComplete ? "var(--cta-bg)" : "transparent", color: d.isComplete ? "var(--cta-fg)" : "var(--app-dark)", border: d.isComplete ? "none" : d.isToday ? "2px solid var(--app-green)" : "1px solid var(--app-border)" }}>
                       {format(addDays(weekStart, i), "d")}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#D8D7D2]">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">Saved Passages</span>
-              <button onClick={() => setLocation("/bible")} className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">View All</button>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--app-border)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Saved Passages</span>
+              <button onClick={() => setLocation("/bible")} className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">View All</button>
             </div>
             {savedPassages?.passages?.length ? (
               savedPassages.passages.slice(0, 4).map((p, i) => (
-                <div key={i} className="px-6 py-5 border-b border-[#D8D7D2]">
-                  <p className="font-serif text-[16px] text-black mb-1">{p.reference}</p>
-                  <p className="text-[13px] text-[#73726C] leading-relaxed" style={{ WebkitLineClamp: 2, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>{p.text}</p>
+                <div key={i} className="px-6 py-5 border-b border-[var(--app-border)]">
+                  <p className="font-serif text-[16px] text-[var(--app-dark)] mb-1">{p.reference}</p>
+                  <p className="text-[13px] text-[var(--app-gray-lt)] leading-relaxed" style={{ WebkitLineClamp: 2, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>{p.text}</p>
                 </div>
               ))
             ) : (
-              <div className="px-6 py-6"><p className="text-[14px] text-[#73726C] italic">No saved passages yet.</p></div>
+              <div className="px-6 py-6"><p className="text-[14px] text-[var(--app-gray-lt)] italic">No saved passages yet.</p></div>
             )}
           </section>
         </div>
       </div>
 
       {/* ─────────────  MOBILE: ORIGINAL (UNTOUCHED)  ───────────── */}
-      <div className="md:hidden min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
+      <div className="md:hidden min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
       {/* Header */}
-      <header className="flex bg-white border-b border-[#D8D7D2]">
+      <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex-1 py-6 px-6 flex items-center">
-          <h1 className="font-serif text-[26px] leading-none text-black tracking-wide">Profile</h1>
+          <h1 className="font-serif text-[26px] leading-none text-[var(--app-dark)] tracking-wide">Profile</h1>
         </div>
-        <div className="border-l border-[#D8D7D2] py-6 px-7 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="0.75" strokeLinecap="square">
+        <div className="border-l border-[var(--app-border)] py-6 px-7 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--app-gray)" strokeWidth="0.75" strokeLinecap="square">
             <line x1="2" y1="7" x2="22" y2="7" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="17" x2="22" y2="17" />
           </svg>
         </div>
       </header>
 
       {/* Profile hero */}
-      <section className="flex flex-col items-center pt-12 pb-10 bg-white border-b border-[#D8D7D2]">
+      <section className="flex flex-col items-center pt-12 pb-10 bg-[var(--app-white)] border-b border-[var(--app-border)]">
         {/* Avatar with circular progress */}
         <div className="relative w-[116px] h-[116px] flex items-center justify-center">
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 116 116">
-            <circle cx="58" cy="58" r="56" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+            <circle cx="58" cy="58" r="56" fill="none" stroke="var(--app-border)" strokeWidth="3" />
           </svg>
           <svg className="absolute inset-0 w-full h-full -rotate-[110deg]" viewBox="0 0 116 116">
-            <circle cx="58" cy="58" r="56" fill="none" stroke="#1b291d" strokeWidth="3"
+            <circle cx="58" cy="58" r="56" fill="none" stroke="var(--app-green)" strokeWidth="3"
               strokeDasharray={dashArray} />
           </svg>
-          <div className="absolute inset-[11px] rounded-full flex items-center justify-center" style={{ background: "#e9e8e4" }}>
-            <span className="font-serif text-[32px] text-black">{userInitials}</span>
+          <div className="absolute inset-[11px] rounded-full flex items-center justify-center" style={{ background: "var(--app-bg-inner)" }}>
+            <span className="font-serif text-[32px] text-[var(--app-dark)]">{userInitials}</span>
           </div>
         </div>
 
-        <h2 className="font-serif text-[30px] font-bold mt-7 tracking-tight text-black" data-testid="text-user-name">{userName}</h2>
-        {memberSince && <p className="text-[10px] font-semibold tracking-[0.15em] text-[#73726C] mt-2.5 uppercase">Member Since {memberSince}</p>}
+        <h2 className="font-serif text-[30px] font-bold mt-7 tracking-tight text-[var(--app-dark)]" data-testid="text-user-name">{userName}</h2>
+        {memberSince && <p className="text-[10px] font-semibold tracking-[0.15em] text-[var(--app-gray-lt)] mt-2.5 uppercase">Member Since {memberSince}</p>}
 
         {archetype && (
-          <p className="text-[13px] text-[#1b291d] mt-2 font-medium">{archetype.name} · {archetype.description}</p>
+          <p className="text-[13px] text-[var(--app-green)] mt-2 font-medium">{archetype.name} · {archetype.description}</p>
         )}
 
         {/* Stats */}
         <div className="flex gap-16 mt-9">
           <div className="flex flex-col items-center">
-            <span className="font-serif text-[22px] text-black leading-none mb-2">{currentStreak}</span>
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase">Day Streak</span>
+            <span className="font-serif text-[22px] text-[var(--app-dark)] leading-none mb-2">{currentStreak}</span>
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase">Day Streak</span>
           </div>
           <div className="flex flex-col items-center">
-            <span className="font-serif text-[22px] text-black leading-none mb-2">{stats?.conversationCount ?? 0}</span>
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase">Sessions</span>
+            <span className="font-serif text-[22px] text-[var(--app-dark)] leading-none mb-2">{stats?.conversationCount ?? 0}</span>
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase">Sessions</span>
           </div>
         </div>
       </section>
@@ -269,15 +269,15 @@ export default function Account() {
       <section className="flex flex-col">
         <div className="section-band">
           <span>Daily Progress</span>
-          <span className="text-[11px] font-medium tracking-[0.08em] text-[#73726C] uppercase">{weekRange}</span>
+          <span className="text-[11px] font-medium tracking-[0.08em] text-[var(--app-gray-lt)] uppercase">{weekRange}</span>
         </div>
-        <div className="flex justify-between px-6 py-6 bg-white">
+        <div className="flex justify-between px-6 py-6 bg-[var(--app-white)]">
           {weekDays.map((d, i) => (
             <div key={i} className="w-10 h-10 flex items-center justify-center text-[13px] font-medium"
               style={{
-                background: d.isComplete ? "#1b291d" : "transparent",
-                color: d.isComplete ? "#fff" : "#111",
-                border: d.isComplete ? "none" : "1px solid #D8D7D2",
+                background: d.isComplete ? "var(--cta-bg)" : "transparent",
+                color: d.isComplete ? "var(--cta-fg)" : "var(--app-dark)",
+                border: d.isComplete ? "none" : "1px solid var(--app-border)",
               }}>
               {d.letter}
             </div>
@@ -289,18 +289,18 @@ export default function Account() {
       <section className="flex flex-col mt-4">
         <div className="section-band">
           <span>Saved Passages</span>
-          <span className="text-[11px] font-medium tracking-[0.08em] text-[#73726C] uppercase cursor-pointer" onClick={() => setLocation("/bible")}>View All</span>
+          <span className="text-[11px] font-medium tracking-[0.08em] text-[var(--app-gray-lt)] uppercase cursor-pointer" onClick={() => setLocation("/bible")}>View All</span>
         </div>
         {savedPassages?.passages?.length ? (
           savedPassages.passages.slice(0, 3).map((p, i) => (
-            <article key={i} className="px-6 py-6 bg-white border-b border-[#f0f0ee]">
-              <h4 className="font-serif text-[18px] font-bold text-black mb-1.5">{p.reference}</h4>
-              <p className="text-[15px] text-[#73726C]">{p.text}</p>
+            <article key={i} className="px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+              <h4 className="font-serif text-[18px] font-bold text-[var(--app-dark)] mb-1.5">{p.reference}</h4>
+              <p className="text-[15px] text-[var(--app-gray-lt)]">{p.text}</p>
             </article>
           ))
         ) : (
-          <article className="px-6 py-6 bg-white border-b border-[#f0f0ee]">
-            <p className="text-[15px] text-[#73726C] italic">No saved passages yet. Highlight verses in the Bible reader to save them here.</p>
+          <article className="px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+            <p className="text-[15px] text-[var(--app-gray-lt)] italic">No saved passages yet. Highlight verses in the Bible reader to save them here.</p>
           </article>
         )}
       </section>
@@ -310,16 +310,16 @@ export default function Account() {
         <div className="section-band"><span>Preferences</span></div>
 
         {/* Beta access */}
-        <div className="px-6 py-5 bg-white border-b border-[#f0f0ee] flex justify-between items-center">
+        <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex justify-between items-center">
           <div>
-            <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block">Beta Access</label>
-            <p className="font-serif text-[18px] text-black">{isBetaUser ? "Joined" : "Not enrolled"}</p>
+            <label className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase block">Beta Access</label>
+            <p className="font-serif text-[18px] text-[var(--app-dark)]">{isBetaUser ? "Joined" : "Not enrolled"}</p>
           </div>
           <button
             onClick={toggleBeta}
             disabled={betaLoading || isBetaUser}
             className="w-12 h-6 rounded-full relative transition-colors"
-            style={{ background: isBetaUser ? "#1b291d" : "#D8D7D2" }}
+            style={{ background: isBetaUser ? "var(--app-green)" : "var(--app-border)" }}
             data-testid="button-beta-access"
           >
             <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all"
@@ -328,38 +328,38 @@ export default function Account() {
         </div>
 
         {/* Daily reminder placeholder */}
-        <div className="px-6 py-5 bg-white border-b border-[#f0f0ee] flex justify-between items-center">
+        <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex justify-between items-center">
           <div>
-            <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block">Daily Reminder</label>
-            <p className="font-serif text-[18px] text-black">Coming soon</p>
+            <label className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase block">Daily Reminder</label>
+            <p className="font-serif text-[18px] text-[var(--app-dark)]">Coming soon</p>
           </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5"><path d="M6 9l6 6 6-6" /></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5"><path d="M6 9l6 6 6-6" /></svg>
         </div>
       </section>
 
       {/* Membership */}
       <section className="flex flex-col mt-4">
         <div className="section-band"><span>Membership</span></div>
-        <div className="px-6 py-5 bg-white border-b border-[#f0f0ee] flex justify-between items-center">
+        <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex justify-between items-center">
           <div>
-            <label className="text-[10px] font-semibold tracking-[0.1em] text-[#73726C] uppercase block">Current Plan</label>
-            <p className="font-serif text-[18px] text-black">Free</p>
+            <label className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase block">Current Plan</label>
+            <p className="font-serif text-[18px] text-[var(--app-dark)]">Free</p>
           </div>
-          <span className="text-[11px] font-semibold text-[#1b291d] border border-[#1b291d] px-3 py-1 uppercase tracking-wider">Free forever</span>
+          <span className="text-[11px] font-semibold text-[var(--app-green)] border border-[var(--app-green)] px-3 py-1 uppercase tracking-wider">Free forever</span>
         </div>
       </section>
 
       {/* Appearance */}
       <div className="section-band"><span>Appearance</span></div>
-      <div className="px-6 py-5 bg-white border-b border-[#f0f0ee] flex items-center justify-between">
-        <span className="text-[14px] text-black">Dark mode</span>
+      <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-center justify-between">
+        <span className="text-[14px] text-[var(--app-dark)]">Dark mode</span>
         <button
           onClick={toggleTheme}
           role="switch"
           aria-checked={theme === "dark"}
           aria-label="Toggle dark mode"
           className="relative w-12 h-7 transition-colors"
-          style={{ background: theme === "dark" ? "#1b291d" : "#D8D7D2" }}
+          style={{ background: theme === "dark" ? "var(--app-green)" : "var(--app-border)" }}
           data-testid="button-theme-toggle"
         >
           <span
@@ -374,7 +374,7 @@ export default function Account() {
         <button
           onClick={handleLogout}
           className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase transition-colors"
-          style={{ background: "#1b291d", color: "#fff" }}
+          style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
           data-testid="button-logout"
         >
           Sign out

@@ -4,9 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSearch, useLocation } from "wouter";
 import { useBible } from "@/context/BibleContext";
 import { useScroll } from "@/context/ScrollContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -43,32 +40,28 @@ function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) 
 
   return (
     <motion.div
-      className="px-5 py-4"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.6 }}
     >
       <button
-        className="w-full text-left"
+        className="w-full text-left px-6 py-7 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]"
         onClick={() => onNavigate(reference)}
+        data-testid="card-verse-of-the-day"
       >
-        <Card className="overflow-hidden border-primary/20 hover:border-primary/40 transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-                Verse of the Day
-              </span>
-            </div>
-            <p className="font-serif text-lg leading-relaxed italic text-foreground">
-              "{text}"
-            </p>
-            <div className="flex items-center justify-between mt-3">
-              <p className="text-sm font-medium text-primary">{reference}</p>
-              <span className="text-xs text-muted-foreground">Read in context →</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2 mb-3">
+          <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--app-green)" }} />
+          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase" style={{ color: "var(--app-green)" }}>
+            Verse of the Day
+          </span>
+        </div>
+        <p className="font-serif text-[19px] leading-relaxed italic text-[var(--app-dark)]">
+          "{text}"
+        </p>
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-[13px] font-semibold tracking-wide" style={{ color: "var(--app-green)" }}>{reference}</p>
+          <span className="text-[11px] text-[var(--app-gray-lt)]">Read in context →</span>
+        </div>
       </button>
     </motion.div>
   );
@@ -520,8 +513,8 @@ export default function Bible() {
 
   if (versionsLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center pb-20" style={{ background: "var(--app-bg)" }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--app-green)" }} />
       </div>
     );
   }
@@ -531,17 +524,17 @@ export default function Bible() {
   // Bible Home View
   if (!showReader) {
     return (
-      <div className="min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
+      <div className="min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
         <div className="px-5 pt-6 pb-4">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <BookOpen className="w-10 h-10 mb-4" style={{ color: "#1b291d" }} />
+            <BookOpen className="w-10 h-10 mb-4" style={{ color: "var(--app-green)" }} />
           </motion.div>
           
           <motion.h1 
-            className="font-serif text-3xl font-bold text-black"
+            className="font-serif text-3xl font-bold text-[var(--app-dark)]"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -551,7 +544,8 @@ export default function Bible() {
           </motion.h1>
           
           <motion.p 
-            className="text-muted-foreground mt-2"
+            className="mt-2"
+            style={{ color: "var(--app-gray-lt)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -569,13 +563,13 @@ export default function Bible() {
         >
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#73726C]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--app-gray-lt)]" />
               <input
                 placeholder="Search verses or type a reference..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#EBEAE5] border border-[#D8D7D2] focus:border-[#1b291d] outline-none text-[14px] font-sans text-black transition-colors"
+                className="w-full pl-9 pr-4 py-2.5 bg-[var(--app-bg)] border border-[var(--app-border)] focus:border-[var(--app-green)] outline-none text-[14px] font-sans text-[var(--app-dark)] transition-colors"
                 data-testid="input-search"
               />
             </div>
@@ -583,7 +577,7 @@ export default function Bible() {
               onClick={handleSearch}
               disabled={searchLoading}
               className="px-4 py-2.5 font-semibold text-[12px] tracking-wider uppercase disabled:opacity-40"
-              style={{ background: "#1b291d", color: "#fff" }}
+              style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
               data-testid="button-do-search"
             >
               {searchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Go"}
@@ -599,9 +593,9 @@ export default function Bible() {
                 data-testid={`button-feeling-${feeling.id}`}
                 className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase transition-colors"
                 style={{
-                  background: activeFeeling === feeling.id ? "#1b291d" : "transparent",
-                  color: activeFeeling === feeling.id ? "#fff" : "#73726C",
-                  border: activeFeeling === feeling.id ? "1px solid #1b291d" : "1px solid #D8D7D2",
+                  background: activeFeeling === feeling.id ? "var(--cta-bg)" : "transparent",
+                  color: activeFeeling === feeling.id ? "var(--cta-fg)" : "var(--app-gray-lt)",
+                  border: activeFeeling === feeling.id ? "1px solid var(--app-green)" : "1px solid var(--app-border)",
                 }}
               >
                 {feeling.label}
@@ -612,16 +606,16 @@ export default function Bible() {
 
         {/* Search error */}
         {searchError && !searchLoading && (
-          <div className="px-6 py-3 bg-white border-b border-[#f0f0ee]">
+          <div className="px-6 py-3 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
             <p className="text-[13px] text-red-600">{searchError}</p>
           </div>
         )}
 
         {/* Loading state */}
         {searchLoading && (
-          <div className="flex items-center gap-2 px-6 py-4 bg-white border-b border-[#f0f0ee]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#1b291d]" />
-            <span className="text-[13px] text-[#73726C]">Finding verses...</span>
+          <div className="flex items-center gap-2 px-6 py-4 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+            <Loader2 className="w-4 h-4 animate-spin text-[var(--app-green)]" />
+            <span className="text-[13px] text-[var(--app-gray-lt)]">Finding verses...</span>
           </div>
         )}
 
@@ -636,7 +630,7 @@ export default function Bible() {
               <div className="section-band">
                 <span>Results</span>
                 <button
-                  className="text-[11px] font-medium tracking-wider uppercase text-[#73726C]"
+                  className="text-[11px] font-medium tracking-wider uppercase text-[var(--app-gray-lt)]"
                   onClick={() => { setSearchResults([]); setSearchQuery(""); setActiveFeeling(null); }}
                 >
                   Clear
@@ -646,21 +640,21 @@ export default function Bible() {
                 {(showAllResults ? searchResults : searchResults.slice(0, 5)).map((result: any, index: number) => (
                   <button
                     key={index}
-                    className="w-full text-left px-6 py-5 bg-white border-b border-[#f0f0ee] block"
+                    className="w-full text-left px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] block"
                     onClick={() => navigateToVerse(result.reference)}
                   >
-                    <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1b291d] mb-1.5">{result.reference}</p>
+                    <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[var(--app-green)] mb-1.5">{result.reference}</p>
                     {result.text && (
-                      <p className="font-serif text-[17px] text-black leading-relaxed">{result.text}</p>
+                      <p className="font-serif text-[17px] text-[var(--app-dark)] leading-relaxed">{result.text}</p>
                     )}
                     {result.relevance && (
-                      <p className="text-[12px] text-[#73726C] mt-2 italic">{result.relevance}</p>
+                      <p className="text-[12px] text-[var(--app-gray-lt)] mt-2 italic">{result.relevance}</p>
                     )}
                   </button>
                 ))}
                 {searchResults.length > 5 && !showAllResults && (
                   <button
-                    className="w-full py-4 text-[11px] font-semibold tracking-wider uppercase text-[#1b291d] bg-white border-b border-[#f0f0ee]"
+                    className="w-full py-4 text-[11px] font-semibold tracking-wider uppercase text-[var(--app-green)] bg-[var(--app-white)] border-b border-[var(--app-border-soft)]"
                     onClick={() => setShowAllResults(true)}
                   >
                     Show {searchResults.length - 5} more results
@@ -676,28 +670,28 @@ export default function Bible() {
           {/* Full Bible Reader Card */}
           <button
             onClick={() => setBookSheetOpen(true)}
-            className="w-full text-left px-6 py-6 bg-white border-b border-[#f0f0ee] flex items-center justify-between"
+            className="w-full text-left px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-center justify-between"
             data-testid="card-bible-reader"
           >
             <div>
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{currentVersion?.abbreviation || "NIV"} Version</span>
-              <p className="font-serif text-[22px] text-black mb-1">Full Bible Reader</p>
-              <p className="text-[14px] text-[#73726C]">Read scripture in your preferred translation</p>
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] block mb-1">{currentVersion?.abbreviation || "NIV"} Version</span>
+              <p className="font-serif text-[22px] text-[var(--app-dark)] mb-1">Full Bible Reader</p>
+              <p className="text-[14px] text-[var(--app-gray-lt)]">Read scripture in your preferred translation</p>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
           </button>
 
           <button
             onClick={() => setBookmarksSheetOpen(true)}
-            className="w-full text-left px-6 py-6 bg-white border-b border-[#f0f0ee] flex items-center justify-between"
+            className="w-full text-left px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-center justify-between"
             data-testid="card-verse-collection"
           >
             <div>
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C] block mb-1">{bookmarkGroups.length} Verses Saved</span>
-              <p className="font-serif text-[22px] text-black mb-1">Your Verse Collection</p>
-              <p className="text-[14px] text-[#73726C]">Verses you've bookmarked and highlighted</p>
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] block mb-1">{bookmarkGroups.length} Verses Saved</span>
+              <p className="font-serif text-[22px] text-[var(--app-dark)] mb-1">Your Verse Collection</p>
+              <p className="text-[14px] text-[var(--app-gray-lt)]">Verses you've bookmarked and highlighted</p>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D8D7D2" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
           </button>
         </div>
 
@@ -713,43 +707,51 @@ export default function Bible() {
             <ScrollArea className="h-[calc(100vh-80px)] mt-4">
               {booksLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--app-green)" }} />
                 </div>
               ) : (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                    <h3 className="text-[10px] font-semibold tracking-[0.15em] uppercase mb-2" style={{ color: "var(--app-gray-lt)" }}>
                       Old Testament
                     </h3>
-                    <div className="space-y-0.5">
+                    <div>
                       {oldTestamentBooks.map((book) => (
-                        <Button
+                        <button
                           key={book.id}
-                          variant={currentBook?.id === book.id ? "secondary" : "ghost"}
-                          className="w-full justify-start font-normal"
                           onClick={() => handleSelectBook(book)}
                           data-testid={`book-${book.abbreviation}`}
+                          className="w-full text-left px-2 py-2 font-serif text-[16px] transition-colors"
+                          style={{
+                            color: currentBook?.id === book.id ? "var(--app-green)" : "var(--app-dark)",
+                            fontWeight: currentBook?.id === book.id ? 700 : 400,
+                            background: currentBook?.id === book.id ? "var(--app-bg-warm)" : "transparent",
+                          }}
                         >
                           {book.name}
-                        </Button>
+                        </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                    <h3 className="text-[10px] font-semibold tracking-[0.15em] uppercase mb-2" style={{ color: "var(--app-gray-lt)" }}>
                       New Testament
                     </h3>
-                    <div className="space-y-0.5">
+                    <div>
                       {newTestamentBooks.map((book) => (
-                        <Button
+                        <button
                           key={book.id}
-                          variant={currentBook?.id === book.id ? "secondary" : "ghost"}
-                          className="w-full justify-start font-normal"
                           onClick={() => handleSelectBook(book)}
                           data-testid={`book-${book.abbreviation}`}
+                          className="w-full text-left px-2 py-2 font-serif text-[16px] transition-colors"
+                          style={{
+                            color: currentBook?.id === book.id ? "var(--app-green)" : "var(--app-dark)",
+                            fontWeight: currentBook?.id === book.id ? 700 : 400,
+                            background: currentBook?.id === book.id ? "var(--app-bg-warm)" : "transparent",
+                          }}
                         >
                           {book.name}
-                        </Button>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -763,23 +765,23 @@ export default function Bible() {
         <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
           <SheetContent side="right" className="w-80">
             <SheetHeader>
-              <SheetTitle className="font-serif">Your Collection</SheetTitle>
+              <SheetTitle className="font-serif" style={{ color: "var(--app-dark)" }}>Your Collection</SheetTitle>
             </SheetHeader>
             <ScrollArea className="h-[calc(100vh-100px)] mt-4">
               {bookmarkGroups.length === 0 ? (
                 <div className="text-center py-12">
-                  <Star className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">No verses saved yet</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
+                  <Star className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--app-border)" }} />
+                  <p className="text-[14px]" style={{ color: "var(--app-gray-lt)" }}>No verses saved yet</p>
+                  <p className="text-[12px] mt-1" style={{ color: "var(--app-gray-lt)" }}>
                     Tap verses while reading to save them
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 pr-2">
+                <div>
                   {bookmarkGroups.map((bookmark) => (
-                    <Card 
-                      key={bookmark.id} 
-                      className="p-3 shadow-sm cursor-pointer hover-elevate"
+                    <div
+                      key={bookmark.id}
+                      className="cursor-pointer py-4 border-b border-[var(--app-border-soft)]"
                       onClick={() => {
                         const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
                         if (match) {
@@ -790,26 +792,25 @@ export default function Bible() {
                       }}
                       data-testid={`card-bookmark-${bookmark.id}`}
                     >
-                      <p className="text-xs font-medium text-primary mb-2">
+                      <p className="text-[11px] font-semibold tracking-wide mb-2" style={{ color: "var(--app-green)" }}>
                         {bookmark.reference}
                       </p>
                       <div className="line-clamp-4">
                         {bookmark.verses.map((v) => (
-                          <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90">
-                            <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
+                          <p key={v.number} className="font-serif text-[14px] leading-relaxed text-[var(--app-dark)]">
+                            <span className="text-[11px] mr-1" style={{ color: "var(--app-gray-lt)" }}>{v.number}</span>
                             {v.text}
                           </p>
                         ))}
                       </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
-                        <p className="text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--app-border-soft)" }}>
+                        <p className="text-[11px]" style={{ color: "var(--app-gray-lt)" }}>
                           {new Date(bookmark.dateSaved).toLocaleDateString()}
                         </p>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-primary"
+                        <div className="flex gap-3">
+                          <button
+                            className="p-1"
+                            style={{ color: "var(--app-green)" }}
                             onClick={async (e) => {
                               e.stopPropagation();
                               const combinedText = bookmark.verses.map(v => `${v.number}. ${v.text}`).join(" ");
@@ -833,11 +834,9 @@ export default function Bible() {
                             data-testid={`button-reflect-bookmark-${bookmark.id}`}
                           >
                             <MessageCircle className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
+                          </button>
+                          <button
+                            className="p-1 text-red-600"
                             onClick={(e) => {
                               e.stopPropagation();
                               setBookmarkGroups(bookmarkGroups.filter(b => b.id !== bookmark.id));
@@ -845,10 +844,10 @@ export default function Bible() {
                             data-testid={`button-remove-bookmark-${bookmark.id}`}
                           >
                             <X className="w-4 h-4" />
-                          </Button>
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               )}
@@ -862,16 +861,16 @@ export default function Bible() {
   // Bible Reader View — escapes the shell's 220px nav padding on desktop so the
   // three-column layout can own the full viewport width predictably.
   return (
-    <div className="min-h-screen pb-20 md:pr-[340px] md:pl-[280px] md:-ml-[220px] md:w-screen" style={{ background: "#EBEAE5" }}>
+    <div className="min-h-screen pb-20 md:pr-[340px] md:pl-[280px] md:-ml-[220px] md:w-screen" style={{ background: "var(--app-bg)" }}>
       {/* Desktop left book-rail (matches comp) */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[280px] border-r border-black bg-[#EBEAE5] overflow-y-auto z-30">
-        <div className="px-6 pt-8 pb-5 border-b border-[#D8D7D2]">
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[280px] border-r border-[var(--app-dark)] bg-[var(--app-bg)] overflow-y-auto z-30">
+        <div className="px-6 pt-8 pb-5 border-b border-[var(--app-border)]">
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (setShowReader(false), handleSearch())}
             placeholder="Search scripture…"
-            className="w-full bg-transparent border-b border-[#C7C6C0] focus:border-[#1b291d] outline-none pb-2 text-[15px] text-black placeholder:text-[#9A9992]"
+            className="w-full bg-transparent border-b border-[var(--app-border)] focus:border-[var(--app-green)] outline-none pb-2 text-[15px] text-[var(--app-dark)] placeholder:text-[var(--app-gray-lt)]"
           />
         </div>
         <div className="flex-1 overflow-y-auto py-4">
@@ -881,39 +880,39 @@ export default function Bible() {
               onClick={() => handleSelectBook(book)}
               className={cn(
                 "w-full flex items-center justify-between px-6 py-2.5 text-left transition-colors hover:bg-white/50",
-                currentBook?.id === book.id ? "font-bold text-black" : "text-[#333]"
+                currentBook?.id === book.id ? "font-bold text-[var(--app-dark)]" : "text-[var(--app-gray)]"
               )}
             >
               <span className="text-[16px] flex items-center gap-2">
                 {currentBook?.id === book.id && <span className="text-[10px]">▸</span>}
                 {book.name}
               </span>
-              <span className="text-[12px] text-[#9A9992]">{book.chaptersCount ?? ""}</span>
+              <span className="text-[12px] text-[var(--app-gray-lt)]">{book.chaptersCount ?? ""}</span>
             </button>
           ))}
         </div>
-        <div className="px-6 py-6 border-t border-[#D8D7D2] text-[13px] text-[#73726C] space-y-1">
+        <div className="px-6 py-6 border-t border-[var(--app-border)] text-[13px] text-[var(--app-gray-lt)] space-y-1">
           <p>SoulGuide</p>
-          <p className="text-[#9A9992]">{currentVersion?.abbreviation || "Scripture"}</p>
+          <p className="text-[var(--app-gray-lt)]">{currentVersion?.abbreviation || "Scripture"}</p>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-40 bg-white border-b border-[#D8D7D2]">
+      <header className="sticky top-0 z-40 bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex items-center">
           <button
             onClick={() => setShowReader(false)}
-            className="py-5 px-5 border-r border-[#D8D7D2] text-[#73726C]"
+            className="py-5 px-5 border-r border-[var(--app-border)] text-[var(--app-gray-lt)]"
             data-testid="button-back-to-bible-home"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 py-5 px-5">
-            <p className="font-serif text-[20px] leading-none text-black">{currentChapter?.reference || "Select Chapter"}</p>
-            {currentVersion && <p className="text-[10px] font-semibold tracking-wider uppercase text-[#73726C] mt-0.5">{currentVersion.name}</p>}
+            <p className="font-serif text-[20px] leading-none text-[var(--app-dark)]">{currentChapter?.reference || "Select Chapter"}</p>
+            {currentVersion && <p className="text-[10px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)] mt-0.5">{currentVersion.name}</p>}
           </div>
           <button
             onClick={() => setBookmarksSheetOpen(true)}
-            className="py-5 px-5 border-l border-[#D8D7D2] text-[11px] font-semibold tracking-wider uppercase text-[#73726C]"
+            className="py-5 px-5 border-l border-[var(--app-border)] text-[11px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)]"
             data-testid="button-open-bookmarks"
           >
             Saved
@@ -922,73 +921,79 @@ export default function Bible() {
         
         {/* Navigation */}
         <div className="flex items-center justify-between px-4 py-2">
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={handlePrevChapter}
             disabled={!currentChapter?.previous}
-            className="text-primary disabled:text-muted-foreground/30"
+            className="p-2 disabled:opacity-30 transition-opacity"
+            style={{ color: "var(--app-green)" }}
             data-testid="button-prev-chapter"
           >
             <ChevronLeft className="w-6 h-6" />
-          </Button>
+          </button>
 
           <div className="flex items-center gap-3">
             <Sheet open={bookSheetOpen} onOpenChange={setBookSheetOpen}>
               <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="font-medium"
+                <button
+                  className="px-4 py-1.5 text-[13px] font-semibold"
+                  style={{ border: "1px solid var(--app-border)", color: "var(--app-dark)" }}
                   data-testid="button-select-book"
                 >
                   {currentBook?.name || "Select Book"}
-                </Button>
+                </button>
               </SheetTrigger>
               <SheetContent side="left" className="w-80">
                 <SheetHeader>
-                  <SheetTitle className="font-serif">Select Book</SheetTitle>
+                  <SheetTitle className="font-serif" style={{ color: "var(--app-dark)" }}>Select Book</SheetTitle>
                 </SheetHeader>
                 <ScrollArea className="h-[calc(100vh-80px)] mt-4">
                   {booksLoading ? (
                     <div className="flex justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--app-green)" }} />
                     </div>
                   ) : (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                        <h3 className="text-[10px] font-semibold tracking-[0.15em] uppercase mb-2" style={{ color: "var(--app-gray-lt)" }}>
                           Old Testament
                         </h3>
-                        <div className="space-y-0.5">
+                        <div>
                           {oldTestamentBooks.map((book) => (
-                            <Button
+                            <button
                               key={book.id}
-                              variant={currentBook?.id === book.id ? "secondary" : "ghost"}
-                              className="w-full justify-start font-normal"
                               onClick={() => handleSelectBook(book)}
                               data-testid={`book-${book.abbreviation}`}
+                              className="w-full text-left px-2 py-2 font-serif text-[16px] transition-colors"
+                              style={{
+                                color: currentBook?.id === book.id ? "var(--app-green)" : "var(--app-dark)",
+                                fontWeight: currentBook?.id === book.id ? 700 : 400,
+                                background: currentBook?.id === book.id ? "var(--app-bg-warm)" : "transparent",
+                              }}
                             >
                               {book.name}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                        <h3 className="text-[10px] font-semibold tracking-[0.15em] uppercase mb-2" style={{ color: "var(--app-gray-lt)" }}>
                           New Testament
                         </h3>
-                        <div className="space-y-0.5">
+                        <div>
                           {newTestamentBooks.map((book) => (
-                            <Button
+                            <button
                               key={book.id}
-                              variant={currentBook?.id === book.id ? "secondary" : "ghost"}
-                              className="w-full justify-start font-normal"
                               onClick={() => handleSelectBook(book)}
                               data-testid={`book-${book.abbreviation}`}
+                              className="w-full text-left px-2 py-2 font-serif text-[16px] transition-colors"
+                              style={{
+                                color: currentBook?.id === book.id ? "var(--app-green)" : "var(--app-dark)",
+                                fontWeight: currentBook?.id === book.id ? 700 : 400,
+                                background: currentBook?.id === book.id ? "var(--app-bg-warm)" : "transparent",
+                              }}
                             >
                               {book.name}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -1000,45 +1005,49 @@ export default function Bible() {
 
             <Sheet open={chapterSheetOpen} onOpenChange={setChapterSheetOpen}>
               <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
+                <button
                   disabled={!currentBook}
                   data-testid="button-select-chapter"
+                  className="px-4 py-1.5 text-[13px] font-semibold disabled:opacity-30"
+                  style={{ border: "1px solid var(--app-border)", color: "var(--app-dark)" }}
                 >
                   Ch. {currentChapter?.number || "-"}
-                </Button>
+                </button>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-[50vh]">
                 <SheetHeader>
-                  <SheetTitle className="font-serif">Select Chapter</SheetTitle>
+                  <SheetTitle className="font-serif" style={{ color: "var(--app-dark)" }}>Select Chapter</SheetTitle>
                 </SheetHeader>
                 <div className="grid grid-cols-5 gap-2 mt-4 max-h-[35vh] overflow-y-auto p-2">
                   {chapters.map((ch) => (
-                    <Button
+                    <button
                       key={ch.id}
-                      variant={currentChapter?.id === ch.id ? "default" : "outline"}
                       onClick={() => handleSelectChapter(ch.id)}
                       data-testid={`chapter-${ch.number}`}
+                      className="py-2.5 text-[14px] font-semibold transition-colors"
+                      style={
+                        currentChapter?.id === ch.id
+                          ? { background: "var(--cta-bg)", color: "var(--cta-fg)" }
+                          : { background: "transparent", color: "var(--app-dark)", border: "1px solid var(--app-border)" }
+                      }
                     >
                       {ch.number}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </SheetContent>
             </Sheet>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={handleNextChapter}
             disabled={!currentChapter?.next}
-            className="text-primary disabled:text-muted-foreground/30"
+            className="p-2 disabled:opacity-30 transition-opacity"
+            style={{ color: "var(--app-green)" }}
             data-testid="button-next-chapter"
           >
             <ChevronRight className="w-6 h-6" />
-          </Button>
+          </button>
         </div>
       </header>
 
@@ -1050,26 +1059,25 @@ export default function Bible() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="font-serif text-2xl font-semibold mb-3">Select a Book</h2>
-            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+            <BookOpen className="w-10 h-10 mx-auto mb-6" style={{ color: "var(--app-green)" }} />
+            <h2 className="font-serif text-[28px] text-[var(--app-dark)] mb-3">Select a Book</h2>
+            <p className="text-[var(--app-gray-lt)] mb-6 max-w-xs mx-auto">
               Choose a book to begin reading
             </p>
-            <Button 
-              onClick={() => setBookSheetOpen(true)} 
-              className="rounded-xl"
+            <button
+              onClick={() => setBookSheetOpen(true)}
+              className="px-8 py-3 font-semibold text-[13px] tracking-[0.15em] uppercase"
+              style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
               data-testid="button-browse-books"
             >
               Browse Books
-            </Button>
+            </button>
           </motion.div>
         )}
 
         {chapterLoading && (
           <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--app-green)" }} />
           </div>
         )}
 
@@ -1084,34 +1092,33 @@ export default function Bible() {
                   exit={{ opacity: 0, y: 20 }}
                   className="fixed bottom-20 left-4 right-4 z-30"
                 >
-                  <Card className="p-2 shadow-lg">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm text-muted-foreground px-2">
-                        {highlightedVerses.size} verse{highlightedVerses.size > 1 ? "s" : ""} selected
-                      </span>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSaveHighlighted(verses)}
-                          data-testid="button-save-verses"
-                        >
-                          <Bookmark className="w-4 h-4 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReflectHighlighted(verses)}
-                          data-testid="button-reflect-verses"
-                        >
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          Reflect
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
+                  <div className="p-2 flex items-center justify-between gap-2" style={{ background: "var(--app-white)", border: "1px solid var(--app-border)", boxShadow: "0 4px 20px rgba(0,0,0,0.12)" }}>
+                    <span className="text-[13px] px-2" style={{ color: "var(--app-gray-lt)" }}>
+                      {highlightedVerses.size} verse{highlightedVerses.size > 1 ? "s" : ""} selected
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        className="flex items-center px-3 py-1.5 text-[12px] font-semibold"
+                        style={{ color: "var(--app-green)" }}
+                        onClick={() => handleSaveHighlighted(verses)}
+                        data-testid="button-save-verses"
+                      >
+                        <Bookmark className="w-4 h-4 mr-1" />
+                        Save
+                      </button>
+                      <button
+                        className="flex items-center px-3 py-1.5 text-[12px] font-semibold"
+                        style={{ color: "var(--app-green)" }}
+                        onClick={() => handleReflectHighlighted(verses)}
+                        data-testid="button-reflect-verses"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        Reflect
+                      </button>
+                      <button
+                        className="flex items-center px-3 py-1.5 text-[12px] font-semibold"
+                        style={{ color: "var(--app-green)" }}
+                        onClick={() => {
                             const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
                             if (selectedVerses.length === 0 || !currentChapter) return;
                             const sorted = selectedVerses.sort((a, b) => parseInt(a.number) - parseInt(b.number));
@@ -1134,22 +1141,21 @@ export default function Bible() {
                               navigator.clipboard.writeText(fullShare);
                             }
                           }}
-                          data-testid="button-share-verses"
-                        >
-                          <Share2 className="w-4 h-4 mr-1" />
-                          Share
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setHighlightedVerses(new Set())}
-                          data-testid="button-clear-selection"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
+                        data-testid="button-share-verses"
+                      >
+                        <Share2 className="w-4 h-4 mr-1" />
+                        Share
+                      </button>
+                      <button
+                        className="p-1.5"
+                        style={{ color: "var(--app-gray-lt)" }}
+                        onClick={() => setHighlightedVerses(new Set())}
+                        data-testid="button-clear-selection"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                  </Card>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1160,9 +1166,9 @@ export default function Bible() {
               transition={{ duration: 0.4 }}
               className="space-y-1"
             >
-              <h2 className="hidden md:block font-serif text-[64px] leading-none text-black mb-10">
+              <h2 className="hidden md:block font-serif text-[64px] leading-none text-[var(--app-dark)] mb-10">
                 {currentBook?.name || currentChapter?.reference?.split(" ").slice(0, -1).join(" ")}
-                <sup className="text-[28px] text-[#9A9992] ml-1">{currentChapter?.number}</sup>
+                <sup className="text-[28px] text-[var(--app-gray-lt)] ml-1">{currentChapter?.number}</sup>
               </h2>
               {verses.map((verse, index) => (
                 <motion.p
@@ -1174,10 +1180,10 @@ export default function Bible() {
                   onClick={() => handleVerseClick(verse.number)}
                   className={cn(
                     "font-serif text-[19px] leading-[1.7] py-2 px-3 -mx-3 cursor-pointer transition-colors",
-                    highlightedVerses.has(verse.number) ? "bg-[#111] text-white" : "hover:bg-[#1b291d]/5 text-black"
+                    highlightedVerses.has(verse.number) ? "bg-[var(--cta-bg)] text-[var(--cta-fg)]" : "hover:bg-[var(--app-green)]/5 text-[var(--app-dark)]"
                   )}
                 >
-                  <span className={cn("font-bold text-[13px] mr-2", highlightedVerses.has(verse.number) ? "text-white/70" : "text-[#1b291d]")}>{verse.number}</span>
+                  <span className={cn("font-bold text-[13px] mr-2", highlightedVerses.has(verse.number) ? "text-[var(--cta-fg)]/70" : "text-[var(--app-green)]")}>{verse.number}</span>
                   {verse.text}
                 </motion.p>
               ))}
@@ -1190,23 +1196,23 @@ export default function Bible() {
       <Sheet open={bookmarksSheetOpen} onOpenChange={setBookmarksSheetOpen}>
         <SheetContent side="right" className="w-80">
           <SheetHeader>
-            <SheetTitle className="font-serif">Your Collection</SheetTitle>
+            <SheetTitle className="font-serif" style={{ color: "var(--app-dark)" }}>Your Collection</SheetTitle>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-100px)] mt-4">
             {bookmarkGroups.length === 0 ? (
               <div className="text-center py-12">
-                <Bookmark className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">No verses saved yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
+                <Bookmark className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--app-border)" }} />
+                <p className="text-[14px]" style={{ color: "var(--app-gray-lt)" }}>No verses saved yet</p>
+                <p className="text-[12px] mt-1" style={{ color: "var(--app-gray-lt)" }}>
                   Tap verses to highlight, then save
                 </p>
               </div>
             ) : (
-              <div className="space-y-3 pr-2">
+              <div>
                 {bookmarkGroups.map((bookmark) => (
-                  <Card 
-                    key={bookmark.id} 
-                    className="p-3 shadow-sm cursor-pointer hover-elevate"
+                  <div
+                    key={bookmark.id}
+                    className="cursor-pointer py-4 border-b border-[var(--app-border-soft)]"
                     onClick={() => {
                       const match = bookmark.reference.match(/(.+)\s+(\d+):(\d+)/);
                       if (match) {
@@ -1217,18 +1223,18 @@ export default function Bible() {
                     }}
                     data-testid={`card-bookmark-${bookmark.id}`}
                   >
-                    <p className="text-xs font-medium text-primary mb-2">
+                    <p className="text-[11px] font-semibold tracking-wide mb-2" style={{ color: "var(--app-green)" }}>
                       {bookmark.reference}
                     </p>
                     <div className="line-clamp-4">
                       {bookmark.verses.map((v) => (
-                        <p key={v.number} className="font-serif text-sm leading-relaxed text-foreground/90">
-                          <span className="text-muted-foreground text-xs mr-1">{v.number}</span>
+                        <p key={v.number} className="font-serif text-[14px] leading-relaxed text-[var(--app-dark)]">
+                          <span className="text-[11px] mr-1" style={{ color: "var(--app-gray-lt)" }}>{v.number}</span>
                           {v.text}
                         </p>
                       ))}
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             )}
@@ -1290,19 +1296,19 @@ function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
   };
 
   return (
-    <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-[340px] border-l border-black bg-[#EBEAE5] overflow-y-auto pt-8">
+    <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-[340px] border-l border-[var(--app-dark)] bg-[var(--app-bg)] overflow-y-auto pt-8">
       {/* Cross references */}
-      <div className="px-6 py-4 border-b border-black">
-        <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-black">Cross References</span>
+      <div className="px-6 py-4 border-b border-[var(--app-dark)]">
+        <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Cross References</span>
       </div>
-      <div className="px-6 py-4 border-b border-[#D8D7D2]">
+      <div className="px-6 py-4 border-b border-[var(--app-border)]">
         {crossRefs.length === 0 ? (
-          <p className="text-[13px] text-[#73726C] italic leading-relaxed">No cross references for this passage yet.</p>
+          <p className="text-[13px] text-[var(--app-gray-lt)] italic leading-relaxed">No cross references for this passage yet.</p>
         ) : (
           <div className="space-y-4">
             {crossRefs.map((c, i) => (
               <button key={i} onClick={() => onNavigate(c.reference)} className="block text-left w-full group">
-                <p className="font-bold text-[15px] text-black group-hover:text-[#1b291d]">{c.reference}</p>
+                <p className="font-bold text-[15px] text-[var(--app-dark)] group-hover:text-[var(--app-green)]">{c.reference}</p>
               </button>
             ))}
           </div>
@@ -1310,44 +1316,44 @@ function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
       </div>
 
       {/* Personal notes */}
-      <div className="px-6 py-4 border-b border-black">
-        <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-black">Personal Notes</span>
+      <div className="px-6 py-4 border-b border-[var(--app-dark)]">
+        <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Personal Notes</span>
       </div>
-      <div className="px-6 py-4 border-b border-[#D8D7D2]">
+      <div className="px-6 py-4 border-b border-[var(--app-border)]">
         <input
           value={draftTitle}
           onChange={(e) => setDraftTitle(e.target.value)}
           placeholder="Note title (optional)"
-          className="w-full bg-white border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-3 py-2 text-[14px] font-serif text-black mb-2 rounded"
+          className="w-full bg-[var(--app-white)] border border-[var(--app-border)] focus:border-[var(--app-green)] outline-none px-3 py-2 text-[14px] font-serif text-[var(--app-dark)] mb-2 rounded"
         />
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={`Write a note on ${reference}…`}
           rows={3}
-          className="w-full bg-white border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-3 py-2 text-[14px] font-serif text-black resize-none rounded mb-2"
+          className="w-full bg-[var(--app-white)] border border-[var(--app-border)] focus:border-[var(--app-green)] outline-none px-3 py-2 text-[14px] font-serif text-[var(--app-dark)] resize-none rounded mb-2"
         />
         <button onClick={saveNote} disabled={!draft.trim() || saving}
-          className="w-full bg-[#1b291d] text-white text-[10px] font-semibold tracking-[0.18em] uppercase py-2.5 rounded disabled:opacity-40">
+          className="w-full bg-[var(--cta-bg)] text-[var(--cta-fg)] text-[10px] font-semibold tracking-[0.18em] uppercase py-2.5 rounded disabled:opacity-40">
           {saving ? "Saving…" : "Save Note"}
         </button>
       </div>
       <div className="flex-1">
         {notes.length === 0 ? (
-          <p className="px-6 py-5 text-[13px] text-[#73726C] italic">No notes on this chapter yet.</p>
+          <p className="px-6 py-5 text-[13px] text-[var(--app-gray-lt)] italic">No notes on this chapter yet.</p>
         ) : (
           <div className="px-6 py-4 space-y-4">
             {notes.map((n) => (
-              <div key={n.id} className="border border-[#C7C6C0] p-4 group relative">
-                {n.title && <p className="font-bold text-[15px] text-black mb-1">{n.title}</p>}
-                <p className="text-[14px] text-[#333] leading-relaxed">{n.body}</p>
+              <div key={n.id} className="border border-[var(--app-border)] p-4 group relative">
+                {n.title && <p className="font-bold text-[15px] text-[var(--app-dark)] mb-1">{n.title}</p>}
+                <p className="text-[14px] text-[var(--app-gray)] leading-relaxed">{n.body}</p>
                 <div className="flex justify-end mt-3">
-                  <span className="text-[10px] text-[#73726C] border border-[#C7C6C0] px-2 py-0.5">
+                  <span className="text-[10px] text-[var(--app-gray-lt)] border border-[var(--app-border)] px-2 py-0.5">
                     {n.createdAt ? new Date(n.createdAt).toLocaleDateString("en-GB").replace(/\//g, ".") : ""}
                   </span>
                 </div>
                 <button onClick={() => deleteNote(n.id)}
-                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#73726C] hover:text-red-600">
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--app-gray-lt)] hover:text-red-600">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>

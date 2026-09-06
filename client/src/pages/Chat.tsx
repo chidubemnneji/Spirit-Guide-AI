@@ -57,7 +57,7 @@ function parseContentWithVerseLinks(content: string, navigate: (path: string) =>
       <button key={`${match.index}-${match[0]}`}
         onClick={() => navigate(`/bible?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verseParam}&t=${Date.now()}`)}
         className="underline underline-offset-2 font-medium"
-        style={{ color: isUser ? "rgba(255,255,255,0.9)" : "#1b291d" }}
+        style={{ color: isUser ? "rgba(255,255,255,0.9)" : "var(--app-green)" }}
         data-testid={`link-verse-${book}-${chapter}-${verseStart}`}
       >{match[0]}</button>
     );
@@ -86,25 +86,25 @@ function MessageBubble({ message, isStreaming = false, onPlayAudio, isPlaying = 
       data-testid={`message-${message.role}-${message.id}`}>
       {isUser ? (
         <div className="max-w-[78%] px-5 py-3.5 font-serif text-[17px] leading-relaxed rounded-2xl rounded-br-sm"
-          style={{ background: "#1b291d", color: "#fff" }}>
+          style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}>
           {parseContentWithVerseLinks(message.content, navigate, true)}
         </div>
       ) : (
         <div className="max-w-[82%]">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#73726C] mb-2">Soul Care</p>
-          <div className="px-6 py-5 bg-white border border-[#E8E0D8] rounded-2xl rounded-tl-sm font-serif text-[18px] leading-[1.7] text-[#111]">
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)] mb-2">Soul Care</p>
+          <div className="px-6 py-5 bg-[var(--app-white)] border border-[var(--app-border-soft)] rounded-2xl rounded-tl-sm font-serif text-[18px] leading-[1.7] text-[var(--app-dark)]">
             {parseContentWithVerseLinks(message.content, navigate, false)}
             {isStreaming && (
               <span className="inline-flex items-center gap-1 ml-2">
-                <span className="w-1.5 h-1.5 bg-[#1b291d] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 bg-[#1b291d] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 bg-[#1b291d] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="w-1.5 h-1.5 bg-[var(--app-green)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 bg-[var(--app-green)] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 bg-[var(--app-green)] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
               </span>
             )}
           </div>
           {!isStreaming && onPlayAudio && (
             <button onClick={() => onPlayAudio(message.id, message.content)}
-              className="flex items-center gap-1.5 mt-2 text-[11px] font-semibold tracking-wider uppercase text-[#73726C]"
+              className="flex items-center gap-1.5 mt-2 text-[11px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)]"
               data-testid={`button-play-message-${message.id}`}>
               <Volume2 size={12} className={isPlaying ? "animate-pulse" : ""} />
               {isPlaying ? "Playing..." : "Listen"}
@@ -380,46 +380,46 @@ export default function Chat() {
   };
 
   if (personaLoading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#EBEAE5" }}>
-      <Loader2 className="w-6 h-6 animate-spin text-[#1b291d]" />
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--app-bg)" }}>
+      <Loader2 className="w-6 h-6 animate-spin text-[var(--app-green)]" />
     </div>
   );
 
   return (
-    <div className={`h-dvh flex ${hideNav ? "" : "pb-[64px] md:pb-0"}`} style={{ background: "#EBEAE5" }}>
+    <div className={`h-dvh flex ${hideNav ? "" : "pb-[64px] md:pb-0"}`} style={{ background: "var(--app-bg)" }}>
       {/* Desktop: persistent conversation history rail */}
-      <aside className="hidden md:flex flex-col w-[300px] flex-shrink-0 border-r border-black">
-        <div className="px-6 h-[89px] flex items-center border-b-2 border-black">
-          <h1 className="font-serif text-[26px] italic leading-none text-black">SoulGuide</h1>
+      <aside className="hidden md:flex flex-col w-[300px] flex-shrink-0 border-r border-[var(--app-dark)]">
+        <div className="px-6 h-[89px] flex items-center border-b-2 border-[var(--app-dark)]">
+          <h1 className="font-serif text-[26px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
         </div>
-        <div className="px-4 py-4 border-b border-[#D8D7D2]">
+        <div className="px-4 py-4 border-b border-[var(--app-border)]">
           <button
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 bg-[#1b291d] text-white text-[11px] font-semibold tracking-[0.18em] uppercase rounded-full py-3"
+            className="w-full flex items-center justify-center gap-2 bg-[var(--cta-bg)] text-[var(--cta-fg)] text-[11px] font-semibold tracking-[0.18em] uppercase rounded-full py-3"
             data-testid="button-new-chat-desktop"
           >
             <Plus size={14} /> New Conversation
           </button>
         </div>
-        <div className="px-6 py-3 border-b border-[#D8D7D2]">
-          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">Conversations</span>
+        <div className="px-6 py-3 border-b border-[var(--app-border)]">
+          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Conversations</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
-            <p className="px-6 py-6 text-[13px] text-[#73726C] italic">No conversations yet.</p>
+            <p className="px-6 py-6 text-[13px] text-[var(--app-gray-lt)] italic">No conversations yet.</p>
           ) : (
             conversations.map((conv) => (
               <button
                 key={conv.id}
                 onClick={async () => { const loaded = await loadExistingConversation(conv.id); if (loaded) { setPendingMood(null); setShowMoodCheckIn(false); } }}
-                className={`w-full text-left px-6 py-4 border-b border-[#E6E5E0] transition-colors hover:bg-white/50 ${conversationId === conv.id ? "bg-white" : ""}`}
+                className={`w-full text-left px-6 py-4 border-b border-[var(--app-border-soft)] transition-colors hover:bg-white/50 ${conversationId === conv.id ? "bg-[var(--app-white)]" : ""}`}
                 data-testid={`button-conversation-${conv.id}`}
               >
-                <p className={`font-serif text-[16px] leading-snug truncate ${conversationId === conv.id ? "text-[#1b291d]" : "text-black"}`}>
+                <p className={`font-serif text-[16px] leading-snug truncate ${conversationId === conv.id ? "text-[var(--app-green)]" : "text-[var(--app-dark)]"}`}>
                   {conv.title || "New Conversation"}
                 </p>
                 {conv.updatedAt && (
-                  <p className="text-[11px] text-[#73726C] mt-1">{formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}</p>
+                  <p className="text-[11px] text-[var(--app-gray-lt)] mt-1">{formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}</p>
                 )}
               </button>
             ))
@@ -430,8 +430,8 @@ export default function Chat() {
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0">
       {/* Header — mobile (original) */}
-      <header className="md:hidden bg-white border-b border-[#D8D7D2] flex items-center">
-        <div className="py-5 px-4 flex items-center border-r border-[#D8D7D2]">
+      <header className="md:hidden bg-[var(--app-white)] border-b border-[var(--app-border)] flex items-center">
+        <div className="py-5 px-4 flex items-center border-r border-[var(--app-border)]">
           <ConversationSidebar
             currentConversationId={conversationId}
             onSelect={async (id) => { const loaded = await loadExistingConversation(id); if (loaded) { setPendingMood(null); setShowMoodCheckIn(false); } }}
@@ -439,16 +439,16 @@ export default function Chat() {
           />
         </div>
         <div className="flex-1 py-5 px-6 flex items-center">
-          <h1 className="font-serif text-[22px] leading-none text-black tracking-wide">Soul Care</h1>
+          <h1 className="font-serif text-[22px] leading-none text-[var(--app-dark)] tracking-wide">Soul Care</h1>
         </div>
-        <button onClick={handleNewChat} className="border-l border-[#D8D7D2] py-5 px-6 text-[#73726C]" data-testid="button-new-chat">
+        <button onClick={handleNewChat} className="border-l border-[var(--app-border)] py-5 px-6 text-[var(--app-gray-lt)]" data-testid="button-new-chat">
           <RotateCcw size={18} />
         </button>
       </header>
 
       {/* Header — desktop (slim, within main column) */}
-      <header className="hidden md:flex items-center h-[89px] border-b-2 border-black px-8 flex-shrink-0">
-        <span className="font-serif text-[20px] italic text-[#73726C]">Soul Care — a space to think and pray</span>
+      <header className="hidden md:flex items-center h-[89px] border-b-2 border-[var(--app-dark)] px-8 flex-shrink-0">
+        <span className="font-serif text-[20px] italic text-[var(--app-gray-lt)]">Soul Care — a space to think and pray</span>
       </header>
 
       {/* Messages */}
@@ -456,25 +456,25 @@ export default function Chat() {
         {initError ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
             <AlertTriangle className="w-8 h-8 text-red-500 mb-4" />
-            <h2 className="font-serif text-[24px] text-black mb-3">Connection Issue</h2>
-            <p className="text-[15px] text-[#73726C] mb-6">{initError}</p>
-            <button onClick={handleNewChat} className="px-8 py-3 font-semibold text-[13px] tracking-[0.2em] uppercase" style={{ background: "#1b291d", color: "#fff" }} data-testid="button-retry">Try Again</button>
+            <h2 className="font-serif text-[24px] text-[var(--app-dark)] mb-3">Connection Issue</h2>
+            <p className="text-[15px] text-[var(--app-gray-lt)] mb-6">{initError}</p>
+            <button onClick={handleNewChat} className="px-8 py-3 font-semibold text-[13px] tracking-[0.2em] uppercase" style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }} data-testid="button-retry">Try Again</button>
           </div>
         ) : messages.length === 0 && !streamingContent ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6 w-full">
             {isInitializing ? (
-              <Loader2 className="w-6 h-6 animate-spin text-[#1b291d]" />
+              <Loader2 className="w-6 h-6 animate-spin text-[var(--app-green)]" />
             ) : (
               <div className="w-full max-w-xl mx-auto">
-                <p className="font-serif text-[44px] text-black mb-4 leading-tight">How are you feeling?</p>
-                <p className="text-[18px] text-[#73726C] mb-12 leading-relaxed max-w-md mx-auto">{getWelcomeMessage()}</p>
+                <p className="font-serif text-[44px] text-[var(--app-dark)] mb-4 leading-tight">How are you feeling?</p>
+                <p className="text-[18px] text-[var(--app-gray-lt)] mb-12 leading-relaxed max-w-md mx-auto">{getWelcomeMessage()}</p>
                 <div className="w-full space-y-3">
                   {STARTERS.map((s, i) => (
                     <button key={i} onClick={() => { setInput(s); textareaRef.current?.focus(); }}
-                      className="w-full text-left px-7 py-6 bg-white border border-[#D8D7D2] rounded-2xl flex items-center justify-between transition-colors hover:border-[#1b291d]"
+                      className="w-full text-left px-7 py-6 bg-[var(--app-white)] border border-[var(--app-border)] rounded-2xl flex items-center justify-between transition-colors hover:border-[var(--app-green)]"
                       data-testid={`button-starter-${i}`}>
-                      <span className="font-serif text-[21px] text-black">{s}</span>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C7C6C0" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+                      <span className="font-serif text-[21px] text-[var(--app-dark)]">{s}</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
                     </button>
                   ))}
                 </div>
@@ -493,7 +493,7 @@ export default function Chat() {
       </main>
 
       {/* Input area */}
-      <div className="border-t border-[#D8D7D2] flex-shrink-0" style={{ background: "#EBEAE5" }}>
+      <div className="border-t border-[var(--app-border)] flex-shrink-0" style={{ background: "var(--app-bg)" }}>
         <MoodCheckIn
           visible={showMoodCheckIn}
           onSelect={mood => { setPendingMood(mood); pendingMoodRef.current = mood; setShowMoodCheckIn(false); setTimeout(() => sendMessage(), 50); }}
@@ -509,25 +509,25 @@ export default function Chat() {
             onBlur={() => { setIsInputFocused(false); if (!input.trim()) setHideNav(false); }}
             placeholder="Share what's on your heart..."
             rows={1}
-            className="flex-1 resize-none bg-white border border-[#D8D7D2] focus:border-[#1b291d] outline-none px-5 py-3 font-serif text-[16px] md:text-[17px] text-black max-h-[140px] transition-colors rounded-full"
+            className="flex-1 resize-none bg-[var(--app-white)] border border-[var(--app-border)] focus:border-[var(--app-green)] outline-none px-5 py-3 font-serif text-[16px] md:text-[17px] text-[var(--app-dark)] max-h-[140px] transition-colors rounded-full"
             style={{ minHeight: "48px" }}
             data-testid="input-message"
           />
           <button onClick={handleMicClick} disabled={isStreaming || isTranscribing || !conversationId || isInitializing}
-            className="w-11 h-11 flex items-center justify-center border border-[#D8D7D2] bg-white rounded-full disabled:opacity-40 transition-colors flex-shrink-0"
-            style={{ background: isRecording ? "#b7453b" : "#fff", color: isRecording ? "#fff" : "#73726C" }}
+            className="w-11 h-11 flex items-center justify-center border border-[var(--app-border)] bg-[var(--app-white)] rounded-full disabled:opacity-40 transition-colors flex-shrink-0"
+            style={{ background: isRecording ? "#b7453b" : "var(--app-white)", color: isRecording ? "#fff" : "var(--app-gray-lt)" }}
             data-testid="button-mic">
             {isTranscribing ? <Loader2 size={16} className="animate-spin" /> : isRecording ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
           <button onClick={sendMessage} disabled={!input.trim() || isStreaming || !conversationId || isInitializing}
             className="w-11 h-11 flex items-center justify-center rounded-full disabled:opacity-40 flex-shrink-0 font-semibold text-[18px]"
-            style={{ background: "#1b291d", color: "#fff" }}
+            style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
             data-testid="button-send">
             {isStreaming ? <Loader2 size={16} className="animate-spin" /> : "↑"}
           </button>
         </div>
         {sendError && <p className="text-[12px] text-red-600 px-4 pb-2 text-center">{sendError}</p>}
-        <p className="text-[10px] text-[#73726C] text-center pb-3 tracking-wide">Your conversations are private and meant to support, not replace, spiritual community.</p>
+        <p className="text-[10px] text-[var(--app-gray-lt)] text-center pb-3 tracking-wide">Your conversations are private and meant to support, not replace, spiritual community.</p>
       </div>
       </div>
     </div>

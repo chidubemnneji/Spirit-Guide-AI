@@ -71,8 +71,8 @@ function AppContent() {
   if (!showNav) {
     // Onboarding / auth flows: simple centered phone column.
     return (
-      <div className="min-h-screen bg-[#111] md:bg-[#F3F0E7] flex justify-center">
-        <div className="w-full max-w-[430px] md:max-w-none relative bg-[#F3F0E7] min-h-screen shadow-2xl md:shadow-none overflow-hidden">
+      <div className="min-h-screen bg-[var(--app-dark)] md:bg-[var(--app-bg)] flex justify-center">
+        <div className="w-full max-w-[430px] md:max-w-none relative bg-[var(--app-bg)] min-h-screen shadow-2xl md:shadow-none overflow-hidden">
           <Router />
         </div>
       </div>
@@ -80,13 +80,13 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EBEAE5]">
+    <div className="min-h-screen bg-[var(--app-bg)]">
       <BottomNav />
       {/* Mobile: centered phone column with bottom-nav clearance.
           Desktop: content fills the space beside the fixed 220px sidebar.
           Home (/devotion) spans full width; other pages stay capped. */}
       <div className="md:pl-[220px]">
-        <div className={`mx-auto w-full max-w-[430px] relative bg-[#EBEAE5] min-h-screen md:shadow-none shadow-2xl overflow-hidden pb-[64px] md:pb-0 ${isWidePage ? "md:max-w-none" : "md:max-w-[860px]"}`}>
+        <div className={`mx-auto w-full max-w-[430px] relative bg-[var(--app-bg)] min-h-screen md:shadow-none shadow-2xl overflow-hidden pb-[64px] md:pb-0 ${isWidePage ? "md:max-w-none" : "md:max-w-[860px]"}`}>
           <Router />
         </div>
       </div>

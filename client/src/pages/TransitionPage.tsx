@@ -35,7 +35,7 @@ export default function TransitionPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#1b291d" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--scripture-bg)" }}>
       {/* Progress bar */}
       <div className="h-0.5 bg-white/10 w-full">
         <div className="h-full bg-white/60 transition-all" style={{ width: `${progress * 100}%` }} />
@@ -58,7 +58,7 @@ export default function TransitionPage() {
             onClick={navigateForward}
             data-testid="button-continue"
             className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase"
-            style={{ background: "#fff", color: "#1b291d" }}
+            style={{ background: "#fff", color: "var(--scripture-bg)" }}
           >
             Continue
           </button>

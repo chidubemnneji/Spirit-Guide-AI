@@ -37,15 +37,15 @@ function WeekStrip({ completedDays, joinedAt }: { completedDays: string[]; joine
   });
 
   return (
-    <div className="flex justify-between px-6 py-5 bg-white">
+    <div className="flex justify-between px-6 py-5 bg-[var(--app-white)]">
       {days.map((d, i) => (
         <div
           key={i}
           className="w-10 h-10 flex items-center justify-center text-[13px] font-medium"
           style={{
-            background: d.isComplete ? "#1b291d" : "transparent",
-            color: d.isComplete ? "#fff" : d.isBeforeJoin ? "#ccc" : "#111",
-            border: d.isComplete ? "none" : "1px solid #D8D7D2",
+            background: d.isComplete ? "var(--cta-bg)" : "transparent",
+            color: d.isComplete ? "var(--cta-fg)" : d.isBeforeJoin ? "var(--app-placeholder)" : "var(--app-dark)",
+            border: d.isComplete ? "none" : "1px solid var(--app-border)",
             opacity: d.isBeforeJoin ? 0.4 : 1,
           }}
         >
@@ -130,20 +130,20 @@ export default function Devotion() {
   return (
     <>
       {/* ─────────────────────────  DESKTOP: EDITORIAL BROADSHEET  ───────────────────────── */}
-      <div className="hidden md:block min-h-screen" style={{ background: "#EBEAE5" }}>
+      <div className="hidden md:block min-h-screen" style={{ background: "var(--app-bg)" }}>
         {/* Masthead */}
-        <header className="flex items-stretch border-b-2 border-black bg-[#EBEAE5] max-w-[1600px] mx-auto w-full">
-          <div className="px-8 py-6 flex items-center border-r border-[#D8D7D2]">
-            <h1 className="font-serif text-[30px] italic leading-none text-black">SoulGuide</h1>
+        <header className="flex items-stretch border-b-2 border-[var(--app-dark)] bg-[var(--app-bg)] max-w-[1600px] mx-auto w-full">
+          <div className="px-8 py-6 flex items-center border-r border-[var(--app-border)]">
+            <h1 className="font-serif text-[30px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
           </div>
           <div className="flex-1 flex items-center px-8">
-            <span className="font-serif text-[18px] italic text-[#73726C]">{greeting?.greeting || `Grace and peace, ${userName}.`}</span>
+            <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">{greeting?.greeting || `Grace and peace, ${userName}.`}</span>
           </div>
           <button
-            className="px-8 flex items-center justify-center border-l border-[#D8D7D2] relative"
+            className="px-8 flex items-center justify-center border-l border-[var(--app-border)] relative"
             onClick={() => setShowNotifications(true)}
           >
-            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-black">{format(new Date(), "MMMM d")}</span>
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">{format(new Date(), "MMMM d")}</span>
             {(notifData?.unreadCount ?? 0) > 0 && <span className="absolute top-5 right-5 w-1.5 h-1.5 bg-red-500 rounded-full" />}
           </button>
         </header>
@@ -151,10 +151,10 @@ export default function Devotion() {
         {/* Three-column broadsheet */}
         <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
           {/* LEFT RAIL — Today's Readings */}
-          <section className="border-r border-black">
-            <div className="flex items-center justify-between px-8 py-5 border-b border-black">
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Today's Readings</span>
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">
+          <section className="border-r border-[var(--app-dark)]">
+            <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--app-dark)]">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Today's Readings</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">
                 {journeyTasks.filter(t => t.isCompleted).length.toString().padStart(2, "0")}/{journeyTasks.length.toString().padStart(2, "0")}
               </span>
             </div>
@@ -162,26 +162,26 @@ export default function Devotion() {
               <button
                 key={task.id}
                 onClick={task.action}
-                className="w-full text-left px-8 py-10 border-b border-[#D8D7D2] block transition-colors hover:bg-white/50"
+                className="w-full text-left px-8 py-10 border-b border-[var(--app-border)] block transition-colors hover:bg-white/50"
               >
-                <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">{task.duration}</span>
-                <p className="font-serif text-[32px] leading-[1.1] text-black mt-3 mb-4">{task.title}</p>
-                <p className="text-[16px] leading-[1.55] text-[#545454] mb-5">{task.subtitle}</p>
+                <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">{task.duration}</span>
+                <p className="font-serif text-[32px] leading-[1.1] text-[var(--app-dark)] mt-3 mb-4">{task.title}</p>
+                <p className="text-[16px] leading-[1.55] text-[var(--app-gray)] mb-5">{task.subtitle}</p>
                 {task.isCompleted ? (
-                  <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] rounded-full px-4 py-1.5">Completed</span>
+                  <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[var(--app-green)] border border-[var(--app-green)] rounded-full px-4 py-1.5">Completed</span>
                 ) : (
-                  <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-white bg-[#1b291d] rounded-full px-4 py-1.5">Begin →</span>
+                  <span className="inline-block text-[11px] font-semibold tracking-[0.15em] uppercase text-[var(--cta-fg)] bg-[var(--cta-bg)] rounded-full px-4 py-1.5">Begin →</span>
                 )}
               </button>
             ))}
           </section>
 
           {/* CENTER — Featured Devotion */}
-          <section className="border-r border-black">
-            <div className="px-9 py-5 border-b border-black">
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Morning Devotion</span>
+          <section className="border-r border-[var(--app-dark)]">
+            <div className="px-9 py-5 border-b border-[var(--app-dark)]">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Morning Devotion</span>
             </div>
-            <div className="relative w-full aspect-[16/10] overflow-hidden border-b border-black">
+            <div className="relative w-full aspect-[16/10] overflow-hidden border-b border-[var(--app-dark)]">
               <img
                 src="https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1000&auto=format&fit=crop&q=80"
                 alt="Peaceful morning nature"
@@ -189,20 +189,20 @@ export default function Devotion() {
               />
             </div>
             <div className="px-9 py-9">
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[#73726C]">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">
                 {struggle ? struggle : "Today's Reflection"}
               </span>
-              <h2 className="font-serif text-[56px] leading-[1.05] text-black mt-4 mb-6">
+              <h2 className="font-serif text-[56px] leading-[1.05] text-[var(--app-dark)] mt-4 mb-6">
                 {devotional?.title || `${userName}'s Journey`}
               </h2>
-              <p className="text-[19px] leading-[1.7] text-[#444] mb-8 max-w-[48ch]">
+              <p className="text-[19px] leading-[1.7] text-[var(--app-gray)] mb-8 max-w-[48ch]">
                 {devotional?.scriptureText
                   ? `"${devotional.scriptureText.slice(0, 160)}${devotional.scriptureText.length > 160 ? "…" : ""}"`
                   : "A space to be still, reflect, and reconnect with what matters most."}
               </p>
               <button
                 onClick={() => { handleComplete(); setLocation("/devotional"); }}
-                className="inline-flex items-center gap-3 bg-black text-white text-[13px] font-semibold tracking-[0.15em] uppercase rounded-full px-9 py-4"
+                className="inline-flex items-center gap-3 bg-[var(--cta-bg)] text-[var(--cta-fg)] text-[13px] font-semibold tracking-[0.15em] uppercase rounded-full px-9 py-4"
               >
                 Read Devotion →
               </button>
@@ -211,11 +211,11 @@ export default function Devotion() {
 
           {/* RIGHT RAIL — This Week + Verse */}
           <section>
-            <div className="flex items-center justify-between px-8 py-5 border-b border-black">
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">This Week</span>
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">{weekRange}</span>
+            <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--app-dark)]">
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">This Week</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">{weekRange}</span>
             </div>
-            <div className="px-6 py-6 border-b border-[#D8D7D2]">
+            <div className="px-6 py-6 border-b border-[var(--app-border)]">
               <div className="flex justify-between gap-1">
                 {(() => {
                   const ws = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -225,13 +225,13 @@ export default function Devotion() {
                     const today = isToday(date);
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                        <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#73726C]">{format(date, "EEEEE")}</span>
+                        <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--app-gray-lt)]">{format(date, "EEEEE")}</span>
                         <div
                           className="w-full aspect-square flex items-center justify-center text-[12px] font-semibold"
                           style={{
-                            background: done ? "#1b291d" : "transparent",
-                            color: done ? "#fff" : "#111",
-                            border: done ? "none" : today ? "2px solid #1b291d" : "1px solid #D8D7D2",
+                            background: done ? "var(--cta-bg)" : "transparent",
+                            color: done ? "var(--cta-fg)" : "var(--app-dark)",
+                            border: done ? "none" : today ? "2px solid var(--app-green)" : "1px solid var(--app-border)",
                           }}
                         >
                           {format(date, "d")}
@@ -242,20 +242,20 @@ export default function Devotion() {
                 })()}
               </div>
               {currentStreak > 0 && (
-                <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] mt-5 text-center">{currentStreak} day streak</p>
+                <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[var(--app-green)] mt-5 text-center">{currentStreak} day streak</p>
               )}
             </div>
 
             {devotional && (
               <div className="px-6 py-6">
-                <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Verse of the Day</span>
-                <p className="font-serif text-[24px] italic leading-[1.4] text-black mt-4 mb-3">
+                <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Verse of the Day</span>
+                <p className="font-serif text-[24px] italic leading-[1.4] text-[var(--app-dark)] mt-4 mb-3">
                   "{devotional.scriptureText}"
                 </p>
-                <p className="text-[12px] font-semibold tracking-[0.12em] uppercase text-[#73726C] mb-5">— {devotional.scriptureReference}</p>
+                <p className="text-[12px] font-semibold tracking-[0.12em] uppercase text-[var(--app-gray-lt)] mb-5">— {devotional.scriptureReference}</p>
                 <button
                   onClick={() => setLocation(buildBibleLink(devotional.scriptureReference || ""))}
-                  className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] rounded-full px-5 py-2.5"
+                  className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[var(--app-green)] border border-[var(--app-green)] rounded-full px-5 py-2.5"
                 >
                   Read in Context
                 </button>
@@ -269,26 +269,26 @@ export default function Devotion() {
                 .slice(0, 5);
               if (recent.length === 0) return null;
               return (
-                <div className="border-t border-black">
-                  <div className="px-6 py-4 border-b border-[#D8D7D2]">
-                    <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-black">Recent Devotions</span>
+                <div className="border-t border-[var(--app-dark)]">
+                  <div className="px-6 py-4 border-b border-[var(--app-border)]">
+                    <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Recent Devotions</span>
                   </div>
                   {recent.map((e, i) => (
                     <button
                       key={i}
                       onClick={() => setLocation(buildBibleLink(e.devotional.scriptureReference || ""))}
-                      className="w-full text-left px-6 py-5 border-b border-[#D8D7D2] block transition-colors hover:bg-white/50"
+                      className="w-full text-left px-6 py-5 border-b border-[var(--app-border)] block transition-colors hover:bg-white/50"
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C]">
+                        <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)]">
                           {e.completedAt ? format(new Date(e.completedAt as string), "MMM d") : ""}
                         </span>
                         {e.rating ? (
-                          <span className="text-[11px] text-[#1b291d]">{"★".repeat(e.rating)}</span>
+                          <span className="text-[11px] text-[var(--app-green)]">{"★".repeat(e.rating)}</span>
                         ) : null}
                       </div>
-                      <p className="font-serif text-[18px] leading-[1.2] text-black">{e.devotional.title}</p>
-                      <p className="text-[12px] text-[#73726C] mt-1">{e.devotional.scriptureReference}</p>
+                      <p className="font-serif text-[18px] leading-[1.2] text-[var(--app-dark)]">{e.devotional.title}</p>
+                      <p className="text-[12px] text-[var(--app-gray-lt)] mt-1">{e.devotional.scriptureReference}</p>
                     </button>
                   ))}
                 </div>
@@ -299,18 +299,18 @@ export default function Devotion() {
       </div>
 
       {/* ─────────────────────────  MOBILE: ORIGINAL COLUMN (UNTOUCHED)  ───────────────────────── */}
-      <div className="md:hidden min-h-screen pb-20" style={{ background: "#EBEAE5" }}>
+      <div className="md:hidden min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
       {/* Header */}
-      <header className="flex bg-white border-b border-[#D8D7D2]">
+      <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex-1 py-6 px-6 flex items-center">
-          <h1 className="font-serif text-[26px] leading-none text-black tracking-wide">SoulGuide</h1>
+          <h1 className="font-serif text-[26px] leading-none text-[var(--app-dark)] tracking-wide">SoulGuide</h1>
         </div>
         <button
-          className="border-l border-[#D8D7D2] py-6 px-7 flex items-center justify-center relative"
+          className="border-l border-[var(--app-border)] py-6 px-7 flex items-center justify-center relative"
           onClick={() => setShowNotifications(true)}
           data-testid="button-notifications"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="0.75" strokeLinecap="square">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--app-gray)" strokeWidth="0.75" strokeLinecap="square">
             <line x1="2" y1="7" x2="22" y2="7" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="17" x2="22" y2="17" />
           </svg>
           {(notifData?.unreadCount ?? 0) > 0 && <span className="absolute top-4 right-4 w-1.5 h-1.5 bg-red-500 rounded-full" />}
@@ -319,7 +319,7 @@ export default function Devotion() {
 
       {/* Hero card */}
       <div className="p-6 pb-0">
-        <div className="bg-white p-7">
+        <div className="bg-[var(--app-white)] p-7">
           <div className="w-full aspect-[4/3] mb-7 overflow-hidden relative">
             <img
               src="https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format&fit=crop&q=80"
@@ -335,13 +335,13 @@ export default function Devotion() {
             )}
           </div>
           <div className="flex items-center justify-between mb-5">
-            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#73726C]">Morning Devotion</span>
-            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#111]">{format(new Date(), "MMM d")}</span>
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Morning Devotion</span>
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">{format(new Date(), "MMM d")}</span>
           </div>
-          <h2 className="font-serif text-[36px] leading-[1.15] text-black mb-4" data-testid="text-greeting">
+          <h2 className="font-serif text-[36px] leading-[1.15] text-[var(--app-dark)] mb-4" data-testid="text-greeting">
             {devotional?.title || `${userName}'s Journey`}
           </h2>
-          <p className="text-[17px] leading-[1.65] text-[#545454]">
+          <p className="text-[17px] leading-[1.65] text-[var(--app-gray)]">
             {struggle ? `Today's reflection is shaped around: ${struggle}.` : "A space to be still, reflect, and reconnect with what matters most."}
           </p>
         </div>
@@ -350,15 +350,15 @@ export default function Devotion() {
       {/* Daily Progress */}
       <div className="section-band mt-4">
         <span>Daily Progress</span>
-        <span className="text-[11px] font-medium tracking-[0.08em] text-[#73726C] uppercase">{weekRange}</span>
+        <span className="text-[11px] font-medium tracking-[0.08em] text-[var(--app-gray-lt)] uppercase">{weekRange}</span>
       </div>
       <WeekStrip completedDays={completedDays} joinedAt={joinedAt} />
 
       {/* Today's Readings */}
-      <div className="border-y border-[#D8D7D2] py-5 px-8 mt-4 bg-white flex items-center justify-between">
-        <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-black">Today's Readings</h3>
+      <div className="border-y border-[var(--app-border)] py-5 px-8 mt-4 bg-[var(--app-white)] flex items-center justify-between">
+        <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-[var(--app-dark)]">Today's Readings</h3>
         {currentStreak > 0 && (
-          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[#1b291d]">{currentStreak} day streak</span>
+          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--app-green)]">{currentStreak} day streak</span>
         )}
       </div>
 
@@ -368,19 +368,19 @@ export default function Devotion() {
           <button
             key={task.id}
             onClick={task.action}
-            className="w-full text-left px-6 py-6 bg-white border-b border-[#f0f0ee] flex items-center justify-between"
+            className="w-full text-left px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-center justify-between"
           >
             <div className="flex-1 pr-4">
               <div className="flex items-center gap-3 mb-1">
-                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#73726C]">{task.duration}</span>
+                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)]">{task.duration}</span>
                 {task.isCompleted && (
-                  <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#1b291d] border border-[#1b291d] px-2 py-0.5">Done</span>
+                  <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[var(--app-green)] border border-[var(--app-green)] px-2 py-0.5">Done</span>
                 )}
               </div>
-              <p className="font-serif text-[20px] text-black mb-1">{task.title}</p>
-              <p className="text-[14px] text-[#73726C] leading-relaxed">{task.subtitle}</p>
+              <p className="font-serif text-[20px] text-[var(--app-dark)] mb-1">{task.title}</p>
+              <p className="text-[14px] text-[var(--app-gray-lt)] leading-relaxed">{task.subtitle}</p>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={task.isCompleted ? "#1b291d" : "#D8D7D2"} strokeWidth="1.5" strokeLinecap="square">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={task.isCompleted ? "var(--app-green)" : "var(--app-border)"} strokeWidth="1.5" strokeLinecap="square">
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
@@ -393,12 +393,12 @@ export default function Devotion() {
           <div className="section-band">
             <span>Verse of the Day</span>
           </div>
-          <div className="px-6 py-7 bg-white border-b border-[#f0f0ee]">
-            <h4 className="font-serif text-[20px] font-bold text-black mb-2">{devotional.scriptureReference}</h4>
-            <p className="text-[16px] text-[#545454] leading-relaxed mb-5 italic">"{devotional.scriptureText}"</p>
+          <div className="px-6 py-7 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+            <h4 className="font-serif text-[20px] font-bold text-[var(--app-dark)] mb-2">{devotional.scriptureReference}</h4>
+            <p className="text-[16px] text-[var(--app-gray)] leading-relaxed mb-5 italic">"{devotional.scriptureText}"</p>
             <button
               onClick={() => setLocation(buildBibleLink(devotional.scriptureReference || ""))}
-              className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#1b291d] border border-[#1b291d] px-4 py-2"
+              className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[var(--app-green)] border border-[var(--app-green)] px-4 py-2"
               data-testid="button-read-in-context"
             >
               Read in Context

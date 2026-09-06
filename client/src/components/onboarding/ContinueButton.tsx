@@ -16,7 +16,7 @@ export function ContinueButton({ onClick, disabled = false, loading = false, var
         disabled={disabled || loading}
         data-testid="button-continue"
         className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase disabled:opacity-40 flex items-center justify-center gap-2"
-        style={{ background: "#1b291d", color: "#fff" }}
+        style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
       >
         {loading ? (
           <><Loader2 size={16} className="animate-spin" /> Processing...</>

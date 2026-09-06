@@ -25,8 +25,8 @@ export function Logo({ size = 36, className = "", showWordmark = false }: LogoPr
         />
       </svg>
       {showWordmark && (
-        <span className="font-serif text-xl font-bold tracking-tight" style={{ color: "#111" }}>
-          Soul<span style={{ color: "#1b291d" }}>Guide</span>
+        <span className="font-serif text-xl font-bold tracking-tight" style={{ color: "var(--app-dark)" }}>
+          Soul<span style={{ color: "var(--app-green)" }}>Guide</span>
         </span>
       )}
     </div>
