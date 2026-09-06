@@ -25,6 +25,9 @@ export default function Welcome() {
         <div className="flex-1 flex items-center px-10">
           <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">A space to think and pray</span>
         </div>
+        <div className="px-8 flex items-center border-l border-[var(--app-border)]">
+          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Est. 2024</span>
+        </div>
         <button
           onClick={() => setLocation("/login")}
           className="px-10 flex items-center border-l border-[var(--app-border)] text-[12px] font-semibold tracking-[0.18em] uppercase text-[var(--app-green)] hover:bg-white/40 transition-colors"
@@ -112,6 +115,9 @@ export default function Welcome() {
       <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex-1 py-6 px-6 flex items-center">
           <Logo size={28} showWordmark />
+        </div>
+        <div className="py-6 px-6 flex items-center border-l border-[var(--app-border)]">
+          <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Est. 2024</span>
         </div>
       </header>
 

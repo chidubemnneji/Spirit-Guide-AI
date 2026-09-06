@@ -48,14 +48,17 @@ export default function Login() {
           </svg>
         </button>
         <div className="flex-1 py-6 px-6 flex items-center justify-center">
-          <h1 className="font-serif text-[22px] leading-none text-[var(--app-dark)] tracking-wide">Sign in</h1>
+          <h1 className="font-serif text-[22px] leading-none text-[var(--app-dark)] tracking-wide">Welcome back</h1>
+        </div>
+        <div className="py-6 px-6 flex items-center border-l border-[var(--app-border)]">
+          <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Vol. 01 — Auth</span>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col">
           {/* Section */}
-          <div className="section-band"><span>Your Details</span></div>
+          <div className="section-band"><span>Identification</span></div>
 
           <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
             <label className="text-[10px] font-semibold tracking-[0.1em] text-[var(--app-gray-lt)] uppercase block mb-1">Email</label>

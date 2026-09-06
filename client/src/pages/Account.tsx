@@ -87,7 +87,7 @@ export default function Account() {
             <h1 className="font-serif text-[30px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
           </div>
           <div className="flex-1 flex items-center px-8">
-            <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">Profile</span>
+            <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">Pilgrim Profile</span>
           </div>
           <button onClick={handleLogout} className="px-8 flex items-center">
             <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-danger)]">Sign Out</span>
@@ -162,7 +162,7 @@ export default function Account() {
             <div className="px-7 py-6 border-b border-[var(--app-border)] flex justify-between items-center">
               <div>
                 <p className="font-serif text-[18px] text-[var(--app-dark)]">Dark Mode</p>
-                <p className="text-[13px] text-[var(--app-gray-lt)] mt-0.5">Switch the app to a darker palette</p>
+                <p className="text-[13px] text-[var(--app-gray-lt)] mt-0.5">A quiet, candlelit palette for evening prayer</p>
               </div>
               <button onClick={toggleTheme} role="switch" aria-checked={theme === "dark"} aria-label="Toggle dark mode" className="w-12 h-6 rounded-full relative transition-colors" style={{ background: theme === "dark" ? "var(--app-green)" : "var(--app-border)" }}>
                 <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all" style={{ left: theme === "dark" ? "calc(100% - 20px)" : "4px" }} />
@@ -181,7 +181,7 @@ export default function Account() {
           {/* RIGHT — This Week + Saved Passages */}
           <section>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--app-dark)]">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">This Week</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Weekly Path</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">{weekRange}</span>
             </div>
             <div className="px-6 py-6 border-b border-[var(--app-border)]">
@@ -220,7 +220,7 @@ export default function Account() {
       {/* Header */}
       <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex-1 py-6 px-6 flex items-center">
-          <h1 className="font-serif text-[26px] leading-none text-[var(--app-dark)] tracking-wide">Profile</h1>
+          <h1 className="font-serif text-[26px] leading-none text-[var(--app-dark)] tracking-wide">Pilgrim Profile</h1>
         </div>
         <div className="border-l border-[var(--app-border)] py-6 px-7 flex items-center justify-center">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--app-gray)" strokeWidth="0.75" strokeLinecap="square">

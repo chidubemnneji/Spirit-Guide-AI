@@ -389,8 +389,9 @@ export default function Chat() {
     <div className={`h-dvh flex ${hideNav ? "" : "pb-[64px] md:pb-0"}`} style={{ background: "var(--app-bg)" }}>
       {/* Desktop: persistent conversation history rail */}
       <aside className="hidden md:flex flex-col w-[300px] flex-shrink-0 border-r border-[var(--app-dark)]">
-        <div className="px-6 h-[89px] flex items-center border-b-2 border-[var(--app-dark)]">
+        <div className="px-6 h-[89px] flex items-center justify-between border-b-2 border-[var(--app-dark)]">
           <h1 className="font-serif text-[26px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
+          <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Seeking Stillness</span>
         </div>
         <div className="px-4 py-4 border-b border-[var(--app-border)]">
           <button

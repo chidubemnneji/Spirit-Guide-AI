@@ -140,6 +140,9 @@ export default function Journal() {
           <div className="flex-1 flex items-center px-8">
             <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">Prayer Journal</span>
           </div>
+          <div className="px-8 flex items-center border-r border-[var(--app-border)]">
+            <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Vol. 01 — Reflections</span>
+          </div>
           <div className="px-8 flex items-center">
             <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">{format(new Date(), "EEEE • h:mm a")}</span>
           </div>

@@ -139,6 +139,9 @@ export default function Devotion() {
           <div className="flex-1 flex items-center px-8">
             <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">{greeting?.greeting || `Grace and peace, ${userName}.`}</span>
           </div>
+          <div className="px-8 flex items-center border-l border-[var(--app-border)]">
+            <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Daily Bread</span>
+          </div>
           <button
             className="px-8 flex items-center justify-center border-l border-[var(--app-border)] relative"
             onClick={() => setShowNotifications(true)}
@@ -212,7 +215,7 @@ export default function Devotion() {
           {/* RIGHT RAIL — This Week + Verse */}
           <section>
             <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--app-dark)]">
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">This Week</span>
+              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Weekly Path</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">{weekRange}</span>
             </div>
             <div className="px-6 py-6 border-b border-[var(--app-border)]">

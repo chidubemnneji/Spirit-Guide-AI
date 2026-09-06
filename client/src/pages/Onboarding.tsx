@@ -68,6 +68,9 @@ export default function Onboarding() {
             Step {String(currentPhase).padStart(2, "0")} — Shape your journey
           </span>
         </div>
+        <div className="px-8 flex items-center border-l border-[var(--app-border)]">
+          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Est. 2024</span>
+        </div>
       </header>
 
       <ProgressBar currentPhase={currentPhase} totalPhases={TOTAL_STEPS} />

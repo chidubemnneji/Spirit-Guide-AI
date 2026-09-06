@@ -96,7 +96,118 @@ export default function Community() {
   const filtered = activeCategory === "All Threads" ? posts : posts.filter(p => categoryLabel(p) === activeCategory);
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
+    <>
+    {/* ─────────────  DESKTOP: EDITORIAL SACRED WALL  ───────────── */}
+    <div className="hidden md:block min-h-screen" style={{ background: "var(--app-bg)" }}>
+      <header className="flex items-stretch border-b-2 border-[var(--app-dark)] max-w-[1600px] mx-auto w-full">
+        <div className="px-8 py-6 flex items-center border-r border-[var(--app-border)]">
+          <h1 className="font-serif text-[30px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
+        </div>
+        <div className="flex-1 flex items-center px-8">
+          <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">The Sacred Wall</span>
+        </div>
+        <div className="px-8 flex items-center border-l border-[var(--app-border)]">
+          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Est. 2024</span>
+        </div>
+        <button
+          onClick={() => setShowCompose(true)}
+          className="px-10 flex items-center border-l border-[var(--app-border)] text-[12px] font-semibold tracking-[0.18em] uppercase text-[var(--app-green)] hover:bg-white/40 transition-colors"
+          data-testid="button-new-post-desktop"
+        >
+          + Share
+        </button>
+      </header>
+
+      <div className="grid grid-cols-[1fr_2fr] max-w-[1600px] mx-auto items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
+        {/* LEFT — categories + gathering stat */}
+        <section className="border-r border-[var(--app-dark)]">
+          <div className="px-6 py-4 border-b border-[var(--app-dark)]">
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Threads</span>
+          </div>
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className="w-full text-left px-6 py-4 border-b border-[var(--app-border-soft)] text-[15px] font-serif transition-colors"
+              style={{
+                background: activeCategory === cat ? "var(--app-white)" : "transparent",
+                color: activeCategory === cat ? "var(--app-green)" : "var(--app-gray-lt)",
+              }}
+              data-testid={`button-category-desktop-${cat}`}
+            >
+              {cat}
+            </button>
+          ))}
+          <div className="px-6 py-6 mt-4 border-t border-[var(--app-dark)]">
+            <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Gathered Today</span>
+            <p className="font-serif text-[44px] leading-none text-[var(--app-dark)] mt-4">
+              {posts.reduce((sum, p) => sum + p.prayerCount, 0)}
+            </p>
+            <p className="text-[13px] text-[var(--app-gray-lt)] mt-2">lights held across {posts.length} thread{posts.length !== 1 ? "s" : ""}</p>
+          </div>
+        </section>
+
+        {/* RIGHT — the wall */}
+        <section>
+          {loading ? (
+            <div className="flex justify-center py-20"><Loader2 className="w-5 h-5 animate-spin text-[var(--app-gray-lt)]" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-24 px-6">
+              <p className="font-serif text-[28px] text-[var(--app-dark)] mb-2">Be the first to share</p>
+              <p className="text-[16px] text-[var(--app-gray-lt)]">The community is waiting to pray with you.</p>
+            </div>
+          ) : (
+            filtered.map((post, i) => (
+              <motion.article
+                key={post.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="px-10 py-10 border-b border-[var(--app-border)]"
+              >
+                <div className="flex justify-between items-center mb-5">
+                  <span className="text-[11px] tracking-[0.15em] font-medium uppercase text-[var(--app-gray-lt)]">
+                    {categoryLabel(post)}
+                  </span>
+                  <span className="text-[11px] tracking-[0.15em] font-medium uppercase text-[var(--app-dark)]">
+                    {timeAgo(post.createdAt)}
+                  </span>
+                </div>
+                <p className="font-serif text-[26px] leading-[1.4] text-[var(--app-dark)] mb-8 max-w-[54ch]">
+                  "{post.content}"
+                </p>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] tracking-[0.15em] font-medium uppercase text-[var(--app-dark)]">
+                    — {post.anonLabel}
+                  </span>
+                  <button
+                    onClick={() => toggleLight(post.id)}
+                    disabled={lightingId === post.id}
+                    className="flex items-center gap-2 px-4 py-2 transition-colors"
+                    style={{ border: post.hasPrayed ? "1px solid var(--app-amber-border)" : "1px solid var(--app-border)" }}
+                    data-testid={`button-pray-desktop-${post.id}`}
+                  >
+                    {lightingId === post.id
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <CandleIcon lit={post.hasPrayed} />
+                    }
+                    <span
+                      className="text-[10px] tracking-[0.1em] font-medium uppercase mt-[1px]"
+                      style={{ color: post.hasPrayed ? "var(--app-dark)" : "var(--app-gray-lt)" }}
+                    >
+                      {post.prayerCount} Light{post.prayerCount !== 1 ? "s" : ""}
+                    </span>
+                  </button>
+                </div>
+              </motion.article>
+            ))
+          )}
+        </section>
+      </div>
+    </div>
+
+    {/* ─────────────  MOBILE: ORIGINAL (UNTOUCHED)  ───────────── */}
+    <div className="md:hidden min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
       {/* Category tabs */}
       <header className="sticky top-0 z-20 bg-[var(--app-white)] border-b border-[var(--app-border)] flex items-center overflow-x-auto gap-2 px-4 py-4"
         style={{ scrollbarWidth: "none" }}>
@@ -175,15 +286,16 @@ export default function Community() {
       {/* Compose button */}
       <button
         onClick={() => setShowCompose(true)}
-        className="fixed bottom-28 right-6 w-14 h-14 flex items-center justify-center shadow-lg z-50 transition-transform active:scale-95"
+        className="md:hidden fixed bottom-28 right-6 w-14 h-14 flex items-center justify-center shadow-lg z-50 transition-transform active:scale-95"
         style={{ background: "var(--cta-bg)" }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="var(--cta-fg)" className="w-7 h-7">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
       </button>
+    </div>
 
-      {/* Compose sheet */}
+    {/* Compose sheet — shared by desktop + mobile */}
       <AnimatePresence>
         {showCompose && (
           <>
@@ -232,6 +344,6 @@ export default function Community() {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
