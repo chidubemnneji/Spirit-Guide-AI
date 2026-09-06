@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { Home, MessageCircle, BookOpen, Flame, User } from "lucide-react";
 import { useFlags } from "@/hooks/useFlags";
 import { useScroll } from "@/context/ScrollContext";
 
@@ -7,27 +8,21 @@ const BASE_NAV = [
     path: "/devotion",
     label: "Home",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="4" y="4" width="16" height="16" fill={active ? "var(--app-green)" : "var(--app-gray-lt)"} />
-      </svg>
+      <Home size={22} strokeWidth={1.5} stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} />
     ),
   },
   {
     path: "/chat",
     label: "Guide",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} strokeWidth="1.5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
+      <MessageCircle size={22} strokeWidth={1.5} stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} />
     ),
   },
   {
     path: "/bible",
     label: "Word",
     icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} strokeWidth="1.5" strokeLinecap="square">
-        <path d="M5 20V5H19V20" />
-      </svg>
+      <BookOpen size={22} strokeWidth={1.5} stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} />
     ),
   },
 ];
@@ -36,9 +31,12 @@ const COMMUNITY_NAV = {
   path: "/community",
   label: "Pray",
   icon: (active: boolean) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-    </svg>
+    <Flame
+      size={22}
+      strokeWidth={1.5}
+      stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"}
+      fill={active ? "var(--app-amber)" : "none"}
+    />
   ),
 };
 
@@ -46,9 +44,7 @@ const PROFILE_NAV = {
   path: "/account",
   label: "Profile",
   icon: (active: boolean) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} strokeWidth="1.5" strokeLinecap="square">
-      <path d="M4 9H20M4 15H20" />
-    </svg>
+    <User size={22} strokeWidth={1.5} stroke={active ? "var(--app-green)" : "var(--app-gray-lt)"} />
   ),
 };
 
