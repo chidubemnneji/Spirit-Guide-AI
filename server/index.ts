@@ -7,13 +7,16 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { isEnabled } from "./flags";
 import { initSentry, Sentry, isSentryEnabled } from "./sentry";
+import { pgSSLConfig } from "./db";
 
 initSentry();
 const app = express();
 app.set('trust proxy', 1);
 const httpServer = createServer(app);
 const PgSession = connectPgSimple(session);
-const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+// Same TLS enforcement as the main db pool (server/db.ts) — see the comment
+// there for why rejectUnauthorized is false rather than true.
+const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: pgSSLConfig });
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
