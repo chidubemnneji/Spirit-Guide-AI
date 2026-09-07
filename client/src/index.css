@@ -21,12 +21,17 @@
   --app-bg-inner:      #e9e8e4;  /* nested/inner panels */
   --app-white:         #FFFFFF;  /* card / row surfaces */
   --app-dark:          #111111;  /* ink — primary text, masthead rules */
-  --app-green:         #1b291d;  /* accent — text, icons, borders, small fills */
+  --app-green:         #1E5631;  /* accent — a true, visible forest green (previously so close
+                                     to --app-dark it read as near-black; kept deep and muted,
+                                     just distinguishable now, so CTAs/icons/borders actually
+                                     register as "accent" rather than "ink") */
   --app-border:        #D8D7D2;  /* structural hairlines (masthead rules, panel edges) */
   --app-border-soft:   #f0f0ee;  /* quiet row dividers on white cards */
   --app-gray:          #545454;  /* body copy on cream */
   --app-gray-lt:       #73726C;  /* muted labels/captions */
-  --app-amber:         #eab308;  /* decorative accent (community candles) */
+  --app-amber:         #C9963A;  /* decorative accent (community candles) — warmed from a
+                                     saturated yellow to an antique/candlelit gold to match
+                                     the editorial tone */
   --app-amber-border:  #d8c3a5;
   --app-placeholder:   #c9c7c0;  /* input placeholder text */
   --app-danger:        #9a3b3b;  /* destructive actions (sign out, delete) */
@@ -40,7 +45,7 @@
   /* Fixed, never theme-flipped — for deliberately-dark interstitials (e.g.
      the onboarding transition screen) that should stay a calm dark green
      regardless of the app's light/dark mode. */
-  --scripture-bg:      #1b291d;
+  --scripture-bg:      #1E5631;
 
   /* Mapped to shadcn tokens */
   --background:          250 15% 91%;   /* #EBEAE5 */
@@ -50,7 +55,7 @@
   --card-border:         30 8% 84%;     /* #D8D7D2 */
   --border:              30 8% 84%;
   --input:               30 8% 84%;
-  --primary:             130 22% 13%;   /* #1b291d */
+  --primary:             140 48% 23%;   /* #1E5631 */
   --primary-foreground:  0 0% 100%;
   --secondary:           40 10% 93%;    /* #f2f1ec */
   --secondary-foreground:0 0% 7%;
@@ -60,7 +65,7 @@
   --accent-foreground:   0 0% 7%;
   --destructive:         4 69% 55%;
   --destructive-foreground: 0 0% 100%;
-  --ring:                130 22% 13%;
+  --ring:                140 48% 23%;
   --radius:              0px;
 
   --font-sans:  'Inter', system-ui, sans-serif;
