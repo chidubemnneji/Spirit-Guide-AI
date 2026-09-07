@@ -65,8 +65,9 @@ function AppContent() {
   const [location] = useLocation();
   const showNav = !ONBOARDING_ROUTES.includes(location);
   // The home broadsheet is designed to span the full width; other pages stay
-  // capped to a readable column.
-  const isWidePage = location === "/devotion" || location === "/journal" || location === "/account" || location === "/chat";
+  // capped to a readable column. The Bible reader also needs the extra room
+  // for its three-column desktop layout (book rail + text + study notes).
+  const isWidePage = location === "/devotion" || location === "/journal" || location === "/account" || location === "/chat" || location === "/bible";
 
   if (!showNav) {
     // Onboarding / auth flows: simple centered phone column.

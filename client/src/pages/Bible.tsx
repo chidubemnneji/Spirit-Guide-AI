@@ -525,6 +525,10 @@ export default function Bible() {
   if (!showReader) {
     return (
       <div className="min-h-screen pb-20" style={{ background: "var(--app-bg)" }}>
+        {/* Bible is a wide page on desktop (for the reader below); the browse
+            list itself stays a readable centered column rather than stretching
+            edge-to-edge. */}
+        <div className="md:max-w-2xl md:mx-auto md:pt-6">
         <div className="px-5 pt-6 pb-4">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -854,16 +858,20 @@ export default function Bible() {
             </ScrollArea>
           </SheetContent>
         </Sheet>
+        </div>
       </div>
     );
   }
 
-  // Bible Reader View — escapes the shell's 220px nav padding on desktop so the
-  // three-column layout can own the full viewport width predictably.
+  // Bible Reader View — a three-column desktop layout (book rail / reading
+  // column / study rail) built as a plain flex row that lives inside the
+  // width the app shell already gives this (now-wide) route. The side rails
+  // use sticky (not fixed) positioning so they stay correctly aligned with
+  // the row they belong to instead of being pinned to raw viewport edges.
   return (
-    <div className="min-h-screen pb-20 md:pr-[340px] md:pl-[280px] md:-ml-[220px] md:w-screen" style={{ background: "var(--app-bg)" }}>
+    <div className="min-h-screen pb-20 md:flex md:items-start" style={{ background: "var(--app-bg)" }}>
       {/* Desktop left book-rail (matches comp) */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[280px] border-r border-[var(--app-dark)] bg-[var(--app-bg)] overflow-y-auto z-30">
+      <aside className="hidden md:flex flex-col md:sticky md:top-0 md:h-screen md:w-[280px] md:shrink-0 border-r border-[var(--app-dark)] bg-[var(--app-bg)] overflow-y-auto">
         <div className="px-6 pt-8 pb-5 border-b border-[var(--app-border)]">
           <input
             value={searchQuery}
@@ -897,6 +905,7 @@ export default function Bible() {
         </div>
       </aside>
 
+      <div className="md:flex-1 md:min-w-0">
       <header className="sticky top-0 z-40 bg-[var(--app-white)] border-b border-[var(--app-border)]">
         <div className="flex items-center">
           <button
@@ -1241,6 +1250,7 @@ export default function Bible() {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+      </div>
 
       {/* Desktop study rail: real personal notes + curated cross references */}
       {currentChapter && (
@@ -1296,7 +1306,7 @@ function ReaderStudyRail({ reference, bookId, chapter, onNavigate }:
   };
 
   return (
-    <aside className="hidden md:flex flex-col fixed right-0 top-0 bottom-0 w-[340px] border-l border-[var(--app-dark)] bg-[var(--app-bg)] overflow-y-auto pt-8">
+    <aside className="hidden md:flex flex-col md:sticky md:top-0 md:h-screen md:w-[340px] md:shrink-0 border-l border-[var(--app-dark)] bg-[var(--app-bg)] overflow-y-auto pt-8">
       {/* Cross references */}
       <div className="px-6 py-4 border-b border-[var(--app-dark)]">
         <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Cross References</span>
