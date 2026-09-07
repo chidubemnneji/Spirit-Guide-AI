@@ -61,10 +61,12 @@ export function BottomNav() {
     <nav
       className={`
         fixed z-50 bg-[var(--app-white)] border-[var(--app-border)]
-        ${hideNav ? "hidden md:flex" : "flex"}
+        ${hideNav ? "hidden" : "flex"} md:flex
         bottom-0 left-0 right-0 h-[64px] border-t items-center justify-between px-10 pb-2 pt-2
         md:top-0 md:bottom-0 md:right-auto md:h-screen md:w-[220px] md:border-t-0 md:border-r
         md:flex-col md:justify-start md:items-stretch md:px-0 md:py-8 md:gap-1
+        md:transition-transform md:duration-300 md:ease-out
+        ${hideNav ? "md:-translate-x-full" : "md:translate-x-0"}
       `}
       aria-label="Primary"
     >
