@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
-import { BIBLE_VERSE_PATTERN } from "@/lib/bibleUtils";
+import { BIBLE_VERSE_PATTERN, normalizeBookName } from "@/lib/bibleUtils";
 
 interface BookmarkGroup {
   id: string;
@@ -188,11 +188,26 @@ export default function Bible() {
     if (!bookParam || !chapterParam) return;
     
     urlProcessedRef.current = true;
-    
-    const targetBook = books.find(
-      (b) => b.name.toLowerCase() === bookParam.toLowerCase()
-    );
-    
+
+    // Match loosely: the third-party Bible API's book.name doesn't always
+    // agree, letter-for-letter, with the canonical name buildBibleLink()
+    // put in the URL (singular/plural, punctuation, "nameLong" vs "name"),
+    // and an exact-match miss here was silently dropping the deep link —
+    // landing on the reader with no book selected instead of the verse.
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const targetNorm = normalize(bookParam);
+    const targetBook = books.find((b) => {
+      const name = normalize(b.name);
+      const nameLong = b.nameLong ? normalize(b.nameLong) : "";
+      return (
+        name === targetNorm ||
+        nameLong === targetNorm ||
+        name === targetNorm.replace(/s$/, "") ||
+        `${name}s` === targetNorm ||
+        nameLong.includes(targetNorm)
+      );
+    });
+
     if (!targetBook) {
       navigate("/bible", { replace: true });
       return;
@@ -261,7 +276,10 @@ export default function Bible() {
     
     const match = cleanRef.match(/^(.+?)\s+(\d+):(\d+(?:-\d+)?)$/);
     if (match) {
-      return { book: match[1].trim(), chapter: match[2], verse: match[3].split('-')[0] };
+      // Normalize the book name the same way buildBibleLink() does elsewhere,
+      // so "Psalm 46:10" (singular, as most references read) resolves the
+      // same way whether it came from search, the chat, or here.
+      return { book: normalizeBookName(match[1].trim()), chapter: match[2], verse: match[3].split('-')[0] };
     }
     return null;
   };

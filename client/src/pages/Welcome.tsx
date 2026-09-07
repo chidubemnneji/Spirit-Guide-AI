@@ -1,7 +1,22 @@
 import { useLocation } from "wouter";
 import { useOnboarding } from "@/context/OnboardingContext";
 
-import { Logo } from "@/components/Logo";
+// Fixed dark palette for this screen only — deliberately not theme-flipped,
+// same idea as --scripture-bg. See the .welcome-glow / .welcome-grain
+// utilities in index.css for the ambient light behind the hero.
+const INK = "#0B0A08";
+const PANEL_LINE = "rgba(255,255,255,0.08)";
+const GOLD = "#C8A96E";
+const PAPER = "#F3EEE4";
+const MUTED = "#8B8471";
+const MUTED_DIM = "#5E594C";
+const BODY = "#B8B0A0";
+
+const FEATURES = [
+  { tag: "Daily", title: "Personalised Devotionals", sub: "Scripture matched to your struggle, every morning." },
+  { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
+  { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
+];
 
 export default function Welcome() {
   const [, setLocation] = useLocation();
@@ -15,185 +30,175 @@ export default function Welcome() {
 
   return (
     <>
-    {/* ───────────── DESKTOP: editorial split landing ───────────── */}
-    <div className="hidden md:flex h-screen overflow-hidden flex-col" style={{ background: "var(--app-bg)" }}>
-      {/* Masthead */}
-      <header className="flex items-stretch border-b-2 border-[var(--app-dark)]">
-        <div className="px-10 py-6 flex items-center border-r border-[var(--app-border)]">
-          <span className="font-serif italic text-[30px] text-[var(--app-green)]">SoulGuide</span>
-        </div>
-        <div className="flex-1 flex items-center px-10">
-          <span className="font-serif text-[18px] italic text-[var(--app-gray-lt)]">A space to think and pray</span>
-        </div>
-        <div className="px-8 flex items-center border-l border-[var(--app-border)]">
-          <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Est. 2024</span>
-        </div>
-        <button
-          onClick={() => setLocation("/login")}
-          className="px-10 flex items-center border-l border-[var(--app-border)] text-[12px] font-semibold tracking-[0.18em] uppercase text-[var(--app-green)] hover:bg-white/40 transition-colors"
-        >
-          Sign in
-        </button>
-      </header>
-
-      <div className="flex-1 grid grid-cols-2 min-h-0">
-        {/* Left: hero + CTAs */}
-        <div className="flex flex-col justify-center items-center text-center px-16 py-10 border-r border-[var(--app-dark)] overflow-y-auto">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center gap-3 mb-8">
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-gray-lt)]">Faith Companion</span>
-              <span className="text-[var(--app-border)]">·</span>
-              <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Matthew 11:28</span>
-            </div>
-            <h1 className="font-serif text-[72px] leading-[1.05] text-[var(--app-dark)] mb-8">
-              A companion<br />for your faith.
-            </h1>
-            <p className="text-[20px] leading-[1.6] text-[var(--app-gray)] max-w-[42ch]">
-              Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
-            </p>
+      {/* ───────────── DESKTOP: dark cinematic landing ───────────── */}
+      <div className="hidden md:flex h-screen overflow-hidden" style={{ background: INK }}>
+        {/* Left rail: mark + vertical wordmark */}
+        <div className="w-[64px] flex-shrink-0 flex flex-col items-center justify-between py-8" style={{ borderRight: `1px solid ${PANEL_LINE}` }}>
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center font-serif italic text-[17px]"
+            style={{ border: `1px solid ${GOLD}66`, color: GOLD }}
+          >
+            S
           </div>
+          <span
+            className="font-mono text-[10px] tracking-[0.3em] uppercase"
+            style={{ writingMode: "vertical-rl", color: MUTED }}
+          >
+            SoulGuide — Est. 2024
+          </span>
+        </div>
 
-          <div className="mt-10 space-y-3 w-full max-w-[440px]">
-            <button
-              onClick={handleBegin}
-              data-testid="button-begin-transformation-desktop"
-              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase transition-opacity hover:opacity-90"
-              style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
-            >
-              Begin your journey
-            </button>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Masthead */}
+          <header
+            className="flex items-center justify-between px-10 py-6 font-mono text-[11px] tracking-[0.2em] uppercase"
+            style={{ borderBottom: `1px solid ${PANEL_LINE}`, color: MUTED }}
+          >
+            <div className="flex items-center gap-9">
+              <span className="font-serif italic text-[20px] normal-case tracking-normal" style={{ color: GOLD }}>SoulGuide</span>
+              <span>The Word</span>
+              <span>The Companion</span>
+            </div>
             <button
               onClick={() => setLocation("/login")}
-              className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase border border-[var(--app-green)] text-[var(--app-green)] hover:bg-white/40 transition-colors"
+              className="transition-colors"
+              style={{ color: GOLD }}
+              data-testid="button-signin-desktop"
             >
-              I already have an account
+              Sign in →
             </button>
-            <p className="text-[12px] text-[var(--app-gray-lt)] text-center tracking-wide pt-1">Free. No ads. No data selling.</p>
-          </div>
-        </div>
+          </header>
 
-        {/* Right: image + verse + what's inside */}
-        <div className="flex flex-col min-h-0">
-          <div className="relative h-[58%] flex-shrink-0 overflow-hidden border-b border-[var(--app-dark)]">
-            <img
-              src="/welcome.jpg"
-              alt="A swan resting on still water"
-              className="w-full h-full object-cover object-center"
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-8">
-              <p className="font-serif text-[18px] italic text-white leading-relaxed">
-                "Come to me, all who are weary and burdened, and I will give you rest." — Matthew 11:28
-              </p>
-            </div>
-          </div>
-          <div className="px-12 py-4 border-b border-[var(--app-border)] flex-shrink-0">
-            <h3 className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">What's inside</h3>
-          </div>
-          {[
-            { tag: "Daily", title: "Personalised Devotionals", sub: "Scripture matched to your struggle, every morning." },
-            { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
-            { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
-          ].map((item, i) => (
-            <div key={i} className="px-12 py-3.5 border-b border-[var(--app-border-soft)] flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)] block mb-1">{item.tag}</span>
-                <p className="font-serif text-[24px] text-[var(--app-dark)] mb-1">{item.title}</p>
-                <p className="text-[15px] text-[var(--app-gray-lt)]">{item.sub}</p>
+          {/* Hero */}
+          <div className="flex-1 relative flex flex-col items-center justify-center text-center px-10 overflow-hidden">
+            <div className="welcome-glow" aria-hidden="true" />
+            <div className="welcome-grain" aria-hidden="true" />
+            <div className="relative z-10 max-w-[720px]">
+              <div className="flex items-center justify-center gap-3 mb-7 font-mono text-[11px] tracking-[0.25em] uppercase" style={{ color: MUTED }}>
+                <span>Faith Companion</span>
+                <span style={{ color: MUTED_DIM }}>·</span>
+                <span style={{ color: GOLD }}>Matthew 11:28</span>
               </div>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+              <h1 className="font-serif text-[76px] leading-[1.05] mb-7" style={{ color: PAPER }}>
+                A companion<br />for your faith.
+              </h1>
+              <p className="text-[19px] leading-[1.65] max-w-[46ch] mx-auto mb-10" style={{ color: BODY }}>
+                Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
+              </p>
+              <div className="flex flex-col items-center gap-3 w-full max-w-[380px] mx-auto">
+                <button
+                  onClick={handleBegin}
+                  data-testid="button-begin-transformation-desktop"
+                  className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase transition-opacity hover:opacity-90"
+                  style={{ background: GOLD, color: INK }}
+                >
+                  Begin your journey
+                </button>
+                <button
+                  onClick={() => setLocation("/login")}
+                  className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase transition-colors hover:bg-white/5"
+                  style={{ border: `1px solid ${GOLD}55`, color: PAPER }}
+                >
+                  I already have an account
+                </button>
+                <p className="text-[11px] tracking-wide pt-1" style={{ color: MUTED_DIM }}>Free. No ads. No data selling.</p>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
-      </div>
-    </div>
 
-    {/* ───────────── MOBILE: original layout (unchanged) ───────────── */}
-    <div className="md:hidden min-h-screen flex flex-col" style={{ background: "var(--app-bg)" }}>
-      {/* Header */}
-      <header className="flex bg-[var(--app-white)] border-b border-[var(--app-border)]">
-        <div className="flex-1 py-6 px-6 flex items-center">
-          <Logo size={28} showWordmark />
-        </div>
-        <div className="py-6 px-6 flex items-center border-l border-[var(--app-border)]">
-          <span className="text-[9px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Est. 2024</span>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <main className="flex-1 flex flex-col">
-        <div className="p-6">
-          <div className="bg-[var(--app-white)] p-7">
-            {/* Hero image placeholder */}
-            <div className="w-full aspect-[4/3] mb-3 overflow-hidden">
-              <img
-                src="/welcome.jpg"
-                alt="A swan resting on still water"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <p className="font-serif text-[13px] italic text-[var(--app-gray-lt)] mb-5 leading-relaxed">
-              "Come to me, all who are weary and burdened, and I will give you rest.", Matthew 11:28
+        {/* Right rail: methodology-style panel */}
+        <aside
+          className="w-[300px] flex-shrink-0 flex flex-col py-8 px-7 font-mono overflow-y-auto"
+          style={{ borderLeft: `1px solid ${PANEL_LINE}`, color: MUTED }}
+        >
+          <div className="mb-8">
+            <p className="tracking-[0.2em] uppercase text-[10px] mb-2.5" style={{ color: MUTED_DIM }}>Companion Status</p>
+            <p className="text-[11px] leading-[1.9] tracking-[0.05em]" style={{ color: GOLD }}>
+              LISTENING: ALWAYS<br />
+              JUDGMENT: NEVER<br />
+              MEMORY: YOUR JOURNEY
             </p>
-            <div className="flex items-center justify-between mb-5">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Faith Companion</span>
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Matthew 11:28</span>
+          </div>
+
+          <div className="mb-7">
+            <p className="tracking-[0.2em] uppercase text-[10px] mb-3" style={{ color: MUTED_DIM }}>What's inside</p>
+            <p className="font-sans normal-case text-[13px] leading-relaxed" style={{ color: BODY }}>
+              Every feature here exists to meet you where you are, and walk with you from there.
+            </p>
+          </div>
+
+          <div className="space-y-3 flex-1">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="p-4" style={{ border: `1px solid ${PANEL_LINE}` }}>
+                <p className="text-[9px] tracking-[0.18em] uppercase mb-1.5" style={{ color: MUTED_DIM }}>{f.tag}</p>
+                <p className="font-serif italic text-[16px] normal-case mb-1" style={{ color: PAPER }}>{f.title}</p>
+                <p className="font-sans normal-case text-[12px] leading-relaxed" style={{ color: MUTED }}>{f.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 pt-5" style={{ borderTop: `1px solid ${PANEL_LINE}` }}>
+            <p className="tracking-[0.2em] uppercase text-[10px] mb-1" style={{ color: MUTED_DIM }}>Status</p>
+            <p className="text-[12px]" style={{ color: GOLD }}>Awaiting your first prayer</p>
+          </div>
+        </aside>
+      </div>
+
+      {/* ───────────── MOBILE: same dark cinematic language ───────────── */}
+      <div className="md:hidden min-h-screen flex flex-col" style={{ background: INK }}>
+        <header className="flex items-center justify-between px-6 py-5" style={{ borderBottom: `1px solid ${PANEL_LINE}` }}>
+          <span className="font-serif italic text-[22px]" style={{ color: GOLD }}>SoulGuide</span>
+          <span className="font-mono text-[9px] tracking-[0.2em] uppercase" style={{ color: MUTED }}>Est. 2024</span>
+        </header>
+
+        <div className="relative flex flex-col items-center text-center px-7 py-14 overflow-hidden">
+          <div className="welcome-glow" aria-hidden="true" />
+          <div className="welcome-grain" aria-hidden="true" />
+          <div className="relative z-10 w-full">
+            <div className="flex items-center justify-center gap-2.5 mb-6 font-mono text-[10px] tracking-[0.2em] uppercase" style={{ color: MUTED }}>
+              <span>Faith Companion</span>
+              <span style={{ color: MUTED_DIM }}>·</span>
+              <span style={{ color: GOLD }}>Matthew 11:28</span>
             </div>
-            <h2 className="font-serif text-[40px] leading-[1.15] text-[var(--app-dark)] mb-4">
+            <h1 className="font-serif text-[42px] leading-[1.15] mb-5" style={{ color: PAPER }}>
               A companion<br />for your faith.
-            </h2>
-            <p className="text-[16px] leading-[1.65] text-[var(--app-gray)]">
+            </h1>
+            <p className="text-[16px] leading-[1.65]" style={{ color: BODY }}>
               Wherever you are on your journey, doubting, searching, or simply tired, you don't have to walk it alone.
             </p>
           </div>
         </div>
 
-        {/* What's inside */}
-        <div className="border-y border-[var(--app-border)] py-5 px-8 bg-[var(--app-white)] flex items-center">
-          <h3 className="text-[12px] font-semibold tracking-[0.15em] uppercase text-[var(--app-dark)]">What's inside</h3>
-        </div>
-
-        <div className="flex flex-col">
-          {[
-            { tag: "Daily", title: "Personalised Devotionals", sub: "Scripture matched to your struggle, every morning." },
-            { tag: "Always on", title: "AI Companion", sub: "Listens without judgment. Remembers your journey." },
-            { tag: "Your words", title: "Prayer Journal", sub: "A private space to reflect and record." },
-          ].map((item, i) => (
-            <div key={i} className="px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-start justify-between">
-              <div className="flex-1 pr-4">
-                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] block mb-1">{item.tag}</span>
-                <p className="font-serif text-[20px] text-[var(--app-dark)] mb-1">{item.title}</p>
-                <p className="text-[14px] text-[var(--app-gray-lt)]">{item.sub}</p>
-              </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+        <div className="px-6" style={{ borderTop: `1px solid ${PANEL_LINE}` }}>
+          {FEATURES.map((f) => (
+            <div key={f.title} className="py-5" style={{ borderBottom: `1px solid ${PANEL_LINE}` }}>
+              <p className="font-mono text-[9px] tracking-[0.18em] uppercase mb-1.5" style={{ color: MUTED_DIM }}>{f.tag}</p>
+              <p className="font-serif italic text-[19px] mb-1" style={{ color: PAPER }}>{f.title}</p>
+              <p className="text-[13px] leading-relaxed" style={{ color: MUTED }}>{f.sub}</p>
             </div>
           ))}
         </div>
 
-        {/* CTAs */}
-        <div className="p-6 space-y-3 bg-[var(--app-white)] border-t border-[var(--app-border)] mt-4">
+        <div className="p-6 space-y-3 mt-auto">
           <button
             onClick={handleBegin}
             data-testid="button-begin-transformation"
             className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase"
-            style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
+            style={{ background: GOLD, color: INK }}
           >
             Begin your journey
           </button>
           <button
             onClick={() => setLocation("/login")}
-            className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase border border-[var(--app-border)] text-[var(--app-gray-lt)]"
-            style={{ background: "transparent" }}
+            className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase"
+            style={{ border: `1px solid ${GOLD}55`, color: PAPER, background: "transparent" }}
           >
             I already have an account
           </button>
-          <p className="text-[11px] text-[var(--app-gray-lt)] text-center tracking-wide">Free. No ads. No data selling.</p>
+          <p className="text-[11px] text-center tracking-wide" style={{ color: MUTED_DIM }}>Free. No ads. No data selling.</p>
         </div>
-      </main>
-    </div>
+      </div>
     </>
   );
 }

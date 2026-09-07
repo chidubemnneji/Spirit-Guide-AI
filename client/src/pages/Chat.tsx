@@ -10,6 +10,7 @@ import RecommendationCards from "@/components/RecommendationCards";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { MoodCheckIn, type Mood } from "@/components/MoodCheckIn";
 import type { Message, RecommendationCard } from "@shared/schema";
+import { normalizeBookName } from "@/lib/bibleUtils";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ChatMessage {
@@ -22,24 +23,13 @@ interface ChatMessage {
 }
 
 // ── Bible verse parsing ─────────────────────────────────────────────────────
+// Requires an explicit "chapter:verse" (unlike bibleUtils' BIBLE_VERSE_PATTERN,
+// which also matches a bare chapter) so we only ever link things that read
+// unambiguously as a specific verse in the middle of a chat message. Book-name
+// normalization itself is shared with the Bible reader and Devotion's "Read in
+// Context" links (@/lib/bibleUtils) rather than a second, partial copy of the
+// same lookup table.
 const BIBLE_VERSE_PATTERN = /\b((?:1|2|3|I|II|III)?\s*[A-Za-z]+(?:\s+(?:of\s+)?[A-Za-z]+)*)\s+(\d+):(\d+)(?:-(\d+))?\b/g;
-
-const BOOK_NAME_MAP: Record<string, string> = {
-  "gen": "Genesis", "genesis": "Genesis", "exo": "Exodus", "exodus": "Exodus",
-  "psa": "Psalms", "psalm": "Psalms", "psalms": "Psalms", "ps": "Psalms",
-  "pro": "Proverbs", "prov": "Proverbs", "proverbs": "Proverbs",
-  "mat": "Matthew", "matt": "Matthew", "matthew": "Matthew",
-  "mar": "Mark", "mark": "Mark", "luk": "Luke", "luke": "Luke",
-  "joh": "John", "john": "John", "act": "Acts", "acts": "Acts",
-  "rom": "Romans", "romans": "Romans",
-  "isa": "Isaiah", "isaiah": "Isaiah", "jer": "Jeremiah", "jeremiah": "Jeremiah",
-  "rev": "Revelation", "revelation": "Revelation",
-};
-
-function normalizeBookName(raw: string): string {
-  const key = raw.trim().toLowerCase().replace(/\s+/g, " ");
-  return BOOK_NAME_MAP[key] || raw.trim();
-}
 
 function parseContentWithVerseLinks(content: string, navigate: (path: string) => void, isUser: boolean): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
