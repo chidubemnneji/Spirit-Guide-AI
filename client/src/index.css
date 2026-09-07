@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 /* ── Design tokens ──────────────────────────────────────────────────────────
-   One editorial system, two modes. Light is the warm-cream broadsheet look
+   One editorial system, two modes. Light is a clean white broadsheet look
    already used across most of the app (Welcome, Login, Devotion, Chat,
    Journal, Account…). Dark is a deliberate second mode, not a mechanical
    inversion — a near-black, candlelit palette with a warm gold accent,
@@ -16,9 +16,9 @@
    hex, so the ThemeToggle actually changes something everywhere. */
 :root {
 
-  --app-bg:            #EBEAE5;  /* page background */
-  --app-bg-warm:       #f2f1ec;  /* section bands, subtle raised areas */
-  --app-bg-inner:      #e9e8e4;  /* nested/inner panels */
+  --app-bg:            #FFFFFF;  /* page background — clean white, not the earlier warm cream */
+  --app-bg-warm:       #F7F7F6;  /* section bands, subtle raised areas */
+  --app-bg-inner:      #F2F2F1;  /* nested/inner panels */
   --app-white:         #FFFFFF;  /* card / row surfaces */
   --app-dark:          #111111;  /* ink — primary text, masthead rules */
   --app-green:         #1E5631;  /* accent — a true, visible forest green (previously so close
@@ -27,7 +27,7 @@
                                      register as "accent" rather than "ink") */
   --app-border:        #D8D7D2;  /* structural hairlines (masthead rules, panel edges) */
   --app-border-soft:   #f0f0ee;  /* quiet row dividers on white cards */
-  --app-gray:          #545454;  /* body copy on cream */
+  --app-gray:          #545454;  /* body copy on white */
   --app-gray-lt:       #73726C;  /* muted labels/captions */
   --app-amber:         #C9963A;  /* decorative accent (community candles) — warmed from a
                                      saturated yellow to an antique/candlelit gold to match
@@ -48,7 +48,7 @@
   --scripture-bg:      #1E5631;
 
   /* Mapped to shadcn tokens */
-  --background:          250 15% 91%;   /* #EBEAE5 */
+  --background:          0 0% 100%;     /* #FFFFFF */
   --foreground:          0 0% 7%;       /* #111111 */
   --card:                0 0% 100%;
   --card-foreground:     0 0% 7%;
@@ -57,11 +57,11 @@
   --input:               30 8% 84%;
   --primary:             140 48% 23%;   /* #1E5631 */
   --primary-foreground:  0 0% 100%;
-  --secondary:           40 10% 93%;    /* #f2f1ec */
+  --secondary:           60 4% 97%;     /* #F7F7F6 */
   --secondary-foreground:0 0% 7%;
-  --muted:               40 10% 93%;
+  --muted:               60 4% 97%;
   --muted-foreground:    30 5% 45%;     /* #73726C */
-  --accent:              40 10% 91%;    /* #e9e8e4 */
+  --accent:              40 3% 95%;     /* #F2F2F1 */
   --accent-foreground:   0 0% 7%;
   --destructive:         4 69% 55%;
   --destructive-foreground: 0 0% 100%;
