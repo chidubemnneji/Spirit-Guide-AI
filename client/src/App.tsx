@@ -8,10 +8,10 @@ import { OnboardingProvider } from "@/context/OnboardingContext";
 import { BibleProvider } from "@/context/BibleContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ScrollProvider } from "@/context/ScrollContext";
+import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useAuth } from "@/context/AuthContext";
-import { useScroll } from "@/context/ScrollContext";
 import Welcome from "@/pages/Welcome";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
@@ -65,7 +65,7 @@ function Router() {
 function AppContent() {
   const [location] = useLocation();
   const showNav = !ONBOARDING_ROUTES.includes(location);
-  const { hideNav } = useScroll();
+  const { collapsed } = useSidebar();
   // The home broadsheet is designed to span the full width; other pages stay
   // capped to a readable column. The Bible reader also needs the extra room
   // for its three-column desktop layout (book rail + text + study notes).
@@ -86,11 +86,11 @@ function AppContent() {
     <div className="min-h-screen bg-[var(--app-bg)]">
       <BottomNav />
       {/* Mobile: centered phone column with bottom-nav clearance.
-          Desktop: content fills the space beside the fixed 220px sidebar —
-          and reclaims that space (padding collapses to 0) whenever the
-          sidebar itself auto-hides on scroll, so hiding it doesn't just
-          leave a dead strip of background on the left. */}
-      <div className={`transition-[padding] duration-300 ease-out ${hideNav ? "md:pl-0" : "md:pl-[220px]"}`}>
+          Desktop: content fills the space beside the sidebar, which the user
+          can collapse to a slim icon rail via the button in BottomNav — the
+          padding here tracks that same collapsed state so content reflows
+          into the reclaimed space rather than leaving it as dead background. */}
+      <div className={`transition-[padding] duration-300 ease-out ${collapsed ? "md:pl-[72px]" : "md:pl-[220px]"}`}>
         <div className={`mx-auto w-full max-w-[430px] relative bg-[var(--app-bg)] min-h-screen md:shadow-none shadow-2xl overflow-hidden pb-[64px] md:pb-0 ${isWidePage ? "md:max-w-none" : "md:max-w-[860px]"}`}>
           <Router />
         </div>
@@ -107,10 +107,12 @@ function App() {
           <OnboardingProvider>
             <BibleProvider>
               <ScrollProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <AppContent />
-                </TooltipProvider>
+                <SidebarProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <AppContent />
+                  </TooltipProvider>
+                </SidebarProvider>
               </ScrollProvider>
             </BibleProvider>
           </OnboardingProvider>
