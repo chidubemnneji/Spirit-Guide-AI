@@ -129,10 +129,14 @@ export default function Devotion() {
 
   return (
     <>
-      {/* ─────────────────────────  DESKTOP: EDITORIAL BROADSHEET  ───────────────────────── */}
-      <div className="hidden md:block min-h-screen" style={{ background: "var(--app-bg)" }}>
+      {/* ─────────────────────────  DESKTOP: EDITORIAL BROADSHEET  ─────────────────────────
+          A fixed one-screen dashboard rather than a page that scrolls: the
+          whole thing is exactly h-screen, and each of the three columns below
+          scrolls independently (only if its own content runs long) instead of
+          the page growing taller than the viewport. */}
+      <div className="hidden md:flex md:flex-col h-screen overflow-hidden" style={{ background: "var(--app-bg)" }}>
         {/* Masthead */}
-        <header className="flex items-stretch border-b-2 border-[var(--app-dark)] bg-[var(--app-bg)] max-w-[1600px] mx-auto w-full">
+        <header className="flex items-stretch border-b-2 border-[var(--app-dark)] bg-[var(--app-bg)] max-w-[1600px] mx-auto w-full flex-shrink-0">
           <div className="px-8 py-6 flex items-center border-r border-[var(--app-border)]">
             <h1 className="font-serif text-[30px] italic leading-none text-[var(--app-dark)]">SoulGuide</h1>
           </div>
@@ -152,9 +156,9 @@ export default function Devotion() {
         </header>
 
         {/* Three-column broadsheet */}
-        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto items-stretch" style={{ minHeight: "calc(100vh - 89px)" }}>
+        <div className="grid grid-cols-[1fr_1.4fr_1fr] max-w-[1600px] mx-auto items-stretch flex-1 min-h-0">
           {/* LEFT RAIL — Today's Readings */}
-          <section className="border-r border-[var(--app-dark)]">
+          <section className="border-r border-[var(--app-dark)] overflow-y-auto min-h-0">
             <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--app-dark)]">
               <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Today's Readings</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">
@@ -180,7 +184,7 @@ export default function Devotion() {
           </section>
 
           {/* CENTER — Featured Devotion */}
-          <section className="border-r border-[var(--app-dark)]">
+          <section className="border-r border-[var(--app-dark)] overflow-y-auto min-h-0">
             <div className="px-9 py-5 border-b border-[var(--app-dark)]">
               <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Morning Devotion</span>
             </div>
@@ -213,7 +217,7 @@ export default function Devotion() {
           </section>
 
           {/* RIGHT RAIL — This Week + Verse */}
-          <section>
+          <section className="overflow-y-auto min-h-0">
             <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--app-dark)]">
               <span className="text-[12px] font-semibold tracking-[0.2em] uppercase text-[var(--app-dark)]">Weekly Path</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">{weekRange}</span>
