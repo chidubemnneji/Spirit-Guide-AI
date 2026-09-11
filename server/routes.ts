@@ -13,6 +13,7 @@ import { signupSchema, loginSchema } from "@shared/schema";
 import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
 import { getOrGenerateWeeklyRecap } from "./services/weeklyRecapService";
+import { scheduleNextReview, todayDateString, type ReviewGrade } from "./services/memorizationService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
 import { flags, isEnabled, isEnabledForUser, getAIModel } from "./flags";
@@ -1608,6 +1609,166 @@ I'm here to listen whenever you're ready to talk.`;
     } catch (error) {
       console.error("Error fetching cross references:", error);
       res.status(500).json({ error: "Failed to fetch cross references" });
+    }
+  });
+
+  // ── Saved Verses ("Your Verse Collection") ─────────────────────────────────
+  // Backs both the reader's own bookmarks sheet and the Account page's
+  // "Saved Passages" section.
+  app.get("/api/bible/saved", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const rows = await db
+        .select()
+        .from(schema.savedVerses)
+        .where(eq(schema.savedVerses.userId, userId))
+        .orderBy(desc(schema.savedVerses.createdAt));
+      const bookmarks = rows.map((r) => ({
+        id: r.id,
+        reference: r.reference,
+        verses: r.verses as { number: string; text: string }[],
+        dateSaved: r.createdAt,
+      }));
+      // "passages" shape is what the Account page's summary card expects.
+      const passages = rows.map((r) => ({
+        reference: r.reference,
+        text: (r.verses as { number: string; text: string }[]).map((v) => v.text).join(" "),
+      }));
+      res.json({ bookmarks, passages });
+    } catch (error) {
+      console.error("Error fetching saved verses:", error);
+      res.status(500).json({ error: "Failed to fetch saved verses" });
+    }
+  });
+
+  app.post("/api/bible/saved", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const { reference, verses } = req.body as { reference?: string; verses?: { number: string; text: string }[] };
+      if (!reference || !Array.isArray(verses) || verses.length === 0) {
+        return res.status(400).json({ error: "reference and verses are required" });
+      }
+      const [saved] = await db
+        .insert(schema.savedVerses)
+        .values({ userId, reference: String(reference).slice(0, 120), verses })
+        .onConflictDoUpdate({
+          target: [schema.savedVerses.userId, schema.savedVerses.reference],
+          set: { verses },
+        })
+        .returning();
+      res.status(201).json({ bookmark: { id: saved.id, reference: saved.reference, verses: saved.verses, dateSaved: saved.createdAt } });
+    } catch (error) {
+      console.error("Error saving verse:", error);
+      res.status(500).json({ error: "Failed to save verse" });
+    }
+  });
+
+  app.delete("/api/bible/saved/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+      await db.delete(schema.savedVerses).where(and(eq(schema.savedVerses.id, id), eq(schema.savedVerses.userId, userId)));
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("Error deleting saved verse:", error);
+      res.status(500).json({ error: "Failed to delete saved verse" });
+    }
+  });
+
+  // ── Verse Memorization (SM-2 spaced repetition) ────────────────────────────
+  app.get("/api/memorization/cards", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const rows = await db
+        .select()
+        .from(schema.memorizationCards)
+        .where(eq(schema.memorizationCards.userId, userId))
+        .orderBy(schema.memorizationCards.dueDate);
+      const today = todayDateString();
+      res.json({
+        cards: rows,
+        dueCards: rows.filter((c) => c.dueDate <= today),
+      });
+    } catch (error) {
+      console.error("Error fetching memorization cards:", error);
+      res.status(500).json({ error: "Failed to fetch memorization cards" });
+    }
+  });
+
+  app.post("/api/memorization/cards", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const { reference, verseText } = req.body as { reference?: string; verseText?: string };
+      if (!reference || !verseText?.trim()) {
+        return res.status(400).json({ error: "reference and verseText are required" });
+      }
+      const [card] = await db
+        .insert(schema.memorizationCards)
+        .values({
+          userId,
+          reference: String(reference).slice(0, 120),
+          verseText: verseText.trim(),
+          dueDate: todayDateString(),
+        })
+        .onConflictDoNothing()
+        .returning();
+      res.status(201).json({ card: card || null, alreadyExists: !card });
+    } catch (error) {
+      console.error("Error creating memorization card:", error);
+      res.status(500).json({ error: "Failed to create memorization card" });
+    }
+  });
+
+  app.post("/api/memorization/cards/:id/review", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const id = parseInt(req.params.id);
+      const { grade } = req.body as { grade?: ReviewGrade };
+      if (isNaN(id) || !grade || !["again", "hard", "good", "easy"].includes(grade)) {
+        return res.status(400).json({ error: "Invalid id or grade" });
+      }
+      const [card] = await db
+        .select()
+        .from(schema.memorizationCards)
+        .where(and(eq(schema.memorizationCards.id, id), eq(schema.memorizationCards.userId, userId)))
+        .limit(1);
+      if (!card) return res.status(404).json({ error: "Card not found" });
+
+      const next = scheduleNextReview(
+        { easeFactor: card.easeFactor, intervalDays: card.intervalDays, repetitions: card.repetitions },
+        grade
+      );
+
+      const [updated] = await db
+        .update(schema.memorizationCards)
+        .set({
+          easeFactor: next.easeFactor,
+          intervalDays: next.intervalDays,
+          repetitions: next.repetitions,
+          dueDate: next.dueDate,
+          lastReviewedAt: new Date(),
+        })
+        .where(eq(schema.memorizationCards.id, id))
+        .returning();
+
+      res.json({ card: updated });
+    } catch (error) {
+      console.error("Error reviewing memorization card:", error);
+      res.status(500).json({ error: "Failed to review card" });
+    }
+  });
+
+  app.delete("/api/memorization/cards/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+      await db.delete(schema.memorizationCards).where(and(eq(schema.memorizationCards.id, id), eq(schema.memorizationCards.userId, userId)));
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("Error deleting memorization card:", error);
+      res.status(500).json({ error: "Failed to delete memorization card" });
     }
   });
 

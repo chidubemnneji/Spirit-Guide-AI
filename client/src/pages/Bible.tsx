@@ -12,17 +12,18 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2, ImageDown } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2, ImageDown, Brain } from "lucide-react";
 import { shareVerseImage } from "@/lib/verseImage";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 import { BIBLE_VERSE_PATTERN, normalizeBookName } from "@/lib/bibleUtils";
 
 interface BookmarkGroup {
-  id: string;
+  id: number;
   verses: { number: string; text: string }[];
   reference: string;
-  dateSaved: Date;
+  dateSaved: Date | string;
 }
 
 const VERSE_OF_THE_DAY = {
@@ -98,6 +99,113 @@ function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) 
   );
 }
 
+interface MemorizationCardData {
+  id: number;
+  reference: string;
+  verseText: string;
+  dueDate: string;
+}
+
+const GRADE_BUTTONS: { grade: "again" | "hard" | "good" | "easy"; label: string; color: string }[] = [
+  { grade: "again", label: "Again", color: "var(--app-danger)" },
+  { grade: "hard", label: "Hard", color: "var(--app-amber)" },
+  { grade: "good", label: "Good", color: "var(--app-green)" },
+  { grade: "easy", label: "Easy", color: "var(--app-green)" },
+];
+
+// A spaced-repetition flashcard review flow — cards are seeded from the
+// user's saved verse collection (see handleAddToMemorization) and scheduled
+// server-side with a standard SM-2 algorithm.
+function MemorizeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [revealed, setRevealed] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+
+  const { data, refetch } = useQuery<{ cards: MemorizationCardData[]; dueCards: MemorizationCardData[] }>({
+    queryKey: ["/api/memorization/cards"],
+    enabled: open,
+  });
+
+  const dueCards = data?.dueCards || [];
+  const current = dueCards[0];
+
+  const handleGrade = async (grade: "again" | "hard" | "good" | "easy") => {
+    if (!current || reviewing) return;
+    setReviewing(true);
+    try {
+      await fetch(`/api/memorization/cards/${current.id}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ grade }),
+      });
+      setRevealed(false);
+      await refetch();
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="bottom" className="h-[70vh] flex flex-col">
+        <SheetHeader>
+          <SheetTitle className="font-serif" style={{ color: "var(--app-dark)" }}>Memorize</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          {!data ? (
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--app-green)" }} />
+          ) : !current ? (
+            <div className="text-center">
+              <Brain className="w-10 h-10 mx-auto mb-4" style={{ color: "var(--app-border)" }} />
+              <p className="font-serif text-[22px] text-[var(--app-dark)] mb-2">
+                {data.cards.length === 0 ? "No verses to memorize yet." : "All caught up!"}
+              </p>
+              <p className="text-[14px] text-[var(--app-gray-lt)]">
+                {data.cards.length === 0
+                  ? "Save a verse in your collection, then tap the brain icon to add it here."
+                  : `You have ${data.cards.length} verse${data.cards.length === 1 ? "" : "s"} in rotation — come back when the next one is due.`}
+              </p>
+            </div>
+          ) : (
+            <div className="w-full max-w-md text-center">
+              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase mb-6" style={{ color: "var(--app-gray-lt)" }}>
+                {dueCards.length} due today
+              </p>
+              <p className="text-[13px] font-semibold tracking-wide mb-4" style={{ color: "var(--app-green)" }}>{current.reference}</p>
+              {revealed ? (
+                <p className="font-serif text-[22px] leading-relaxed text-[var(--app-dark)] mb-8">"{current.verseText}"</p>
+              ) : (
+                <button
+                  onClick={() => setRevealed(true)}
+                  className="w-full py-16 border border-dashed mb-8"
+                  style={{ borderColor: "var(--app-border)", color: "var(--app-gray-lt)" }}
+                >
+                  Tap to reveal
+                </button>
+              )}
+              {revealed && (
+                <div className="grid grid-cols-4 gap-2">
+                  {GRADE_BUTTONS.map((b) => (
+                    <button
+                      key={b.grade}
+                      onClick={() => handleGrade(b.grade)}
+                      disabled={reviewing}
+                      className="py-3 text-[12px] font-semibold uppercase tracking-wide border disabled:opacity-40"
+                      style={{ borderColor: b.color, color: b.color }}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export default function Bible() {
   const {
     currentVersion,
@@ -117,10 +225,12 @@ export default function Bible() {
   const [animateContent, setAnimateContent] = useState(false);
   const [bookmarkGroups, setBookmarkGroups] = useState<BookmarkGroup[]>([]);
   const [bookmarksSheetOpen, setBookmarksSheetOpen] = useState(false);
+  const [memorizeSheetOpen, setMemorizeSheetOpen] = useState(false);
   const [showReader, setShowReader] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const { toast } = useToast();
   const urlProcessedRef = useRef(false);
   const lastScrollY = useRef(0);
   const [, navigate] = useLocation();
@@ -194,6 +304,15 @@ export default function Bible() {
       setCurrentVersion(kjv || versions[0]);
     }
   }, [versions, currentVersion, setCurrentVersion]);
+
+  // Load previously saved verses — these used to live only in local state
+  // and vanished on refresh; now they're persisted server-side.
+  useEffect(() => {
+    fetch("/api/bible/saved", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.bookmarks) setBookmarkGroups(d.bookmarks); })
+      .catch(() => {});
+  }, []);
 
   // Default the compare-panel's second version to whichever isn't the one
   // already being read.
@@ -496,16 +615,26 @@ export default function Bible() {
       ? `${currentChapter.reference}:${firstVerse}`
       : `${currentChapter.reference}:${firstVerse}-${lastVerse}`;
     const verseText = sortedVerses.map(v => v.text).join(" ");
-
-    // Also keep local bookmark state for the session
-    const newBookmark: BookmarkGroup = {
-      id: `${reference}-${Date.now()}`,
-      verses: sortedVerses,
-      reference,
-      dateSaved: new Date(),
-    };
-    setBookmarkGroups([...bookmarkGroups, newBookmark]);
     setHighlightedVerses(new Set());
+
+    // Persist to the saved-verses collection (backs both this reader's
+    // bookmarks sheet and the Account page's "Saved Passages").
+    try {
+      const res = await fetch("/api/bible/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reference, verses: sortedVerses }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.bookmark) {
+          setBookmarkGroups(prev => [d.bookmark, ...prev.filter(b => b.reference !== reference)]);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to save verse:", e);
+    }
 
     // Save to prayer journal
     try {
@@ -521,6 +650,37 @@ export default function Bible() {
       });
     } catch (e) {
       console.error("Failed to save verse to journal:", e);
+    }
+  };
+
+  const handleDeleteBookmark = async (id: number) => {
+    setBookmarkGroups(prev => prev.filter(b => b.id !== id));
+    try {
+      await fetch(`/api/bible/saved/${id}`, { method: "DELETE", credentials: "include" });
+    } catch (e) {
+      console.error("Failed to delete saved verse:", e);
+    }
+  };
+
+  const handleAddToMemorization = async (bookmark: BookmarkGroup) => {
+    const verseText = bookmark.verses.map(v => v.text).join(" ");
+    try {
+      const res = await fetch("/api/memorization/cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reference: bookmark.reference, verseText }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.alreadyExists) {
+          toast({ title: "Already memorizing this verse" });
+        } else {
+          toast({ title: "Added to memorization", description: bookmark.reference });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to add to memorization:", e);
     }
   };
 
@@ -787,6 +947,21 @@ export default function Bible() {
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
           </button>
+
+          <button
+            onClick={() => setMemorizeSheetOpen(true)}
+            className="w-full text-left px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-center justify-between"
+            data-testid="card-memorize"
+          >
+            <div>
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] block mb-1 flex items-center gap-1.5">
+                <Brain className="w-3.5 h-3.5" /> Spaced Repetition
+              </span>
+              <p className="font-serif text-[22px] text-[var(--app-dark)] mb-1">Memorize</p>
+              <p className="text-[14px] text-[var(--app-gray-lt)]">Review your saved verses until they're second nature</p>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
         </div>
 
         {/* Verse of the Day — live from today's devotional */}
@@ -930,10 +1105,19 @@ export default function Bible() {
                             <MessageCircle className="w-4 h-4" />
                           </button>
                           <button
+                            className="p-1"
+                            style={{ color: "var(--app-green)" }}
+                            onClick={(e) => { e.stopPropagation(); handleAddToMemorization(bookmark); }}
+                            data-testid={`button-memorize-bookmark-${bookmark.id}`}
+                            title="Add to memorization"
+                          >
+                            <Brain className="w-4 h-4" />
+                          </button>
+                          <button
                             className="p-1 text-red-600"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setBookmarkGroups(bookmarkGroups.filter(b => b.id !== bookmark.id));
+                              handleDeleteBookmark(bookmark.id);
                             }}
                             data-testid={`button-remove-bookmark-${bookmark.id}`}
                           >
@@ -948,6 +1132,8 @@ export default function Bible() {
             </ScrollArea>
           </SheetContent>
         </Sheet>
+
+        <MemorizeSheet open={memorizeSheetOpen} onClose={() => setMemorizeSheetOpen(false)} />
         </div>
       </div>
     );

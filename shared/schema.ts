@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, timestamp, jsonb, index, uniqueIndex, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -494,6 +494,44 @@ export const weeklyRecaps = pgTable("weekly_recaps", {
 }));
 
 export type WeeklyRecap = typeof weeklyRecaps.$inferSelect;
+
+// Saved verses ("Your Verse Collection" in the Bible reader). This backs
+// both the reader's own bookmarks sheet and the Account page's "Saved
+// Passages" section — previously the reader only kept bookmarks in local
+// component state (lost on refresh) while Account queried a /api/bible/saved
+// endpoint that didn't exist, so "Saved Passages" was always empty.
+export const savedVerses = pgTable("saved_verses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  reference: varchar("reference", { length: 120 }).notNull(),
+  verses: jsonb("verses").notNull(), // { number: string; text: string }[]
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (t) => ({
+  userRefIdx: uniqueIndex("saved_verses_user_ref_idx").on(t.userId, t.reference),
+}));
+
+export type SavedVerse = typeof savedVerses.$inferSelect;
+
+// Verse memorization flashcards — a lightweight SM-2 spaced-repetition
+// scheduler. Cards are usually added from a saved verse, but can reference
+// any verse text directly.
+export const memorizationCards = pgTable("memorization_cards", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  reference: varchar("reference", { length: 120 }).notNull(),
+  verseText: text("verse_text").notNull(),
+  easeFactor: real("ease_factor").default(2.5).notNull(),
+  intervalDays: integer("interval_days").default(0).notNull(),
+  repetitions: integer("repetitions").default(0).notNull(),
+  dueDate: varchar("due_date", { length: 10 }).notNull(), // YYYY-MM-DD, due today when created
+  lastReviewedAt: timestamp("last_reviewed_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (t) => ({
+  userRefIdx: uniqueIndex("memorization_cards_user_ref_idx").on(t.userId, t.reference),
+  userDueIdx: index("memorization_cards_user_due_idx").on(t.userId, t.dueDate),
+}));
+
+export type MemorizationCard = typeof memorizationCards.$inferSelect;
 
 export const insertPrayerJournalSchema = createInsertSchema(prayerJournalEntries).omit({
   id: true,
