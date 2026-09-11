@@ -12,7 +12,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2, ImageDown } from "lucide-react";
+import { shareVerseImage } from "@/lib/verseImage";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 import { BIBLE_VERSE_PATTERN, normalizeBookName } from "@/lib/bibleUtils";
@@ -34,9 +35,23 @@ function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) 
     queryKey: ["/api/devotional/today"],
     staleTime: 1000 * 60 * 10,
   });
+  const [sharingImage, setSharingImage] = useState(false);
 
   const text = data?.data?.scriptureText || VERSE_OF_THE_DAY.text;
   const reference = data?.data?.scriptureReference || VERSE_OF_THE_DAY.reference;
+
+  const handleShareImage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (sharingImage) return;
+    setSharingImage(true);
+    try {
+      await shareVerseImage(text, reference);
+    } catch (err) {
+      console.error("Verse image share failed:", err);
+    } finally {
+      setSharingImage(false);
+    }
+  };
 
   return (
     <motion.div
@@ -44,16 +59,32 @@ function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.6 }}
     >
-      <button
-        className="w-full text-left px-6 py-7 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]"
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full text-left px-6 py-7 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] cursor-pointer"
         onClick={() => onNavigate(reference)}
+        onKeyDown={(e) => { if (e.key === "Enter") onNavigate(reference); }}
         data-testid="card-verse-of-the-day"
       >
-        <div className="flex items-center gap-2 mb-3">
-          <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--app-green)" }} />
-          <span className="text-[10px] font-semibold tracking-[0.15em] uppercase" style={{ color: "var(--app-green)" }}>
-            Verse of the Day
-          </span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-3.5 h-3.5" style={{ color: "var(--app-green)" }} />
+            <span className="text-[10px] font-semibold tracking-[0.15em] uppercase" style={{ color: "var(--app-green)" }}>
+              Verse of the Day
+            </span>
+          </div>
+          <button
+            onClick={handleShareImage}
+            disabled={sharingImage}
+            className="p-1 disabled:opacity-40"
+            style={{ color: "var(--app-gray-lt)" }}
+            aria-label="Share as image"
+            title="Share as image"
+            data-testid="button-share-verse-of-day-image"
+          >
+            {sharingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />}
+          </button>
         </div>
         <p className="font-serif text-[19px] leading-relaxed italic text-[var(--app-dark)]">
           "{text}"
@@ -62,7 +93,7 @@ function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) 
           <p className="text-[13px] font-semibold tracking-wide" style={{ color: "var(--app-green)" }}>{reference}</p>
           <span className="text-[11px] text-[var(--app-gray-lt)]">Read in context →</span>
         </div>
-      </button>
+      </div>
     </motion.div>
   );
 }
@@ -89,6 +120,7 @@ export default function Bible() {
   const [showReader, setShowReader] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const urlProcessedRef = useRef(false);
   const lastScrollY = useRef(0);
   const [, navigate] = useLocation();
@@ -492,9 +524,30 @@ export default function Bible() {
     }
   };
 
+  const handleShareVerseImage = async (verses: { number: string; text: string }[]) => {
+    if (highlightedVerses.size === 0 || !currentChapter || generatingImage) return;
+    const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
+    if (selectedVerses.length === 0) return;
+
+    const sorted = selectedVerses.sort((a, b) => parseInt(a.number) - parseInt(b.number));
+    const first = sorted[0].number;
+    const last = sorted[sorted.length - 1].number;
+    const ref = first === last ? `${currentChapter.reference}:${first}` : `${currentChapter.reference}:${first}-${last}`;
+    const text = sorted.map(v => v.text).join(" ");
+
+    setGeneratingImage(true);
+    try {
+      await shareVerseImage(text, ref);
+    } catch (err) {
+      console.error("Verse image share failed:", err);
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
   const handleReflectHighlighted = async (verses: { number: string; text: string }[]) => {
     if (highlightedVerses.size === 0 || !currentChapter) return;
-    
+
     const selectedVerses = verses.filter(v => highlightedVerses.has(v.number));
     if (selectedVerses.length === 0) return;
     
@@ -1253,6 +1306,16 @@ export default function Bible() {
                       >
                         <Share2 className="w-4 h-4 mr-1" />
                         Share
+                      </button>
+                      <button
+                        className="flex items-center px-3 py-1.5 text-[12px] font-semibold disabled:opacity-40"
+                        style={{ color: "var(--app-green)" }}
+                        onClick={() => handleShareVerseImage(verses)}
+                        disabled={generatingImage}
+                        data-testid="button-share-verse-image"
+                        title="Share as image"
+                      >
+                        {generatingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />}
                       </button>
                       <button
                         className="p-1.5"
