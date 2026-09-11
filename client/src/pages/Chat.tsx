@@ -457,14 +457,14 @@ export default function Chat() {
               <Loader2 className="w-6 h-6 animate-spin text-[var(--app-green)]" />
             ) : (
               <div className="w-full max-w-xl mx-auto">
-                <p className="font-serif text-[44px] text-[var(--app-dark)] mb-4 leading-tight">How are you feeling?</p>
-                <p className="text-[18px] text-[var(--app-gray-lt)] mb-12 leading-relaxed max-w-md mx-auto">{getWelcomeMessage()}</p>
+                <p className="font-serif text-[28px] md:text-[44px] text-[var(--app-dark)] mb-3 md:mb-4 leading-tight">How are you feeling?</p>
+                <p className="text-[15px] md:text-[18px] text-[var(--app-gray-lt)] mb-8 md:mb-12 leading-relaxed max-w-md mx-auto">{getWelcomeMessage()}</p>
                 <div className="w-full space-y-3">
                   {STARTERS.map((s, i) => (
                     <button key={i} onClick={() => { setInput(s); textareaRef.current?.focus(); }}
-                      className="w-full text-left px-7 py-6 bg-[var(--app-white)] border border-[var(--app-border)] rounded-2xl flex items-center justify-between transition-colors hover:border-[var(--app-green)]"
+                      className="w-full text-left px-5 py-5 md:px-7 md:py-6 bg-[var(--app-white)] border border-[var(--app-border)] rounded-2xl flex items-center justify-between transition-colors hover:border-[var(--app-green)]"
                       data-testid={`button-starter-${i}`}>
-                      <span className="font-serif text-[21px] text-[var(--app-dark)]">{s}</span>
+                      <span className="font-serif text-[16px] md:text-[21px] text-[var(--app-dark)]">{s}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
                     </button>
                   ))}
