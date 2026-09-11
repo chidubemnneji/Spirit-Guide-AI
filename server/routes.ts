@@ -14,6 +14,7 @@ import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
 import { getOrGenerateWeeklyRecap } from "./services/weeklyRecapService";
 import { scheduleNextReview, todayDateString, type ReviewGrade } from "./services/memorizationService";
+import { READING_PLANS, getReadingPlan } from "./data/readingPlans";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
 import { flags, isEnabled, isEnabledForUser, getAIModel } from "./flags";
@@ -1769,6 +1770,149 @@ I'm here to listen whenever you're ready to talk.`;
     } catch (error) {
       console.error("Error deleting memorization card:", error);
       res.status(500).json({ error: "Failed to delete memorization card" });
+    }
+  });
+
+  // ── Bible Reading Plans ─────────────────────────────────────────────────────
+  // The catalog itself is static (server/data/readingPlans.ts); only
+  // per-user progress lives in the database.
+  app.get("/api/reading-plans", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const progressRows = await db
+        .select()
+        .from(schema.userReadingPlans)
+        .where(eq(schema.userReadingPlans.userId, userId));
+      const progressByPlan = new Map(progressRows.map((r) => [r.planId, r]));
+
+      const plans = READING_PLANS.map((plan) => {
+        const progress = progressByPlan.get(plan.id);
+        return {
+          id: plan.id,
+          title: plan.title,
+          description: plan.description,
+          category: plan.category,
+          totalDays: plan.days.length,
+          isStarted: !!progress,
+          completedDays: (progress?.completedDays as number[] | undefined) || [],
+          isCompleted: !!progress?.completedAt,
+          startedAt: progress?.startedAt || null,
+        };
+      });
+
+      res.json({ plans });
+    } catch (error) {
+      console.error("Error fetching reading plans:", error);
+      res.status(500).json({ error: "Failed to fetch reading plans" });
+    }
+  });
+
+  app.get("/api/reading-plans/:planId/days/:day", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const plan = getReadingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Plan not found" });
+      const dayNum = parseInt(req.params.day);
+      const dayEntry = plan.days.find((d) => d.day === dayNum);
+      if (!dayEntry) return res.status(404).json({ error: "Day not found" });
+
+      let verseText = "";
+      try {
+        const versions = await bibleAPI.getVersions();
+        const bibleId = versions[0]?.id;
+        if (bibleId) {
+          const hits = await bibleAPI.search(bibleId, dayEntry.reference, 1);
+          verseText = hits[0]?.text || "";
+        }
+      } catch {
+        // Leave verseText empty — the client still shows the reference and prompt,
+        // and can navigate into the reader for the full text.
+      }
+
+      res.json({
+        planId: plan.id,
+        planTitle: plan.title,
+        totalDays: plan.days.length,
+        day: dayEntry.day,
+        reference: dayEntry.reference,
+        prompt: dayEntry.prompt,
+        verseText,
+      });
+    } catch (error) {
+      console.error("Error fetching reading plan day:", error);
+      res.status(500).json({ error: "Failed to fetch reading plan day" });
+    }
+  });
+
+  app.post("/api/reading-plans/:planId/start", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const plan = getReadingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Plan not found" });
+
+      const [progress] = await db
+        .insert(schema.userReadingPlans)
+        .values({ userId, planId: plan.id, completedDays: [] })
+        .onConflictDoUpdate({
+          target: [schema.userReadingPlans.userId, schema.userReadingPlans.planId],
+          // Restarting a plan (including a completed one) resets progress.
+          set: { completedDays: [], startedAt: new Date(), completedAt: null, lastReadAt: null },
+        })
+        .returning();
+
+      res.status(201).json({ progress });
+    } catch (error) {
+      console.error("Error starting reading plan:", error);
+      res.status(500).json({ error: "Failed to start reading plan" });
+    }
+  });
+
+  app.post("/api/reading-plans/:planId/days/:day/complete", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const plan = getReadingPlan(req.params.planId);
+      if (!plan) return res.status(404).json({ error: "Plan not found" });
+      const dayNum = parseInt(req.params.day);
+      if (!plan.days.some((d) => d.day === dayNum)) {
+        return res.status(400).json({ error: "Invalid day for this plan" });
+      }
+
+      const [existing] = await db
+        .select()
+        .from(schema.userReadingPlans)
+        .where(and(eq(schema.userReadingPlans.userId, userId), eq(schema.userReadingPlans.planId, plan.id)))
+        .limit(1);
+      if (!existing) return res.status(404).json({ error: "Plan not started" });
+
+      const completedDays = Array.from(new Set([...(existing.completedDays as number[]), dayNum])).sort((a, b) => a - b);
+      const isNowComplete = completedDays.length >= plan.days.length;
+
+      const [updated] = await db
+        .update(schema.userReadingPlans)
+        .set({
+          completedDays,
+          lastReadAt: new Date(),
+          completedAt: isNowComplete ? (existing.completedAt || new Date()) : null,
+        })
+        .where(eq(schema.userReadingPlans.id, existing.id))
+        .returning();
+
+      res.json({ progress: updated });
+    } catch (error) {
+      console.error("Error completing reading plan day:", error);
+      res.status(500).json({ error: "Failed to complete reading plan day" });
+    }
+  });
+
+  app.delete("/api/reading-plans/:planId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId!;
+      await db
+        .delete(schema.userReadingPlans)
+        .where(and(eq(schema.userReadingPlans.userId, userId), eq(schema.userReadingPlans.planId, req.params.planId)));
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("Error abandoning reading plan:", error);
+      res.status(500).json({ error: "Failed to abandon reading plan" });
     }
   });
 

@@ -12,7 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2, ImageDown, Brain } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2, ImageDown, Brain, CalendarCheck } from "lucide-react";
 import { shareVerseImage } from "@/lib/verseImage";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -959,6 +959,21 @@ export default function Bible() {
               </span>
               <p className="font-serif text-[22px] text-[var(--app-dark)] mb-1">Memorize</p>
               <p className="text-[14px] text-[var(--app-gray-lt)]">Review your saved verses until they're second nature</p>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
+
+          <button
+            onClick={() => navigate("/reading-plans")}
+            className="w-full text-left px-6 py-6 bg-[var(--app-white)] border-b border-[var(--app-border-soft)] flex items-center justify-between"
+            data-testid="card-reading-plans"
+          >
+            <div>
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] block mb-1 flex items-center gap-1.5">
+                <CalendarCheck className="w-3.5 h-3.5" /> Guided Plans
+              </span>
+              <p className="font-serif text-[22px] text-[var(--app-dark)] mb-1">Reading Plans</p>
+              <p className="text-[14px] text-[var(--app-gray-lt)]">Short, themed plans on peace, gratitude, and more</p>
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--app-border)" strokeWidth="1.5" strokeLinecap="square"><path d="M9 18l6-6-6-6" /></svg>
           </button>

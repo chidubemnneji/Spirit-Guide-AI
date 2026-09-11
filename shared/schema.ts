@@ -533,6 +533,24 @@ export const memorizationCards = pgTable("memorization_cards", {
 
 export type MemorizationCard = typeof memorizationCards.$inferSelect;
 
+// Bible reading plans — the plan catalog itself (title, day-by-day
+// references/prompts) is static content in server/data/readingPlans.ts, not
+// a DB table, since it's curated by us rather than user-generated. This
+// table only tracks each user's progress through a plan.
+export const userReadingPlans = pgTable("user_reading_plans", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  planId: varchar("plan_id", { length: 60 }).notNull(), // matches an id in the static catalog
+  completedDays: jsonb("completed_days").default(sql`'[]'::jsonb`).notNull(), // number[]
+  startedAt: timestamp("started_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  completedAt: timestamp("completed_at"),
+  lastReadAt: timestamp("last_read_at"),
+}, (t) => ({
+  userPlanIdx: uniqueIndex("user_reading_plans_user_plan_idx").on(t.userId, t.planId),
+}));
+
+export type UserReadingPlan = typeof userReadingPlans.$inferSelect;
+
 export const insertPrayerJournalSchema = createInsertSchema(prayerJournalEntries).omit({
   id: true,
   createdAt: true,

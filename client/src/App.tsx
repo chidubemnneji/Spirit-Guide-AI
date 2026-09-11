@@ -27,6 +27,7 @@ import MeetPrayerPartner from "@/pages/MeetPrayerPartner";
 import NotFound from "@/pages/not-found";
 import Journal from "@/pages/Journal";
 import DevotionalReading from "@/pages/DevotionalReading";
+import ReadingPlans from "@/pages/ReadingPlans";
 import VerifyEmail from "@/pages/VerifyEmail";
 import { useFlags } from "@/hooks/useFlags";
 
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/account" component={() => <Protected component={Account} />} />
       <Route path="/journal" component={() => <Protected component={Journal} />} />
       <Route path="/devotional" component={() => <Protected component={DevotionalReading} />} />
+      <Route path="/reading-plans" component={() => <Protected component={ReadingPlans} />} />
       <Route component={NotFound} />
     </Switch>
   );
