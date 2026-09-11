@@ -410,7 +410,7 @@ export default function Devotion() {
           </div>
           <div className="px-6 py-7 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
             <h4 className="font-serif text-[20px] font-bold text-[var(--app-dark)] mb-2">{devotional.scriptureReference}</h4>
-            <p className="text-[16px] text-[var(--app-gray)] leading-relaxed mb-5 italic">"{devotional.scriptureText}"</p>
+            <p className="text-[var(--app-gray)] leading-relaxed mb-5 italic" style={{ fontSize: "calc(16px * var(--reading-scale, 1))" }}>"{devotional.scriptureText}"</p>
             <button
               onClick={() => setLocation(buildBibleLink(devotional.scriptureReference || ""))}
               className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[var(--app-green)] border border-[var(--app-green)] px-4 py-2"

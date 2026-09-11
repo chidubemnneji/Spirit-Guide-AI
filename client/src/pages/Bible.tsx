@@ -87,7 +87,7 @@ function TodaysVerseCard({ onNavigate }: { onNavigate: (ref: string) => void }) 
             {sharingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />}
           </button>
         </div>
-        <p className="font-serif text-[19px] leading-relaxed italic text-[var(--app-dark)]">
+        <p className="font-serif leading-relaxed italic text-[var(--app-dark)]" style={{ fontSize: "calc(19px * var(--reading-scale, 1))" }}>
           "{text}"
         </p>
         <div className="flex items-center justify-between mt-3">
@@ -173,7 +173,7 @@ function MemorizeSheet({ open, onClose }: { open: boolean; onClose: () => void }
               </p>
               <p className="text-[13px] font-semibold tracking-wide mb-4" style={{ color: "var(--app-green)" }}>{current.reference}</p>
               {revealed ? (
-                <p className="font-serif text-[22px] leading-relaxed text-[var(--app-dark)] mb-8">"{current.verseText}"</p>
+                <p className="font-serif leading-relaxed text-[var(--app-dark)] mb-8" style={{ fontSize: "calc(22px * var(--reading-scale, 1))" }}>"{current.verseText}"</p>
               ) : (
                 <button
                   onClick={() => setRevealed(true)}
@@ -1535,8 +1535,9 @@ export default function Bible() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.01 }}
                   onClick={() => handleVerseClick(verse.number)}
+                  style={{ fontSize: "calc(19px * var(--reading-scale, 1))" }}
                   className={cn(
-                    "font-serif text-[19px] leading-[1.7] py-2 px-3 -mx-3 cursor-pointer transition-colors",
+                    "font-serif leading-[1.7] py-2 px-3 -mx-3 cursor-pointer transition-colors",
                     highlightedVerses.has(verse.number) ? "bg-[var(--cta-bg)] text-[var(--cta-fg)]" : "hover:bg-[var(--app-green)]/5 text-[var(--app-dark)]"
                   )}
                 >

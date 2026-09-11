@@ -169,7 +169,7 @@ function EntryCard({ entry, onDelete, onAnswer }: { entry: PrayerJournalEntry; o
         {entry.verseReference && (
           <p className="text-[11px] font-semibold tracking-wider uppercase text-[var(--app-green)] mb-2">{entry.verseReference}</p>
         )}
-        <p className="font-serif text-[18px] text-[var(--app-dark)] leading-relaxed" style={{ WebkitLineClamp: expanded ? undefined : 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
+        <p className="font-serif text-[var(--app-dark)] leading-relaxed" style={{ fontSize: "calc(18px * var(--reading-scale, 1))", WebkitLineClamp: expanded ? undefined : 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
           {entry.content}
         </p>
         {isAnswered && entry.answerNote && (
@@ -308,8 +308,8 @@ export default function Journal() {
                         </span>
                       )}
                     </div>
-                    <p className="font-serif text-[17px] leading-[1.55] text-[var(--app-dark)] mt-2 mb-3"
-                       style={{ WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
+                    <p className="font-serif leading-[1.55] text-[var(--app-dark)] mt-2 mb-3"
+                       style={{ fontSize: "calc(17px * var(--reading-scale, 1))", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
                       {entry.content}
                     </p>
                     {isAnswered && entry.answerNote && (

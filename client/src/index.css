@@ -16,6 +16,9 @@
    hex, so the ThemeToggle actually changes something everywhere. */
 :root {
 
+  --reading-scale:     1;        /* user-adjustable text-size preference — see TextSizeContext;
+                                     applied only to Scripture/devotional/journal reading text,
+                                     not the rest of the UI */
   --app-bg:            #FFFFFF;  /* page background — clean white, not the earlier warm cream */
   --app-bg-warm:       #F7F7F6;  /* section bands, subtle raised areas */
   --app-bg-inner:      #F2F2F1;  /* nested/inner panels */

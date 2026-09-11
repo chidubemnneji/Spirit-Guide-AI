@@ -3,12 +3,45 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useTextSize, type TextSize } from "@/context/TextSizeContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, addDays, isToday } from "date-fns";
 import type { UserPersona } from "@shared/schema";
 
 interface UserStats { conversationCount: number; messageCount: number; practicesCompleted: number; currentStreak: number; longestStreak: number; }
+
+const TEXT_SIZE_OPTIONS: { value: TextSize; label: string; sample: string }[] = [
+  { value: "sm", label: "Small", sample: "text-[13px]" },
+  { value: "md", label: "Default", sample: "text-[15px]" },
+  { value: "lg", label: "Large", sample: "text-[18px]" },
+  { value: "xl", label: "Extra Large", sample: "text-[21px]" },
+];
+
+function TextSizeControl({ textSize, setTextSize }: { textSize: TextSize; setTextSize: (s: TextSize) => void }) {
+  return (
+    <div className="flex gap-2" role="group" aria-label="Reading text size">
+      {TEXT_SIZE_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => setTextSize(opt.value)}
+          className={`flex-1 py-2 font-serif border transition-colors ${opt.sample}`}
+          style={{
+            borderColor: textSize === opt.value ? "var(--app-green)" : "var(--app-border)",
+            color: textSize === opt.value ? "var(--app-green)" : "var(--app-gray-lt)",
+            background: textSize === opt.value ? "var(--app-bg-warm)" : "transparent",
+          }}
+          aria-pressed={textSize === opt.value}
+          aria-label={opt.label}
+          title={opt.label}
+          data-testid={`button-text-size-${opt.value}`}
+        >
+          Aa
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface WeeklyRecap {
   hasEnoughData: boolean;
@@ -96,6 +129,7 @@ export default function Account() {
 
   const handleLogout = async () => { await logout(); setLocation("/"); };
   const { theme, toggleTheme } = useTheme();
+  const { textSize, setTextSize } = useTextSize();
 
   const userName = user?.name || "Friend";
   const userInitials = userName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -209,6 +243,12 @@ export default function Account() {
               <button onClick={toggleTheme} role="switch" aria-checked={theme === "dark"} aria-label="Toggle dark mode" className="w-12 h-6 rounded-full relative transition-colors" style={{ background: theme === "dark" ? "var(--app-green)" : "var(--app-border)" }}>
                 <div className="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all" style={{ left: theme === "dark" ? "calc(100% - 20px)" : "4px" }} />
               </button>
+            </div>
+            {/* Text size */}
+            <div className="px-7 py-6 border-b border-[var(--app-border)]">
+              <p className="font-serif text-[18px] text-[var(--app-dark)] mb-1">Text Size</p>
+              <p className="text-[13px] text-[var(--app-gray-lt)] mt-0.5 mb-4">Scales Scripture, devotional, and journal reading text</p>
+              <TextSizeControl textSize={textSize} setTextSize={setTextSize} />
             </div>
             {/* Plan */}
             <div className="px-7 py-6 border-b border-[var(--app-border)] flex justify-between items-center">
@@ -419,6 +459,10 @@ export default function Account() {
             style={{ left: theme === "dark" ? "26px" : "4px" }}
           />
         </button>
+      </div>
+      <div className="px-6 py-5 bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
+        <span className="text-[14px] text-[var(--app-dark)] block mb-3">Text size</span>
+        <TextSizeControl textSize={textSize} setTextSize={setTextSize} />
       </div>
 
       {/* Logout */}

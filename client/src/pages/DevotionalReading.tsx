@@ -34,7 +34,10 @@ function SectionBlock({
           {label}
         </p>
       )}
-      <p className={accent ? "font-serif text-[18px] italic leading-relaxed text-[var(--app-dark)]" : "text-[15px] leading-relaxed text-[var(--app-gray)]"}>
+      <p
+        className={accent ? "font-serif italic leading-relaxed text-[var(--app-dark)]" : "leading-relaxed text-[var(--app-gray)]"}
+        style={{ fontSize: accent ? "calc(18px * var(--reading-scale, 1))" : "calc(15px * var(--reading-scale, 1))" }}
+      >
         {content}
       </p>
     </motion.div>
@@ -55,7 +58,7 @@ function PracticeBlock({ content, index }: { content: string; index: number }) {
           Try this today
         </p>
       </div>
-      <p className="text-[15px] text-[var(--app-gray)] leading-relaxed">{content}</p>
+      <p className="text-[var(--app-gray)] leading-relaxed" style={{ fontSize: "calc(15px * var(--reading-scale, 1))" }}>{content}</p>
     </motion.div>
   );
 }
@@ -95,7 +98,7 @@ function PrayerBlock({ content, index }: { content: string; index: number }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <p className="font-serif text-[16px] italic text-[var(--app-dark)] leading-relaxed px-6 pb-6">
+            <p className="font-serif italic text-[var(--app-dark)] leading-relaxed px-6 pb-6" style={{ fontSize: "calc(16px * var(--reading-scale, 1))" }}>
               "{content}"
             </p>
           </motion.div>
@@ -252,7 +255,7 @@ function TimedModeSection() {
               {isPlaying ? "Pause" : "Listen"}
             </button>
           </div>
-          <p className="text-[15px] text-[var(--app-gray)] leading-relaxed whitespace-pre-line">
+          <p className="text-[var(--app-gray)] leading-relaxed whitespace-pre-line" style={{ fontSize: "calc(15px * var(--reading-scale, 1))" }}>
             {timedText || eveningText}
           </p>
           <button
@@ -361,7 +364,7 @@ export default function DevotionalReading() {
               Verse of the day
             </span>
           </div>
-          <p className="font-serif text-[20px] leading-relaxed italic text-[var(--app-dark)] mb-3">
+          <p className="font-serif leading-relaxed italic text-[var(--app-dark)] mb-3" style={{ fontSize: "calc(20px * var(--reading-scale, 1))" }}>
             "{devotional.scriptureText}"
           </p>
           <p className="text-[13px] font-semibold" style={{ color: "var(--app-green)" }}>{devotional.scriptureReference}</p>
