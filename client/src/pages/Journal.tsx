@@ -16,14 +16,39 @@ const MOODS = [
   { id: "wrestling", emoji: "⚡", label: "Wrestling" },
 ];
 
+// A structured ACTS prayer flow (Adoration, Confession, Thanksgiving,
+// Supplication) — an alternative to free-writing that gives people who feel
+// stuck a shape to pray in. Sections combine into one journal entry on save,
+// so it needs no new schema or backend route.
+const ACTS_STEPS = [
+  { id: "adoration", emoji: "🙌", label: "Adoration", prompt: "Who is God to you right now? Praise Him for who He is." },
+  { id: "confession", emoji: "🕯️", label: "Confession", prompt: "Is there anything weighing on your conscience you want to bring to Him?" },
+  { id: "thanksgiving", emoji: "🎁", label: "Thanksgiving", prompt: "What are you thankful for today, big or small?" },
+  { id: "supplication", emoji: "🤲", label: "Supplication", prompt: "What do you need? For yourself, or for someone else." },
+] as const;
+
+function combineActsEntry(values: Record<string, string>): string {
+  return ACTS_STEPS
+    .filter((step) => values[step.id]?.trim())
+    .map((step) => `${step.emoji} ${step.label}\n${values[step.id].trim()}`)
+    .join("\n\n");
+}
+
 function NewEntrySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [mode, setMode] = useState<"free" | "guided">("free");
   const [content, setContent] = useState("");
+  const [actsValues, setActsValues] = useState<Record<string, string>>({});
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const finalContent = mode === "guided" ? combineActsEntry(actsValues) : content;
+
   const createMutation = useMutation({
-    mutationFn: async () => { await apiRequest("POST", "/api/journal", { content, mood: selectedMood, verseReference: null, verseText: null }); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/journal"] }); setContent(""); setSelectedMood(null); onClose(); },
+    mutationFn: async () => { await apiRequest("POST", "/api/journal", { content: finalContent, mood: selectedMood, verseReference: null, verseText: null }); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
+      setContent(""); setActsValues({}); setSelectedMood(null); onClose();
+    },
     onError: () => toast({ variant: "destructive", title: "Couldn't save entry" }),
   });
 
@@ -33,7 +58,7 @@ function NewEntrySheet({ open, onClose }: { open: boolean; onClose: () => void }
         <>
           <motion.div className="fixed inset-0 bg-black/40 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
-            className="fixed bottom-0 left-0 right-0 bg-[var(--app-white)] z-50 flex flex-col"
+            className="fixed bottom-0 left-0 right-0 bg-[var(--app-white)] z-50 flex flex-col max-h-[88vh]"
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
           >
@@ -42,7 +67,25 @@ function NewEntrySheet({ open, onClose }: { open: boolean; onClose: () => void }
               <button onClick={onClose}><X size={20} className="text-[var(--app-gray-lt)]" /></button>
             </div>
 
-            <div className="px-6 py-4">
+            {/* Free write / Guided prayer toggle */}
+            <div className="flex px-6 pt-4 gap-2">
+              {(["free", "guided"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className="flex-1 py-2.5 text-[12px] font-semibold tracking-wider uppercase border transition-colors"
+                  style={{
+                    background: mode === m ? "var(--cta-bg)" : "transparent",
+                    color: mode === m ? "var(--cta-fg)" : "var(--app-gray-lt)",
+                    borderColor: mode === m ? "var(--app-green)" : "var(--app-border)",
+                  }}
+                >
+                  {m === "free" ? "Free write" : "Guided prayer (ACTS)"}
+                </button>
+              ))}
+            </div>
+
+            <div className="px-6 py-4 overflow-y-auto">
               {/* Mood picker */}
               <div className="section-band -mx-6 mb-4"><span>How are you feeling?</span></div>
               <div className="flex gap-2 flex-wrap mb-4">
@@ -59,16 +102,33 @@ function NewEntrySheet({ open, onClose }: { open: boolean; onClose: () => void }
                 ))}
               </div>
 
-              <textarea
-                autoFocus value={content} onChange={e => setContent(e.target.value)}
-                placeholder="Write your prayer or reflection..."
-                rows={8}
-                className="w-full font-serif text-[18px] text-[var(--app-dark)] bg-[var(--app-bg)] px-4 py-3 resize-none outline-none border border-[var(--app-border)] focus:border-[var(--app-green)] transition-colors mb-4"
-              />
+              {mode === "free" ? (
+                <textarea
+                  autoFocus value={content} onChange={e => setContent(e.target.value)}
+                  placeholder="Write your prayer or reflection..."
+                  rows={8}
+                  className="w-full font-serif text-[18px] text-[var(--app-dark)] bg-[var(--app-bg)] px-4 py-3 resize-none outline-none border border-[var(--app-border)] focus:border-[var(--app-green)] transition-colors mb-4"
+                />
+              ) : (
+                <div className="space-y-4 mb-4">
+                  {ACTS_STEPS.map((step) => (
+                    <div key={step.id}>
+                      <p className="text-[13px] font-semibold text-[var(--app-dark)] mb-1">{step.emoji} {step.label}</p>
+                      <p className="text-[12px] text-[var(--app-gray-lt)] mb-2">{step.prompt}</p>
+                      <textarea
+                        value={actsValues[step.id] || ""}
+                        onChange={(e) => setActsValues((v) => ({ ...v, [step.id]: e.target.value }))}
+                        rows={2}
+                        className="w-full font-serif text-[16px] text-[var(--app-dark)] bg-[var(--app-bg)] px-4 py-3 resize-none outline-none border border-[var(--app-border)] focus:border-[var(--app-green)] transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <button
                 onClick={() => createMutation.mutate()}
-                disabled={!content.trim() || createMutation.isPending}
+                disabled={!finalContent.trim() || createMutation.isPending}
                 className="w-full py-4 font-semibold text-[13px] tracking-[0.2em] uppercase disabled:opacity-40 flex items-center justify-center gap-2 mb-6"
                 style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}
                 data-testid="button-save-journal-entry"
@@ -357,26 +417,49 @@ export default function Journal() {
 
 // Desktop inline composer — persistent writing pane (mirrors NewEntrySheet logic).
 function DesktopComposer() {
+  const [mode, setMode] = useState<"free" | "guided">("free");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [actsValues, setActsValues] = useState<Record<string, string>>({});
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const finalContent = mode === "guided" ? combineActsEntry(actsValues) : content;
+
   const createMutation = useMutation({
     mutationFn: async () => {
-      const body = title.trim() ? `${title.trim()}\n\n${content}` : content;
+      const body = title.trim() ? `${title.trim()}\n\n${finalContent}` : finalContent;
       await apiRequest("POST", "/api/journal", { content: body, mood: selectedMood, verseReference: null, verseText: null });
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/journal"] }); setTitle(""); setContent(""); setSelectedMood(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
+      setTitle(""); setContent(""); setActsValues({}); setSelectedMood(null);
+    },
     onError: () => toast({ variant: "destructive", title: "Couldn't save entry" }),
   });
 
   return (
     <section className="flex flex-col">
-      <div className="px-8 py-4 border-b border-[var(--app-dark)]">
+      <div className="px-8 py-4 border-b border-[var(--app-dark)] flex items-center justify-between">
         <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">New Entry</span>
+        <div className="flex gap-2">
+          {(["free", "guided"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className="px-3 py-1.5 text-[10px] font-semibold tracking-wider uppercase border transition-colors"
+              style={{
+                background: mode === m ? "var(--cta-bg)" : "transparent",
+                color: mode === m ? "var(--cta-fg)" : "var(--app-gray-lt)",
+                borderColor: mode === m ? "var(--app-green)" : "var(--app-border)",
+              }}
+            >
+              {m === "free" ? "Free write" : "Guided (ACTS)"}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex-1 flex flex-col px-8 py-8">
+      <div className="flex-1 flex flex-col px-8 py-8 overflow-y-auto">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -384,12 +467,29 @@ function DesktopComposer() {
           className="w-full font-serif text-[40px] leading-tight text-[var(--app-dark)] bg-transparent outline-none placeholder:text-[var(--app-placeholder)] mb-5"
         />
         <div className="border-t border-[var(--app-border)] pt-6 flex-1">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Speak your truth into the silence. What is on your heart today?"
-            className="w-full h-full min-h-[280px] font-serif text-[20px] leading-[1.7] text-[var(--app-gray)] bg-transparent outline-none resize-none placeholder:text-[var(--app-placeholder)]"
-          />
+          {mode === "free" ? (
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Speak your truth into the silence. What is on your heart today?"
+              className="w-full h-full min-h-[280px] font-serif text-[20px] leading-[1.7] text-[var(--app-gray)] bg-transparent outline-none resize-none placeholder:text-[var(--app-placeholder)]"
+            />
+          ) : (
+            <div className="space-y-6">
+              {ACTS_STEPS.map((step) => (
+                <div key={step.id}>
+                  <p className="text-[15px] font-semibold text-[var(--app-dark)] mb-1">{step.emoji} {step.label}</p>
+                  <p className="text-[13px] text-[var(--app-gray-lt)] mb-2">{step.prompt}</p>
+                  <textarea
+                    value={actsValues[step.id] || ""}
+                    onChange={(e) => setActsValues((v) => ({ ...v, [step.id]: e.target.value }))}
+                    rows={2}
+                    className="w-full font-serif text-[17px] leading-[1.6] text-[var(--app-gray)] bg-transparent outline-none resize-none border-b border-[var(--app-border)] focus:border-[var(--app-green)] transition-colors pb-2 placeholder:text-[var(--app-placeholder)]"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="border-t border-[var(--app-border)] pt-6 flex items-end justify-between">
           <div>
@@ -410,7 +510,7 @@ function DesktopComposer() {
           </div>
           <button
             onClick={() => createMutation.mutate()}
-            disabled={!content.trim() || createMutation.isPending}
+            disabled={!finalContent.trim() || createMutation.isPending}
             className="bg-[var(--cta-bg)] text-[var(--cta-fg)] text-[12px] font-semibold tracking-[0.15em] uppercase rounded-full px-8 py-4 disabled:opacity-40 flex items-center gap-2 whitespace-nowrap"
           >
             {createMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : "Save Entry"}
