@@ -12,7 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, Search, X, Bookmark, MessageCircle, Star, ArrowLeft, Share2, Columns2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BibleVersion, Book, Chapter } from "@shared/bible.types";
 import { BIBLE_VERSE_PATTERN, normalizeBookName } from "@/lib/bibleUtils";
@@ -87,6 +87,8 @@ export default function Bible() {
   const [bookmarkGroups, setBookmarkGroups] = useState<BookmarkGroup[]>([]);
   const [bookmarksSheetOpen, setBookmarksSheetOpen] = useState(false);
   const [showReader, setShowReader] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
   const urlProcessedRef = useRef(false);
   const lastScrollY = useRef(0);
   const [, navigate] = useLocation();
@@ -135,6 +137,14 @@ export default function Bible() {
     enabled: !!currentVersion?.id && !!currentChapter?.id,
   });
 
+  // Fetch the same chapter in a second translation for side-by-side compare.
+  // Chapter ids (e.g. "GEN.1") are shared across versions on api.bible, so
+  // the current chapter's id works unchanged against a different bibleId.
+  const { data: compareChapterContent, isLoading: compareLoading } = useQuery<Chapter>({
+    queryKey: ["/api/bible", compareVersionId, "chapters", currentChapter?.id],
+    enabled: compareOpen && !!compareVersionId && !!currentChapter?.id,
+  });
+
   // Animate content when chapter loads
   useEffect(() => {
     if (chapterContent) {
@@ -152,6 +162,15 @@ export default function Bible() {
       setCurrentVersion(kjv || versions[0]);
     }
   }, [versions, currentVersion, setCurrentVersion]);
+
+  // Default the compare-panel's second version to whichever isn't the one
+  // already being read.
+  useEffect(() => {
+    if (versions.length > 0 && (!compareVersionId || compareVersionId === currentVersion?.id)) {
+      const alt = versions.find((v) => v.id !== currentVersion?.id);
+      if (alt) setCompareVersionId(alt.id);
+    }
+  }, [versions, currentVersion, compareVersionId]);
 
   // Update chapter when content loads
   useEffect(() => {
@@ -938,6 +957,15 @@ export default function Bible() {
             {currentVersion && <p className="text-[10px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)] mt-0.5">{currentVersion.name}</p>}
           </div>
           <button
+            onClick={() => setCompareOpen(true)}
+            disabled={!currentChapter || versions.length < 2}
+            className="py-5 px-5 border-l border-[var(--app-border)] text-[var(--app-gray-lt)] disabled:opacity-30"
+            data-testid="button-compare-translations"
+            title="Compare translations"
+          >
+            <Columns2 className="w-5 h-5" />
+          </button>
+          <button
             onClick={() => setBookmarksSheetOpen(true)}
             className="py-5 px-5 border-l border-[var(--app-border)] text-[11px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)]"
             data-testid="button-open-bookmarks"
@@ -945,7 +973,60 @@ export default function Bible() {
             Saved
           </button>
         </div>
-        
+
+        {/* Compare translations */}
+        <Sheet open={compareOpen} onOpenChange={setCompareOpen}>
+          <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0">
+            <SheetHeader className="px-6 pt-6 pb-2">
+              <SheetTitle className="font-serif" style={{ color: "var(--app-dark)" }}>
+                Compare Translations — {currentChapter?.reference}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="px-6 py-3 border-b border-[var(--app-border)] flex items-center gap-2 flex-wrap">
+              {versions.filter((v) => v.id !== currentVersion?.id).map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => setCompareVersionId(v.id)}
+                  className="px-3 py-1.5 text-[12px] font-semibold uppercase tracking-wider border transition-colors"
+                  style={{
+                    borderColor: compareVersionId === v.id ? "var(--app-green)" : "var(--app-border)",
+                    color: compareVersionId === v.id ? "var(--app-green)" : "var(--app-gray-lt)",
+                    background: compareVersionId === v.id ? "var(--app-bg-warm)" : "transparent",
+                  }}
+                >
+                  {v.abbreviation}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 overflow-hidden grid grid-cols-2 divide-x divide-[var(--app-border)]">
+              <div className="overflow-y-auto px-5 py-5">
+                <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] mb-3">{currentVersion?.abbreviation}</p>
+                {verses.map((verse) => (
+                  <p key={verse.number} className="font-serif text-[16px] leading-relaxed text-[var(--app-dark)] mb-2">
+                    <sup className="text-[10px] font-sans font-bold mr-1" style={{ color: "var(--app-green)" }}>{verse.number}</sup>
+                    {verse.text}
+                  </p>
+                ))}
+              </div>
+              <div className="overflow-y-auto px-5 py-5">
+                <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)] mb-3">
+                  {versions.find((v) => v.id === compareVersionId)?.abbreviation || "Select a translation"}
+                </p>
+                {compareLoading ? (
+                  <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--app-green)" }} /></div>
+                ) : (
+                  parseVerses(compareChapterContent?.content || "").map((verse) => (
+                    <p key={verse.number} className="font-serif text-[16px] leading-relaxed text-[var(--app-dark)] mb-2">
+                      <sup className="text-[10px] font-sans font-bold mr-1" style={{ color: "var(--app-green)" }}>{verse.number}</sup>
+                      {verse.text}
+                    </p>
+                  ))
+                )}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {/* Navigation */}
         <div className="flex items-center justify-between px-4 py-2">
           <button
