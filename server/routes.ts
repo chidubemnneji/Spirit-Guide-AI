@@ -12,6 +12,7 @@ import type { InsertUserPersona } from "@shared/schema";
 import { signupSchema, loginSchema } from "@shared/schema";
 import { hybridAIClient } from "./services/hybridAIClient";
 import { devotionalService } from "./services/devotionalService";
+import { getOrGenerateWeeklyRecap } from "./services/weeklyRecapService";
 import { getScripturesByFeeling, isValidFeeling, detectFeelingFromMessage } from "./services/feelingScriptureService";
 import { anthropic } from "./services/anthropicClient";
 import { flags, isEnabled, isEnabledForUser, getAIModel } from "./flags";
@@ -2727,6 +2728,21 @@ RULES:
     } catch (error) {
       console.error("Journal delete error:", error);
       res.status(500).json({ error: "Failed to delete journal entry" });
+    }
+  });
+
+  // ── Weekly Recap ───────────────────────────────────────────────────────────
+  // A short AI-generated reflection over the user's past 7 days. Cached per
+  // ISO week so repeat visits don't re-spend an AI call.
+  app.get("/api/weekly-recap", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+      const recap = await getOrGenerateWeeklyRecap(session.userId);
+      res.json(recap);
+    } catch (error) {
+      console.error("Weekly recap error:", error);
+      res.status(500).json({ error: "Failed to generate weekly recap" });
     }
   });
 

@@ -479,6 +479,22 @@ export const prayerJournalEntries = pgTable("prayer_journal_entries", {
   userCreatedIdx: index("journal_user_created_idx").on(t.userId, t.createdAt),
 }));
 
+// Weekly Recap — a short AI-generated reflection over the user's past 7 days
+// (journal entries, mood check-ins, devotional streak). Cached one per
+// user per ISO week so it's generated at most once, not on every page view.
+export const weeklyRecaps = pgTable("weekly_recaps", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  weekKey: varchar("week_key", { length: 10 }).notNull(), // e.g. "2026-W37"
+  summary: text("summary").notNull(),
+  stats: jsonb("stats"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (t) => ({
+  userWeekIdx: uniqueIndex("weekly_recaps_user_week_idx").on(t.userId, t.weekKey),
+}));
+
+export type WeeklyRecap = typeof weeklyRecaps.$inferSelect;
+
 export const insertPrayerJournalSchema = createInsertSchema(prayerJournalEntries).omit({
   id: true,
   createdAt: true,

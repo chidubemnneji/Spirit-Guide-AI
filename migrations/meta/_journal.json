@@ -29,6 +29,13 @@
       "when": 1789138472445,
       "tag": "0003_add_streak_freeze_and_answered_prayer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789143742960,
+      "tag": "0004_add_weekly_recaps",
+      "breakpoints": true
     }
   ]
 }

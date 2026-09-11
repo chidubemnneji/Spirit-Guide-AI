@@ -10,6 +10,48 @@ import type { UserPersona } from "@shared/schema";
 
 interface UserStats { conversationCount: number; messageCount: number; practicesCompleted: number; currentStreak: number; longestStreak: number; }
 
+interface WeeklyRecap {
+  hasEnoughData: boolean;
+  summary: string | null;
+  stats: { journalEntries: number; answeredPrayers: number; devotionalsCompleted: number; currentStreak: number; dominantMood: string | null };
+}
+
+function WeeklyRecapCard() {
+  const { data, isLoading } = useQuery<WeeklyRecap>({ queryKey: ["/api/weekly-recap"], staleTime: 1000 * 60 * 30 });
+
+  if (isLoading) {
+    return (
+      <div className="px-6 py-8 bg-[var(--app-white)] border-b border-[var(--app-border)]">
+        <div className="h-4 w-2/3 bg-[var(--app-border)] animate-pulse rounded mb-2" />
+        <div className="h-4 w-1/2 bg-[var(--app-border)] animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  if (!data?.hasEnoughData || !data.summary) {
+    return (
+      <div className="px-6 py-8 bg-[var(--app-white)] border-b border-[var(--app-border)]">
+        <p className="font-serif text-[16px] italic text-[var(--app-gray-lt)]">
+          Write a journal entry or complete a devotional this week, and your reflection will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-6 py-8 bg-[var(--app-white)] border-b border-[var(--app-border)]">
+      <p className="font-serif text-[18px] italic leading-relaxed text-[var(--app-dark)]">{data.summary}</p>
+      <div className="flex gap-5 mt-5 flex-wrap">
+        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--app-gray-lt)]">{data.stats.journalEntries} journal {data.stats.journalEntries === 1 ? "entry" : "entries"}</span>
+        {data.stats.answeredPrayers > 0 && (
+          <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--app-green)]">{data.stats.answeredPrayers} answered</span>
+        )}
+        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-[var(--app-gray-lt)]">{data.stats.devotionalsCompleted} devotionals</span>
+      </div>
+    </div>
+  );
+}
+
 const ARCHETYPE_DISPLAY: Record<string, { name: string; description: string }> = {
   wounded_seeker:     { name: "Wounded Seeker",     description: "Finding God through the pain" },
   eager_builder:      { name: "Eager Builder",       description: "Growing deliberately, day by day" },
@@ -180,6 +222,10 @@ export default function Account() {
 
           {/* RIGHT — This Week + Saved Passages */}
           <section>
+            <div className="px-6 py-4 border-b border-[var(--app-dark)]">
+              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Weekly Reflection</span>
+            </div>
+            <WeeklyRecapCard />
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--app-dark)]">
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Weekly Path</span>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">{weekRange}</span>
@@ -283,6 +329,12 @@ export default function Account() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Weekly Reflection */}
+      <section className="flex flex-col mt-4">
+        <div className="section-band"><span>Weekly Reflection</span></div>
+        <WeeklyRecapCard />
       </section>
 
       {/* Saved Passages */}
