@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { X, Loader2, Trash2 } from "lucide-react";
+import { X, Loader2, Trash2, HandHeart, Check } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PrayerJournalEntry } from "@shared/schema";
@@ -83,9 +83,12 @@ function NewEntrySheet({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
-function EntryCard({ entry, onDelete }: { entry: PrayerJournalEntry; onDelete: (id: number) => void }) {
+function EntryCard({ entry, onDelete, onAnswer }: { entry: PrayerJournalEntry; onDelete: (id: number) => void; onAnswer: (id: number, answered: boolean, note?: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [notingAnswer, setNotingAnswer] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
   const mood = MOODS.find(m => m.id === entry.mood);
+  const isAnswered = !!entry.answeredAt;
 
   return (
     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="bg-[var(--app-white)] border-b border-[var(--app-border-soft)]">
@@ -94,7 +97,14 @@ function EntryCard({ entry, onDelete }: { entry: PrayerJournalEntry; onDelete: (
           <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-gray-lt)]">
             {format(new Date(entry.createdAt), "MMM d, yyyy")}
           </span>
-          {mood && <span className="text-[12px]">{mood.emoji} {mood.label}</span>}
+          <div className="flex items-center gap-2">
+            {isAnswered && (
+              <span className="flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase text-[var(--app-green)]">
+                <Check size={12} /> Answered
+              </span>
+            )}
+            {mood && <span className="text-[12px]">{mood.emoji} {mood.label}</span>}
+          </div>
         </div>
         {entry.verseReference && (
           <p className="text-[11px] font-semibold tracking-wider uppercase text-[var(--app-green)] mb-2">{entry.verseReference}</p>
@@ -102,14 +112,53 @@ function EntryCard({ entry, onDelete }: { entry: PrayerJournalEntry; onDelete: (
         <p className="font-serif text-[18px] text-[var(--app-dark)] leading-relaxed" style={{ WebkitLineClamp: expanded ? undefined : 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
           {entry.content}
         </p>
+        {isAnswered && entry.answerNote && (
+          <p className="mt-3 text-[14px] font-serif italic text-[var(--app-gray)] border-l-2 border-[var(--app-green)] pl-3">
+            {entry.answerNote}
+          </p>
+        )}
       </button>
       <AnimatePresence>
         {expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="px-6 pb-5 flex justify-end">
-              <button onClick={() => onDelete(entry.id)} className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase text-red-600">
-                <Trash2 size={12} /> Delete
-              </button>
+            <div className="px-6 pb-5">
+              {notingAnswer ? (
+                <div className="mb-3">
+                  <textarea
+                    autoFocus
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    placeholder="How was this prayer answered? (optional)"
+                    rows={2}
+                    className="w-full text-[14px] text-[var(--app-dark)] bg-[var(--app-bg)] px-3 py-2 resize-none outline-none border border-[var(--app-border)] focus:border-[var(--app-green)] transition-colors mb-2"
+                  />
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => { setNotingAnswer(false); setNoteDraft(""); }} className="text-[11px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)]">
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => { onAnswer(entry.id, true, noteDraft); setNotingAnswer(false); }}
+                      className="text-[11px] font-semibold tracking-wider uppercase text-[var(--app-green)]"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex justify-between items-center">
+                {isAnswered ? (
+                  <button onClick={() => onAnswer(entry.id, false)} className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase text-[var(--app-gray-lt)]">
+                    Unmark as answered
+                  </button>
+                ) : !notingAnswer ? (
+                  <button onClick={() => setNotingAnswer(true)} className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase text-[var(--app-green)]">
+                    <HandHeart size={12} /> Mark as answered
+                  </button>
+                ) : <span />}
+                <button onClick={() => onDelete(entry.id)} className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase text-red-600">
+                  <Trash2 size={12} /> Delete
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -120,13 +169,23 @@ function EntryCard({ entry, onDelete }: { entry: PrayerJournalEntry; onDelete: (
 
 export default function Journal() {
   const [newEntryOpen, setNewEntryOpen] = useState(false);
+  const [filter, setFilter] = useState<"all" | "answered">("all");
   const { data, isLoading } = useQuery<{ entries: PrayerJournalEntry[] }>({ queryKey: ["/api/journal"] });
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/journal/${id}`); },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/journal"] }),
   });
+  const answerMutation = useMutation({
+    mutationFn: async ({ id, answered, note }: { id: number; answered: boolean; note?: string }) => {
+      await apiRequest("PATCH", `/api/journal/${id}/answer`, { answered, answerNote: note });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/journal"] }),
+  });
+  const handleAnswer = (id: number, answered: boolean, note?: string) => answerMutation.mutate({ id, answered, note });
 
-  const entries = data?.entries || [];
+  const allEntries = data?.entries || [];
+  const answeredCount = allEntries.filter((e) => !!e.answeredAt).length;
+  const entries = filter === "answered" ? allEntries.filter((e) => !!e.answeredAt) : allEntries;
 
   return (
     <>
@@ -152,28 +211,52 @@ export default function Journal() {
           {/* LEFT — Past reflections */}
           <section className="border-r border-[var(--app-dark)] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--app-dark)]">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-dark)]">Past Reflections</span>
+              <div className="flex items-center gap-4">
+                <button onClick={() => setFilter("all")} className="text-[11px] font-semibold tracking-[0.18em] uppercase" style={{ color: filter === "all" ? "var(--app-dark)" : "var(--app-gray-lt)" }}>
+                  All
+                </button>
+                <button onClick={() => setFilter("answered")} className="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] uppercase" style={{ color: filter === "answered" ? "var(--app-green)" : "var(--app-gray-lt)" }}>
+                  Answered {answeredCount > 0 && `(${answeredCount})`}
+                </button>
+              </div>
               <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">Total {entries.length}</span>
             </div>
             {isLoading ? (
               <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[var(--app-gray-lt)]" /></div>
             ) : entries.length === 0 ? (
               <div className="px-6 py-16">
-                <p className="font-serif text-[22px] text-[var(--app-dark)] mb-2">No reflections yet.</p>
-                <p className="text-[14px] text-[var(--app-gray-lt)] leading-relaxed">Begin writing on the right. This is your private space.</p>
+                <p className="font-serif text-[22px] text-[var(--app-dark)] mb-2">
+                  {filter === "answered" ? "No answered prayers yet." : "No reflections yet."}
+                </p>
+                <p className="text-[14px] text-[var(--app-gray-lt)] leading-relaxed">
+                  {filter === "answered" ? "Mark an entry as answered and it'll show up here." : "Begin writing on the right. This is your private space."}
+                </p>
               </div>
             ) : (
               entries.map((entry) => {
                 const mood = MOODS.find((m) => m.id === entry.mood);
+                const isAnswered = !!entry.answeredAt;
                 return (
                   <div key={entry.id} className="group px-6 py-6 border-b border-[var(--app-border)] relative">
-                    <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">
-                      {format(new Date(entry.createdAt), "MMMM d, yyyy")}
-                    </span>
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[var(--app-gray-lt)]">
+                        {format(new Date(entry.createdAt), "MMMM d, yyyy")}
+                      </span>
+                      {isAnswered && (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold tracking-[0.15em] uppercase text-[var(--app-green)]">
+                          <Check size={11} /> Answered
+                        </span>
+                      )}
+                    </div>
                     <p className="font-serif text-[17px] leading-[1.55] text-[var(--app-dark)] mt-2 mb-3"
                        style={{ WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
                       {entry.content}
                     </p>
+                    {isAnswered && entry.answerNote && (
+                      <p className="font-serif italic text-[14px] text-[var(--app-gray)] border-l-2 border-[var(--app-green)] pl-3 mb-3">
+                        {entry.answerNote}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between">
                       {mood ? (
                         <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[var(--app-gray-lt)]">{mood.emoji} {mood.label}</span>
@@ -182,13 +265,23 @@ export default function Journal() {
                         <span className="font-serif italic text-[13px] text-[var(--app-green)]">{entry.verseReference}</span>
                       )}
                     </div>
-                    <button
-                      onClick={() => deleteMutation.mutate(entry.id)}
-                      className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--app-gray-lt)] hover:text-red-600"
-                      aria-label="Delete entry"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="absolute top-5 right-5 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleAnswer(entry.id, !isAnswered)}
+                        className="text-[var(--app-gray-lt)] hover:text-[var(--app-green)]"
+                        aria-label={isAnswered ? "Unmark as answered" : "Mark as answered"}
+                        title={isAnswered ? "Unmark as answered" : "Mark as answered"}
+                      >
+                        <HandHeart size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteMutation.mutate(entry.id)}
+                        className="text-[var(--app-gray-lt)] hover:text-red-600"
+                        aria-label="Delete entry"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 );
               })
@@ -216,22 +309,42 @@ export default function Journal() {
         </button>
       </header>
 
+      {allEntries.length > 0 && (
+        <div className="flex gap-5 px-6 py-3 bg-[var(--app-white)] border-b border-[var(--app-border)]">
+          <button onClick={() => setFilter("all")} className="text-[12px] font-semibold tracking-[0.12em] uppercase" style={{ color: filter === "all" ? "var(--app-dark)" : "var(--app-gray-lt)" }}>
+            All
+          </button>
+          <button onClick={() => setFilter("answered")} className="flex items-center gap-1 text-[12px] font-semibold tracking-[0.12em] uppercase" style={{ color: filter === "answered" ? "var(--app-green)" : "var(--app-gray-lt)" }}>
+            Answered {answeredCount > 0 && `(${answeredCount})`}
+          </button>
+        </div>
+      )}
+
       <main>
         {isLoading ? (
           <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[var(--app-gray-lt)]" /></div>
         ) : entries.length === 0 ? (
           <div className="text-center py-20 px-8">
-            <p className="font-serif text-[28px] text-[var(--app-dark)] mb-3">Your journal is empty.</p>
-            <p className="text-[16px] text-[var(--app-gray-lt)] mb-8 leading-relaxed">Write your first prayer or reflection. This is your private space.</p>
-            <button onClick={() => setNewEntryOpen(true)}
-              className="px-8 py-3 font-semibold text-[13px] tracking-[0.2em] uppercase"
-              style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}>
-              Write your first entry
-            </button>
+            {filter === "answered" ? (
+              <>
+                <p className="font-serif text-[28px] text-[var(--app-dark)] mb-3">No answered prayers yet.</p>
+                <p className="text-[16px] text-[var(--app-gray-lt)] mb-8 leading-relaxed">Mark an entry as answered and it'll show up here.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-serif text-[28px] text-[var(--app-dark)] mb-3">Your journal is empty.</p>
+                <p className="text-[16px] text-[var(--app-gray-lt)] mb-8 leading-relaxed">Write your first prayer or reflection. This is your private space.</p>
+                <button onClick={() => setNewEntryOpen(true)}
+                  className="px-8 py-3 font-semibold text-[13px] tracking-[0.2em] uppercase"
+                  style={{ background: "var(--cta-bg)", color: "var(--cta-fg)" }}>
+                  Write your first entry
+                </button>
+              </>
+            )}
           </div>
         ) : (
           entries.map(entry => (
-            <EntryCard key={entry.id} entry={entry} onDelete={id => deleteMutation.mutate(id)} />
+            <EntryCard key={entry.id} entry={entry} onDelete={id => deleteMutation.mutate(id)} onAnswer={handleAnswer} />
           ))
         )}
       </main>

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { StreakCelebration } from "@/components/devotional/StreakCelebration";
 import { NotificationDrawer } from "@/components/NotificationDrawer";
 import { format, startOfWeek, addDays, isToday } from "date-fns";
@@ -69,6 +70,7 @@ export default function Devotion() {
   const [showNotifications, setShowNotifications] = useState(false);
   const startTime = useRef(Date.now()).current;
   const startedRef = useRef(false);
+  const { toast } = useToast();
 
   const greetingQuery = useQuery<{ success: boolean; data: DevotionalGreeting }>({ queryKey: ["/api/devotional/greeting"] });
   const devotionalQuery = useQuery<{ success: boolean; data: Devotional; completedTaskIds: string[] }>({ queryKey: ["/api/devotional/today"] });
@@ -84,6 +86,12 @@ export default function Devotion() {
       queryClient.invalidateQueries({ queryKey: ["/api/devotional/greeting"] });
       queryClient.invalidateQueries({ queryKey: ["/api/devotional/journey"] });
       if (data?.data?.newMilestones?.length > 0) { setCelebrationMilestone(data.data.newMilestones[0]); setShowCelebration(true); }
+      else if (data?.data?.freezeUsed) {
+        toast({
+          title: "Streak freeze used 🧊",
+          description: `You missed a day, but your streak is safe. ${data.data.freezesAvailable} left this month.`,
+        });
+      }
     },
   });
 

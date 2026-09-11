@@ -387,6 +387,12 @@ export const devotionalStreaks = pgTable("devotional_streaks", {
   lastCompletedDate: varchar("last_completed_date", { length: 10 }), // YYYY-MM-DD format
   totalDevotionalsCompleted: integer("total_devotionals_completed").default(0),
   streakMilestonesAchieved: text("streak_milestones_achieved").array(),
+  // Streak-freeze ("grace") mechanic: one missed day a month doesn't reset the
+  // streak, it just spends a freeze. freezesAvailable resets to 1 whenever
+  // the calendar month rolls over past freezeRefillMonth.
+  freezesAvailable: integer("freezes_available").default(1),
+  freezeRefillMonth: varchar("freeze_refill_month", { length: 7 }), // YYYY-MM
+  lastFreezeUsedDate: varchar("last_freeze_used_date", { length: 10 }), // YYYY-MM-DD
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -462,6 +468,10 @@ export const prayerJournalEntries = pgTable("prayer_journal_entries", {
   tags: text("tags").array(),
   verseReference: varchar("verse_reference", { length: 100 }),
   verseText: text("verse_text"),
+  // Answered-prayer tracking: any entry can later be marked answered, with an
+  // optional note on how — surfaced as its own "Answered" view in the journal.
+  answeredAt: timestamp("answered_at"),
+  answerNote: text("answer_note"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 }, (t) => ({

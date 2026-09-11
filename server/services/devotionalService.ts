@@ -26,6 +26,16 @@ function getYesterdayDateString(): string {
   return yesterday.toISOString().split("T")[0];
 }
 
+function getDayBeforeYesterdayDateString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 2);
+  return d.toISOString().split("T")[0];
+}
+
+function getCurrentMonthString(): string {
+  return new Date().toISOString().slice(0, 7); // YYYY-MM
+}
+
 function getTimeOfDayGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return "Good Morning";
@@ -201,6 +211,8 @@ interface CompletionResult {
   longestStreak: number;
   totalCompleted: number;
   newMilestones: number[];
+  freezeUsed: boolean;
+  freezesAvailable: number;
 }
 
 export async function completeDevotional(
@@ -236,12 +248,28 @@ export async function completeDevotional(
 
   const streak = await getOrCreateStreak(userId);
   const yesterday = getYesterdayDateString();
+  const dayBeforeYesterday = getDayBeforeYesterdayDateString();
+  const currentMonth = getCurrentMonthString();
+
+  // Streak freeze ("grace"): one available per calendar month. Refills
+  // whenever the tracked refill month has rolled over.
+  const freezesAvailable =
+    streak.freezeRefillMonth === currentMonth ? (streak.freezesAvailable ?? 1) : 1;
 
   let newCurrentStreak = 1;
+  let freezeUsed = false;
+  let remainingFreezes = freezesAvailable;
+
   if (streak.lastCompletedDate === yesterday) {
     newCurrentStreak = (streak.currentStreak || 0) + 1;
   } else if (streak.lastCompletedDate === today) {
     newCurrentStreak = streak.currentStreak || 1;
+  } else if (streak.lastCompletedDate === dayBeforeYesterday && freezesAvailable > 0) {
+    // Exactly one day was missed and a freeze is available — spend it and
+    // keep the streak alive rather than resetting it to 1.
+    newCurrentStreak = (streak.currentStreak || 0) + 1;
+    freezeUsed = true;
+    remainingFreezes = freezesAvailable - 1;
   }
 
   const newLongestStreak = Math.max(newCurrentStreak, streak.longestStreak || 0);
@@ -267,6 +295,9 @@ export async function completeDevotional(
       lastCompletedDate: today,
       totalDevotionalsCompleted: newTotal,
       streakMilestonesAchieved: updatedMilestones,
+      freezesAvailable: remainingFreezes,
+      freezeRefillMonth: currentMonth,
+      lastFreezeUsedDate: freezeUsed ? today : streak.lastFreezeUsedDate,
       updatedAt: now,
     })
     .where(eq(devotionalStreaks.userId, userId));
@@ -276,6 +307,8 @@ export async function completeDevotional(
     longestStreak: newLongestStreak,
     totalCompleted: newTotal,
     newMilestones,
+    freezeUsed,
+    freezesAvailable: remainingFreezes,
   };
 }
 

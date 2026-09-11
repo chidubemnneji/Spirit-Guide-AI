@@ -2687,6 +2687,33 @@ RULES:
     }
   });
 
+  // Mark (or unmark) a journal entry as an answered prayer.
+  app.patch("/api/journal/:id/answer", async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionWithUser;
+      if (!session.userId) return res.status(401).json({ error: "Not authenticated" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const { answered, answerNote } = req.body as { answered: boolean; answerNote?: string };
+
+      const [entry] = await db
+        .update(schema.prayerJournalEntries)
+        .set({
+          answeredAt: answered ? new Date() : null,
+          answerNote: answered ? (answerNote?.trim() || null) : null,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(schema.prayerJournalEntries.id, id), eq(schema.prayerJournalEntries.userId, session.userId)))
+        .returning();
+
+      if (!entry) return res.status(404).json({ error: "Entry not found" });
+      res.json({ entry });
+    } catch (error) {
+      console.error("Journal answer-toggle error:", error);
+      res.status(500).json({ error: "Failed to update entry" });
+    }
+  });
+
   app.delete("/api/journal/:id", async (req: Request, res: Response) => {
     try {
       const session = req.session as SessionWithUser;
